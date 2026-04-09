@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -706,6 +734,17 @@
     <span class="md-ellipsis">
       
         High-Level Components
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#primary-crds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primary CRDs
       
     </span>
   </a>
@@ -1025,17 +1064,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#future-enhancements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Future Enhancements
-      
-    </span>
-  </a>
   
 </li>
       
@@ -4859,6 +4887,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#primary-crds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Primary CRDs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authorization-architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5175,17 +5214,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#future-enhancements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Future Enhancements
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5223,6 +5251,7 @@
 
 <h1 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h1>
 <p>This operator is structured into clear layers to keep reconciliation logic maintainable and testable.</p>
+<p>Helm charts are the primary deployment path for this project. Raw <code>Keycloak</code>, <code>KeycloakRealm</code>, and <code>KeycloakClient</code> manifests are supported, but they are the advanced/manual path when you need full control over the surrounding Kubernetes wiring.</p>
 <h2 id="high-level-components">High-Level Components<a class="headerlink" href="#high-level-components" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -5254,6 +5283,35 @@
 </tr>
 </tbody>
 </table>
+<h2 id="primary-crds">Primary CRDs<a class="headerlink" href="#primary-crds" title="Permanent link">&para;</a></h2>
+<p>The operator API is centered on three primary custom resources:</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Scope</th>
+<th>Primary owner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Keycloak</code></td>
+<td>One Keycloak instance per operator namespace</td>
+<td><code>handlers/keycloak.py</code> + <code>services/keycloak_reconciler.py</code></td>
+</tr>
+<tr>
+<td><code>KeycloakRealm</code></td>
+<td>Realm-scoped identity configuration</td>
+<td><code>handlers/realm.py</code> + <code>services/realm_reconciler.py</code></td>
+</tr>
+<tr>
+<td><code>KeycloakClient</code></td>
+<td>Client-scoped application configuration</td>
+<td><code>handlers/client.py</code> + <code>services/client_reconciler.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>operatorRef.namespace</code> selects which operator instance manages a realm or client. Each operator instance manages exactly one Keycloak instance in its own namespace, so <code>operatorRef</code> is the routing key for multi-operator deployments.</p>
 <h2 id="authorization-architecture">Authorization Architecture<a class="headerlink" href="#authorization-architecture" title="Permanent link">&para;</a></h2>
 <p>The operator uses <strong>Kubernetes RBAC</strong> combined with <strong>declarative namespace grant lists</strong> for multi-tenant authorization.</p>
 <h3 id="authorization-model">Authorization Model<a class="headerlink" href="#authorization-model" title="Permanent link">&para;</a></h3>
@@ -5324,8 +5382,7 @@ metadata:
   namespace: platform
 spec:
   realmName: shared
-  instanceRef:
-    name: keycloak
+  operatorRef:
     namespace: keycloak-system
   # Only these namespaces can create clients
   clientAuthorizationGrants:
@@ -5339,7 +5396,7 @@ spec:
 <li>Operator reads client's `realmRef` to find realm</li>
 <li>Operator checks if `app-team-a` is in realm's `clientAuthorizationGrants`</li>
 <li>If authorized: Client created in Keycloak</li>
-<li>If not authorized: Client enters `Error` phase with clear message</li>
+<li>If not authorized: Client is rejected by the admission webhook when enabled, or enters `Failed` phase during reconciliation when webhooks are disabled</li>
 </ol>
 <p><strong>Example: Client in authorized namespace</strong></p>
 <p>```yaml
@@ -5576,6 +5633,7 @@ spec:
 <p>The scaling strategy should be driven by <strong>actual performance metrics and requirements</strong>, not by assumptions about implementation language.</p>
 <h2 id="rate-limiting-architecture">Rate Limiting Architecture<a class="headerlink" href="#rate-limiting-architecture" title="Permanent link">&para;</a></h2>
 <p>The operator implements a three-layer rate limiting strategy to protect Keycloak instances from API overload, particularly during mass reconciliation events (operator restarts, database reconnections, or intentional/malicious resource spam).</p>
+<p>Execution order is <code>jitter -&gt; namespace limiter -&gt; global limiter</code>. The layer numbers below describe protection scope, not the chronological order of evaluation.</p>
 <pre class="mermaid"><code>flowchart TB
     subgraph Reconciliation["Reconciliation Request Flow"]
         Event[Kubernetes Event&lt;br/&gt;create/update/delete]
@@ -5716,13 +5774,6 @@ spec:
 <li><code>keycloak_operator_rate_limit_tokens_available</code>: Current token bucket levels</li>
 </ul>
 <p>See <a href="../../guides/observability/">Observability</a> for complete metrics documentation.</p>
-<h2 id="future-enhancements">Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Finalizers for deterministic teardown</li>
-<li>Smarter diffing of realm/client sub-resources</li>
-<li>Rate limiting &amp; backoff policies</li>
-<li>Pluggable auth strategies for Keycloak admin API</li>
-</ul>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Core Architecture:</strong></p>
 <ul>
@@ -5783,7 +5834,7 @@ spec:
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../how-to/end-to-end-setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation">
+          <a href="../../how-to/end-to-end-setup/" class="md-footer__link md-footer__link--prev" aria-label="Previous: End-to-End Setup">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -5793,7 +5844,7 @@ spec:
                 Previous
               </span>
               <div class="md-ellipsis">
-                Installation
+                End-to-End Setup
               </div>
             </div>
           </a>

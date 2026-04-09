@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1043,22 +1071,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#read-this-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Read This First
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-are-exporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What You Are Exporting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What You Are Exporting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#scope-of-export" class="md-nav__link">
+  <a href="#desired-state-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scope of Export
+        Desired-State Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stateful-identity-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stateful Identity Data
       
     </span>
   </a>
@@ -1071,22 +1132,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scenarios" class="md-nav__link">
+  <a href="#export-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenarios
+        Export Scenarios
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scenarios">
+    <nav class="md-nav" aria-label="Export Scenarios">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-kubernetes-clustered-quarkus-with-infinispan" class="md-nav__link">
+  <a href="#kubernetes-based-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Kubernetes (Clustered Quarkus with Infinispan)
+        Kubernetes-Based Keycloak
       
     </span>
   </a>
@@ -1094,10 +1155,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-single-node-container-dockerpodman" class="md-nav__link">
+  <a href="#container-based-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Single Node Container (Docker/Podman)
+        Container-Based Keycloak
       
     </span>
   </a>
@@ -1105,10 +1166,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-single-node-vm-systemdbare-metal" class="md-nav__link">
+  <a href="#vm-or-bare-metal-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Single Node VM (Systemd/Bare Metal)
+        VM Or Bare-Metal Keycloak
       
     </span>
   </a>
@@ -1116,10 +1177,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-legacy-wildfly-keycloak-pre-quarkus" class="md-nav__link">
+  <a href="#legacy-wildfly-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Legacy WildFly Keycloak (Pre-Quarkus)
+        Legacy WildFly Keycloak
       
     </span>
   </a>
@@ -1132,22 +1193,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#importing-into-keycloak-operator" class="md-nav__link">
+  <a href="#validate-the-export-before-migration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Importing into Keycloak Operator
+        Validate The Export Before Migration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Importing into Keycloak Operator">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transform-configuration-into-helm-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform Configuration Into Helm Values
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-configuration-through-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy Configuration Through Helm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-users-separately" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import Users Separately
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import Users Separately">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-transform-configuration-with-the-migration-toolkit" class="md-nav__link">
+  <a href="#preferred-for-full-environment-migration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Transform Configuration with the Migration Toolkit
+        Preferred For Full Environment Migration
       
     </span>
   </a>
@@ -1155,10 +1249,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-deploy-with-helm" class="md-nav__link">
+  <a href="#repeatable-user-import-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Deploy with Helm
+        Repeatable User Import Workflow
       
     </span>
   </a>
@@ -1166,10 +1260,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-import-users-data-migration" class="md-nav__link">
+  <a href="#manual-partial-import" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Import Users (Data Migration)
+        Manual Partial Import
       
     </span>
   </a>
@@ -1178,6 +1272,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-import-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Import Verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4638,22 +4754,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#read-this-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Read This First
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Overview">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-are-exporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What You Are Exporting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What You Are Exporting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#scope-of-export" class="md-nav__link">
+  <a href="#desired-state-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scope of Export
+        Desired-State Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stateful-identity-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stateful Identity Data
       
     </span>
   </a>
@@ -4666,22 +4815,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scenarios" class="md-nav__link">
+  <a href="#export-scenarios" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scenarios
+        Export Scenarios
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Scenarios">
+    <nav class="md-nav" aria-label="Export Scenarios">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-kubernetes-clustered-quarkus-with-infinispan" class="md-nav__link">
+  <a href="#kubernetes-based-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Kubernetes (Clustered Quarkus with Infinispan)
+        Kubernetes-Based Keycloak
       
     </span>
   </a>
@@ -4689,10 +4838,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-single-node-container-dockerpodman" class="md-nav__link">
+  <a href="#container-based-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Single Node Container (Docker/Podman)
+        Container-Based Keycloak
       
     </span>
   </a>
@@ -4700,10 +4849,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-single-node-vm-systemdbare-metal" class="md-nav__link">
+  <a href="#vm-or-bare-metal-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Single Node VM (Systemd/Bare Metal)
+        VM Or Bare-Metal Keycloak
       
     </span>
   </a>
@@ -4711,10 +4860,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-legacy-wildfly-keycloak-pre-quarkus" class="md-nav__link">
+  <a href="#legacy-wildfly-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Legacy WildFly Keycloak (Pre-Quarkus)
+        Legacy WildFly Keycloak
       
     </span>
   </a>
@@ -4727,22 +4876,55 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#importing-into-keycloak-operator" class="md-nav__link">
+  <a href="#validate-the-export-before-migration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Importing into Keycloak Operator
+        Validate The Export Before Migration
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Importing into Keycloak Operator">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transform-configuration-into-helm-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transform Configuration Into Helm Values
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-configuration-through-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deploy Configuration Through Helm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-users-separately" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import Users Separately
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Import Users Separately">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-transform-configuration-with-the-migration-toolkit" class="md-nav__link">
+  <a href="#preferred-for-full-environment-migration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Transform Configuration with the Migration Toolkit
+        Preferred For Full Environment Migration
       
     </span>
   </a>
@@ -4750,10 +4932,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-deploy-with-helm" class="md-nav__link">
+  <a href="#repeatable-user-import-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Deploy with Helm
+        Repeatable User Import Workflow
       
     </span>
   </a>
@@ -4761,10 +4943,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-import-users-data-migration" class="md-nav__link">
+  <a href="#manual-partial-import" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Import Users (Data Migration)
+        Manual Partial Import
       
     </span>
   </a>
@@ -4773,6 +4955,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-import-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Post-Import Verification
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4802,220 +5006,198 @@
 
 
 <h1 id="exporting-realms-users">Exporting Realms &amp; Users<a class="headerlink" href="#exporting-realms-users" title="Permanent link">&para;</a></h1>
-<p>This guide provides instructions for exporting Keycloak realms, users, and secrets for migration purposes. These exports can be used to migrate existing Keycloak installations to this operator.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The migration process generally involves:
-1.  <strong>Exporting data</strong> from your existing Keycloak instance.
-2.  <strong>Transforming configuration</strong> into Kubernetes Custom Resources (CRDs).
-3.  <strong>Importing data</strong> (users, sessions) into the new instance.</p>
-<h3 id="scope-of-export">Scope of Export<a class="headerlink" href="#scope-of-export" title="Permanent link">&para;</a></h3>
-<p>Standard Keycloak exports include:
-*   <strong>Realm Configuration</strong>: Roles, groups, settings.
-*   <strong>Clients</strong>: Configurations, redirect URIs.
-*   <strong>Users</strong>: Credentials (hashed), attributes, role mappings.
-*   <strong>Secrets</strong>: Client secrets and hashed user passwords (encrypted).</p>
-<h2 id="scenarios">Scenarios<a class="headerlink" href="#scenarios" title="Permanent link">&para;</a></h2>
-<p>Choose the instruction set that matches your current environment.</p>
-<h3 id="1-kubernetes-clustered-quarkus-with-infinispan">1. Kubernetes (Clustered Quarkus with Infinispan)<a class="headerlink" href="#1-kubernetes-clustered-quarkus-with-infinispan" title="Permanent link">&para;</a></h3>
-<p>For Keycloak deployed on Kubernetes (Quarkus distribution) with an external database (e.g., CNPG, RDS).</p>
-<p><strong>Prerequisites:</strong>
-*   <code>kubectl</code> access to the cluster.
-*   Database credentials (usually in a Secret).</p>
-<p><strong>Steps:</strong></p>
+<p>This guide explains how to export Keycloak configuration and user data for migration into this operator’s Helm-first workflow.</p>
+<h2 id="read-this-first">Read This First<a class="headerlink" href="#read-this-first" title="Permanent link">&para;</a></h2>
+<ul>
+<li>the recommended deployment target is Helm values rendered by the migration toolkit, not hand-written raw CRDs</li>
+<li>realm and client configuration are desired-state data</li>
+<li>users and other live identity records are stateful data and are imported separately</li>
+<li>supported target Keycloak versions start at <code>24.x</code>; see <a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
+</ul>
+<p>If you are leaving this operator rather than migrating into it, see <a href="../../operations/escape-hatch/">Escape Hatch</a>.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>Before the first <code>keycloak-migrate</code> command, download the toolkit from the GitHub Releases page for this repository:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Pick the migration-toolkit release that matches the version you want</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>migration-toolkit-v&lt;version&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--repo<span class="w"> </span>vriesdemichael/keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--pattern<span class="w"> </span><span class="s1">&#39;*keycloak-migrate*&#39;</span>
+</span></code></pre></div>
+<p>Or download the binary asset directly from the migration toolkit releases view:</p>
+<p><code>https://github.com/vriesdemichael/keycloak-operator/releases?q=migration-toolkit</code></p>
+<p>Also make sure you know the actual Keycloak version you are exporting from. Do not hardcode a stale image tag into export jobs.</p>
+<h2 id="what-you-are-exporting">What You Are Exporting<a class="headerlink" href="#what-you-are-exporting" title="Permanent link">&para;</a></h2>
+<p>Exports contain two different categories of data:</p>
+<h3 id="desired-state-configuration">Desired-State Configuration<a class="headerlink" href="#desired-state-configuration" title="Permanent link">&para;</a></h3>
+<ul>
+<li>realm settings</li>
+<li>clients and client configuration</li>
+<li>roles, groups, protocol settings, and related declarative configuration</li>
+</ul>
+<p>This is what the migration toolkit transforms into Helm values.</p>
+<h3 id="stateful-identity-data">Stateful Identity Data<a class="headerlink" href="#stateful-identity-data" title="Permanent link">&para;</a></h3>
+<ul>
+<li>users</li>
+<li>password hashes</li>
+<li>attributes and group membership</li>
+<li>other runtime identity records</li>
+</ul>
+<p>This is not reconciled through <code>KeycloakRealm</code> or <code>KeycloakClient</code> CRs. It is imported through dedicated user-migration workflows.</p>
+<h2 id="export-scenarios">Export Scenarios<a class="headerlink" href="#export-scenarios" title="Permanent link">&para;</a></h2>
+<p>Choose the scenario that matches your current environment.</p>
+<h3 id="kubernetes-based-keycloak">Kubernetes-Based Keycloak<a class="headerlink" href="#kubernetes-based-keycloak" title="Permanent link">&para;</a></h3>
+<p>This is the most common case.</p>
 <ol>
-<li>
-<p><strong>Identify Database Credentials</strong>:
-    Locate the secret containing your database credentials.
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>keycloak-db-credentials<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data}&#39;</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Scale Down Keycloak</strong>:
-    To ensure data consistency and release database locks, scale the Keycloak StatefulSet to 0.
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>scale<span class="w"> </span>statefulset<span class="w"> </span>keycloak<span class="w"> </span>--replicas<span class="o">=</span><span class="m">0</span><span class="w"> </span>-n<span class="w"> </span>keycloak-namespace
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Run Export Job</strong>:
-    Deploy a temporary Job to perform the export. Replace environment variables with your specific database configuration.</p>
-<p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># export-job.yaml</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">batch/v1</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Job</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-export</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-namespace</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<li>determine the running Keycloak image version</li>
+<li>scale down or otherwise gate writes if you need a strongly consistent export</li>
+<li>run <code>kc.sh export</code> from a matching Keycloak image version</li>
+<li>copy the export out</li>
+<li>validate the export before moving on</li>
+</ol>
+<p>Example version check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deploy<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-deployment&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].image}{&quot;\n&quot;}&#39;</span>
+</span></code></pre></div>
+<p>Example export job:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">batch/v1</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Job</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-export</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-namespace</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">restartPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.0.0</span><span class="w">  </span><span class="c1"># Use your current version</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.5.2</span><span class="w">  </span><span class="c1"># Replace with the exact version your source Keycloak is running</span>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">              </span><span class="no">/opt/keycloak/bin/kc.sh export --dir /tmp/export --users realm_file --realm my-realm</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">              </span><span class="no"># Keep pod running to allow copying</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">              </span><span class="no">sleep 3600</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_URL</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jdbc:postgresql://keycloak-db-rw:5432/keycloak</span>
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_USERNAME</span>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">username</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_PASSWORD</span>
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
-</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">      </span><span class="nt">restartPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Never</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">              </span><span class="no">/opt/keycloak/bin/kc.sh export \</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">                </span><span class="no">--dir /tmp/export \</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">                </span><span class="no">--users realm_file \</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">                </span><span class="no">--realm my-realm</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">              </span><span class="no">sleep 3600</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_URL</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jdbc:postgresql://keycloak-db-rw:5432/keycloak</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_USERNAME</span>
+</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
+</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">username</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_PASSWORD</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
+</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
 </span></code></pre></div>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>export-job.yaml
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Copy Exported Data</strong>:
-    Once the job is running (check <code>kubectl get pods</code>), copy the files to your local machine.
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">POD_NAME</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-namespace<span class="w"> </span>-l<span class="w"> </span>job-name<span class="o">=</span>keycloak-export<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].metadata.name}&#39;</span><span class="k">)</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>cp<span class="w"> </span>keycloak-namespace/<span class="nv">$POD_NAME</span>:/tmp/export<span class="w"> </span>./keycloak-export
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Cleanup</strong>:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>job<span class="w"> </span>keycloak-export<span class="w"> </span>-n<span class="w"> </span>keycloak-namespace
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>scale<span class="w"> </span>statefulset<span class="w"> </span>keycloak<span class="w"> </span>--replicas<span class="o">=</span><span class="m">3</span><span class="w"> </span>-n<span class="w"> </span>keycloak-namespace
-</span></code></pre></div></p>
-</li>
-</ol>
-<h3 id="2-single-node-container-dockerpodman">2. Single Node Container (Docker/Podman)<a class="headerlink" href="#2-single-node-container-dockerpodman" title="Permanent link">&para;</a></h3>
-<p>For a single Keycloak container running locally or on a server.</p>
-<p><strong>Steps:</strong></p>
+<p>Use the exact Keycloak version that matches the source instance you are exporting from.</p>
+<h3 id="container-based-keycloak">Container-Based Keycloak<a class="headerlink" href="#container-based-keycloak" title="Permanent link">&para;</a></h3>
+<p>Run an export container attached to the same database and network as the current deployment.</p>
+<p>Prefer secret-backed environment variables instead of typing passwords directly into shell history.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KC_DB_PASSWORD</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>pass<span class="w"> </span>show<span class="w"> </span>keycloak/db-password<span class="k">)</span><span class="s2">&quot;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--network<span class="w"> </span>keycloak-network<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/export:/tmp/export<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB</span><span class="o">=</span>postgres<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_URL</span><span class="o">=</span>jdbc:postgresql://postgres-container:5432/keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_USERNAME</span><span class="o">=</span>keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_PASSWORD</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$KC_DB_PASSWORD</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="si">${</span><span class="nv">KEYCLOAK_IMAGE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="nb">export</span><span class="w"> </span>--dir<span class="w"> </span>/tmp/export<span class="w"> </span>--users<span class="w"> </span>realm_file<span class="w"> </span>--realm<span class="w"> </span>my-realm
+</span></code></pre></div>
+<h3 id="vm-or-bare-metal-keycloak">VM Or Bare-Metal Keycloak<a class="headerlink" href="#vm-or-bare-metal-keycloak" title="Permanent link">&para;</a></h3>
+<p>Stop the service or otherwise gate writes, then run <code>kc.sh export</code> locally with the installed Keycloak distribution.</p>
+<h3 id="legacy-wildfly-keycloak">Legacy WildFly Keycloak<a class="headerlink" href="#legacy-wildfly-keycloak" title="Permanent link">&para;</a></h3>
+<p>Do not treat very old WildFly-era exports as a direct import path into this operator.</p>
+<p>Upgrade into a supported Quarkus-based Keycloak first, then export from there.</p>
+<h2 id="validate-the-export-before-migration">Validate The Export Before Migration<a class="headerlink" href="#validate-the-export-before-migration" title="Permanent link">&para;</a></h2>
+<p>Before destructive follow-up work:</p>
 <ol>
-<li>
-<p><strong>Stop the Container</strong>:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>docker<span class="w"> </span>stop<span class="w"> </span>keycloak-container
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Run Export</strong>:
-    Run a temporary container attached to the same network/volume/database.</p>
-<p><em>If using an external database container:</em>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--network<span class="w"> </span>keycloak-network<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/export:/tmp/export<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB</span><span class="o">=</span>postgres<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_URL</span><span class="o">=</span>jdbc:postgresql://postgres-container:5432/keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_USERNAME</span><span class="o">=</span>keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span>-e<span class="w"> </span><span class="nv">KC_DB_PASSWORD</span><span class="o">=</span>password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span>quay.io/keycloak/keycloak:26.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nb">export</span><span class="w"> </span>--dir<span class="w"> </span>/tmp/export<span class="w"> </span>--users<span class="w"> </span>realm_file<span class="w"> </span>--realm<span class="w"> </span>my-realm
-</span></code></pre></div></p>
-<p><em>If using an internal H2 database (not recommended for production):</em>
-You must mount the data volume of the stopped container.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>-v<span class="w"> </span>keycloak-data-volume:/opt/keycloak/data/h2<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>-v<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/export:/tmp/export<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>quay.io/keycloak/keycloak:26.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nb">export</span><span class="w"> </span>--dir<span class="w"> </span>/tmp/export<span class="w"> </span>--users<span class="w"> </span>realm_file<span class="w"> </span>--realm<span class="w"> </span>my-realm
-</span></code></pre></div></p>
-</li>
+<li>confirm the export contains the expected realm JSON files</li>
+<li>confirm the realm file includes clients and users where expected</li>
+<li>keep a backup of the original export separate from the transformed output</li>
 </ol>
-<h3 id="3-single-node-vm-systemdbare-metal">3. Single Node VM (Systemd/Bare Metal)<a class="headerlink" href="#3-single-node-vm-systemdbare-metal" title="Permanent link">&para;</a></h3>
-<p>For Keycloak running directly on a Virtual Machine.</p>
-<p><strong>Steps:</strong></p>
-<ol>
-<li>
-<p><strong>Stop Keycloak Service</strong>:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>stop<span class="w"> </span>keycloak
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Run Export Command</strong>:
-    Switch to the Keycloak user and run the export CLI.
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># As root or keycloak user</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nb">cd</span><span class="w"> </span>/opt/keycloak
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>bin/kc.sh<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--dir<span class="w"> </span>/tmp/export<span class="w"> </span>--users<span class="w"> </span>realm_file<span class="w"> </span>--realm<span class="w"> </span>my-realm
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Restart Service</strong>:
-    <div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>keycloak
-</span></code></pre></div></p>
-</li>
-</ol>
-<h3 id="4-legacy-wildfly-keycloak-pre-quarkus">4. Legacy WildFly Keycloak (Pre-Quarkus)<a class="headerlink" href="#4-legacy-wildfly-keycloak-pre-quarkus" title="Permanent link">&para;</a></h3>
-<p>Older versions of Keycloak (16 and below) running on WildFly require a different approach.</p>
-<p><strong>Strategy: Upgrade then Export</strong>
-Directly exporting from WildFly and importing into Quarkus often leads to compatibility issues. The recommended path is:</p>
-<ol>
-<li><strong>Migrate Database</strong>: Perform a database migration to a newer Keycloak version (Quarkus) using the official Keycloak migration guide.</li>
-<li><strong>Export from New Version</strong>: Once the database is upgraded and running with a Quarkus distribution, use <strong>Scenario 1, 2, or 3</strong> above to perform the export.</li>
-</ol>
-<hr />
-<h2 id="importing-into-keycloak-operator">Importing into Keycloak Operator<a class="headerlink" href="#importing-into-keycloak-operator" title="Permanent link">&para;</a></h2>
-<p>This operator follows a <strong>GitOps-first</strong> approach. It manages <em>configuration</em> (Realms, Clients) but does not manage <em>stateful data</em> (Users, Sessions) via CRDs.</p>
-<h3 id="1-transform-configuration-with-the-migration-toolkit">1. Transform Configuration with the Migration Toolkit<a class="headerlink" href="#1-transform-configuration-with-the-migration-toolkit" title="Permanent link">&para;</a></h3>
-<p>Use the <a href="../migration-toolkit/">Migration Toolkit</a> to automatically transform your export files into Helm chart values:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>keycloak-migrate<span class="w"> </span>transform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--input<span class="w"> </span>./keycloak-export/my-realm-realm.json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--output-dir<span class="w"> </span>./migration-output<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--operator-namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span>--secret-mode<span class="w"> </span>eso<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span>--eso-store<span class="w"> </span>my-vault-store
+<p>Example quick check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>ls<span class="w"> </span>-1<span class="w"> </span>./keycloak-export
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>jq<span class="w"> </span><span class="s1">&#39;.realm, (.clients | length), (.users | length)&#39;</span><span class="w"> </span>./keycloak-export/my-realm-realm.json
+</span></code></pre></div>
+<h2 id="transform-configuration-into-helm-values">Transform Configuration Into Helm Values<a class="headerlink" href="#transform-configuration-into-helm-values" title="Permanent link">&para;</a></h2>
+<p>Use the migration toolkit to turn exported configuration into Helm values:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./keycloak-migrate<span class="w"> </span>transform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--input<span class="w"> </span>./keycloak-export/my-realm-realm.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--output-dir<span class="w"> </span>./migration-output<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--operator-namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--secret-mode<span class="w"> </span>eso<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--eso-store<span class="w"> </span>my-vault-store
 </span></code></pre></div>
 <p>This produces:</p>
 <ul>
-<li><code>realm-values.yaml</code> — Helm values for the <code>keycloak-realm</code> chart</li>
-<li><code>clients/&lt;name&gt;/values.yaml</code> — Helm values for each <code>keycloak-client</code> chart release</li>
-<li><code>secrets.yaml</code> — Secret manifests (plain, ExternalSecret, or SealedSecret)</li>
-<li><code>unsupported-features.json</code> — Features not yet supported with tracking issue links</li>
-<li><code>NEXT-STEPS.md</code> — Actionable migration checklist</li>
+<li><code>realm-values.yaml</code> for the <code>keycloak-realm</code> chart</li>
+<li><code>clients/&lt;name&gt;/values.yaml</code> for each <code>keycloak-client</code> chart release</li>
+<li>secret material transformed according to the selected secret mode</li>
+<li><code>plain</code> writes Kubernetes <code>Secret</code> manifests</li>
+<li><code>eso</code> writes <code>ExternalSecret</code> manifests that point at your external secret backend</li>
+<li><code>sealed-secrets</code> writes <code>SealedSecret</code> manifests that must still be sealed with your controller key</li>
+<li><code>unsupported-features.json</code></li>
+<li><code>NEXT-STEPS.md</code>, which summarizes the transformed realm, calls out any unsupported or manual follow-up work, and gives the post-transform checklist you should complete before deployment</li>
 </ul>
-<p>See the <a href="../migration-toolkit/">Migration Toolkit Guide</a> for full command reference, secret mode options, and examples.</p>
-<h3 id="2-deploy-with-helm">2. Deploy with Helm<a class="headerlink" href="#2-deploy-with-helm" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Deploy realm</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span>keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>-f<span class="w"> </span>migration-output/my-realm/realm-values.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>-n<span class="w"> </span>my-namespace
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="c1"># Deploy each client</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>helm<span class="w"> </span>install<span class="w"> </span>my-app<span class="w"> </span>keycloak-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span>-f<span class="w"> </span>migration-output/my-realm/clients/my-app/values.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">  </span>-n<span class="w"> </span>my-namespace
+<p>See <a href="../migration-toolkit/#secret-modes">Migration Toolkit secret modes</a> and <a href="../migration-toolkit/#unsupported-features">Migration Toolkit unsupported features</a>.</p>
+<h2 id="deploy-configuration-through-helm">Deploy Configuration Through Helm<a class="headerlink" href="#deploy-configuration-through-helm" title="Permanent link">&para;</a></h2>
+<p>Install the realm first:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-f<span class="w"> </span>migration-output/my-realm/realm-values.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-n<span class="w"> </span>my-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">0</span>.4.8
 </span></code></pre></div>
-<h3 id="3-import-users-data-migration">3. Import Users (Data Migration)<a class="headerlink" href="#3-import-users-data-migration" title="Permanent link">&para;</a></h3>
-<p>Since the <code>KeycloakRealm</code> CRD does not manage users, you must import them separately.</p>
-<p><strong>Option A: Database Migration (Recommended)</strong>
-If migrating the entire installation, backup and restore the PostgreSQL database directly using CloudNativePG. This preserves all data, including users, sessions, and history.</p>
-<ul>
-<li>See <a href="../database-setup/">Database Setup Guide</a> for restore instructions.</li>
-</ul>
-<p><strong>Option B: Automated Import (<code>keycloak-migrate import-users</code>)</strong>
-Use the migration toolkit for a repeatable, idempotent, GitOps-friendly import:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--input<span class="w"> </span>migration-output/my-realm/users.json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+<p>Then install clients:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-app<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>oci://ghcr.io/vriesdemichael/charts/keycloak-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-f<span class="w"> </span>migration-output/my-realm/clients/my-app/values.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-n<span class="w"> </span>my-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>--version<span class="w"> </span><span class="m">0</span>.4.5
 </span></code></pre></div>
-<p>Credentials are resolved automatically from the cluster. The command is idempotent (SKIP mode by default) — re-running it is safe even if some users already exist.</p>
-<p>See the <a href="../migration-toolkit/#import-users">import-users command reference</a> for all flags and options.</p>
-<p><strong>Option C: Partial Import (Manual)</strong>
-If starting fresh and only migrating specific users:</p>
+<p>Before installing client charts into other namespaces, make sure the realm’s <code>clientAuthorizationGrants</code> includes those namespaces.</p>
+<h2 id="import-users-separately">Import Users Separately<a class="headerlink" href="#import-users-separately" title="Permanent link">&para;</a></h2>
+<p>The operator manages configuration declaratively. User import is separate.</p>
+<h3 id="preferred-for-full-environment-migration">Preferred For Full Environment Migration<a class="headerlink" href="#preferred-for-full-environment-migration" title="Permanent link">&para;</a></h3>
+<p>If you are moving the whole installation and database continuity is acceptable, database migration or restore preserves the most state.</p>
+<h3 id="repeatable-user-import-workflow">Repeatable User Import Workflow<a class="headerlink" href="#repeatable-user-import-workflow" title="Permanent link">&para;</a></h3>
+<p>Use the toolkit’s <code>import-users</code> command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--input<span class="w"> </span>migration-output/my-realm/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+</span></code></pre></div>
+<p>This is the preferred repeatable import path for user data generated by the toolkit.</p>
+<h3 id="manual-partial-import">Manual Partial Import<a class="headerlink" href="#manual-partial-import" title="Permanent link">&para;</a></h3>
+<p>If you need a manual workflow for a smaller cutover, you can still use Keycloak’s Partial Import tooling, but it is not the primary GitOps path.</p>
+<h2 id="post-import-verification">Post-Import Verification<a class="headerlink" href="#post-import-verification" title="Permanent link">&para;</a></h2>
+<p>After deployment and user import:</p>
 <ol>
-<li>Deploy Keycloak using the operator.</li>
-<li>Log in to the Keycloak Admin Console.</li>
-<li>Navigate to <strong>Realm Settings</strong> &gt; <strong>Partial Import</strong>.</li>
-<li>Upload the <code>users.json</code> file generated by the migration toolkit.</li>
-<li>Select <strong>Overwrite</strong> or <strong>Skip</strong> strategy as needed.</li>
+<li>verify the realm reaches a healthy phase</li>
+<li>verify expected clients exist and generated secrets are present where applicable</li>
+<li>verify at least one real login or token flow</li>
+<li>verify imported users can authenticate without forced password reset when hashes were preserved</li>
 </ol>
-<div class="admonition note">
-<p class="admonition-title">User passwords are preserved</p>
-<p>Keycloak exports include password hashes. Users imported via Partial Import retain their existing passwords — no password reset is required.</p>
-</div>
+<p>Useful checks:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>-n<span class="w"> </span>my-namespace
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>-n<span class="w"> </span>my-namespace
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+</span></code></pre></div>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../migration-toolkit/">Migration Toolkit</a></li>
+<li><a href="../../operations/migration/">Migration &amp; Upgrade Guide</a></li>
+<li><a href="../../operations/escape-hatch/">Escape Hatch</a></li>
+<li><a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
+</ul>
 
 
 

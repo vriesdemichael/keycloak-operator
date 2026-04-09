@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -959,110 +987,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status-conditions" class="md-nav__link">
+  <a href="#status-conditions-and-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status Conditions
+        Status Conditions and Phases
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Status Conditions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#standard-conditions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Standard Conditions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Standard Conditions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ready" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ready
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#available" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#progressing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Progressing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#degraded" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Degraded
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#checking-resource-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Checking Resource Status
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-status-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Status Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#observedgeneration" class="md-nav__link">
+  <a href="#observed-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ObservedGeneration
+        Observed Generation
       
     </span>
   </a>
@@ -1082,10 +1021,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#keycloak-status" class="md-nav__link">
+  <a href="#keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keycloak Status
+        Keycloak
       
     </span>
   </a>
@@ -1093,10 +1032,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloakrealm-status" class="md-nav__link">
+  <a href="#keycloakrealm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        KeycloakRealm Status
+        KeycloakRealm
       
     </span>
   </a>
@@ -1104,10 +1043,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloakclient-status" class="md-nav__link">
+  <a href="#keycloakclient" class="md-nav__link">
     <span class="md-ellipsis">
       
-        KeycloakClient Status
+        KeycloakClient
       
     </span>
   </a>
@@ -1116,6 +1055,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics Endpoint
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1132,22 +1082,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#available-metrics" class="md-nav__link">
+  <a href="#reconciliation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available Metrics
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Available Metrics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reconciliation-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reconciliation Metrics
+        Reconciliation
       
     </span>
   </a>
@@ -1155,10 +1093,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resource-status-metrics" class="md-nav__link">
+  <a href="#database-and-api-protection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Status Metrics
+        Database and API Protection
       
     </span>
   </a>
@@ -1166,10 +1104,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#error-metrics" class="md-nav__link">
+  <a href="#drift-detection-and-federation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Metrics
+        Drift Detection and Federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Rotation
       
     </span>
   </a>
@@ -1180,20 +1129,15 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#scraping-metrics" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#real-prometheus-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scraping Metrics
+        Real Prometheus Queries
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1206,14 +1150,47 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Logging">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#log-levels" class="md-nav__link">
+  <a href="#resource-stuck-in-paused" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Levels
+        Resource stuck in Paused
       
     </span>
   </a>
@@ -1221,10 +1198,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#viewing-logs" class="md-nav__link">
+  <a href="#missing-management-endpoint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Viewing Logs
+        Missing management endpoint
       
     </span>
   </a>
@@ -1232,10 +1209,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#log-format" class="md-nav__link">
+  <a href="#trace-propagation-not-working-end-to-end" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Format
+        Trace propagation not working end-to-end
       
     </span>
   </a>
@@ -1248,357 +1225,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#health-checks" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Health Checks
+        See Also
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gitops-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitOps Integration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="GitOps Integration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#argo-cd-health-assessment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Argo CD Health Assessment
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flux-cd-health-assessment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Flux CD Health Assessment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#circuit-breaker-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Circuit Breaker Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting-with-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting with Status
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting with Status">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resource-stuck-in-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Stuck in Pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reconciliation-failures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reconciliation Failures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-tracing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Distributed Tracing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Distributed Tracing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#enabling-tracing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enabling Tracing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-traced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Traced
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#end-to-end-tracing-with-keycloak" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        End-to-End Tracing with Keycloak
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#viewing-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing Traces
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Viewing Traces">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jaeger" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Jaeger
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#grafana-tempo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Grafana Tempo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#trace-propagation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Trace Propagation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debugging with Traces
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#integration-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Integration Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Integration Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#with-opentelemetry-collector" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With OpenTelemetry Collector
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#with-grafana-tempo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With Grafana Tempo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Considerations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#debugging-test-failures-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debugging Test Failures with Traces
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Debugging Test Failures with Traces">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How It Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#analyzing-traces-after-ci-failures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Analyzing Traces After CI Failures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#correlating-traces-with-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Correlating Traces with Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#local-debugging-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local Debugging with Traces
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#trace-content" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Trace Content
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5143,110 +4776,21 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#status-conditions" class="md-nav__link">
+  <a href="#status-conditions-and-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status Conditions
+        Status Conditions and Phases
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Status Conditions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#standard-conditions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Standard Conditions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Standard Conditions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ready" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Ready
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#available" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#progressing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Progressing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#degraded" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Degraded
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#checking-resource-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Checking Resource Status
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-status-output" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example Status Output
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#observedgeneration" class="md-nav__link">
+  <a href="#observed-generation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ObservedGeneration
+        Observed Generation
       
     </span>
   </a>
@@ -5266,10 +4810,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#keycloak-status" class="md-nav__link">
+  <a href="#keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keycloak Status
+        Keycloak
       
     </span>
   </a>
@@ -5277,10 +4821,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloakrealm-status" class="md-nav__link">
+  <a href="#keycloakrealm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        KeycloakRealm Status
+        KeycloakRealm
       
     </span>
   </a>
@@ -5288,10 +4832,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloakclient-status" class="md-nav__link">
+  <a href="#keycloakclient" class="md-nav__link">
     <span class="md-ellipsis">
       
-        KeycloakClient Status
+        KeycloakClient
       
     </span>
   </a>
@@ -5300,6 +4844,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics Endpoint
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5316,22 +4871,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#available-metrics" class="md-nav__link">
+  <a href="#reconciliation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available Metrics
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Available Metrics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reconciliation-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reconciliation Metrics
+        Reconciliation
       
     </span>
   </a>
@@ -5339,10 +4882,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resource-status-metrics" class="md-nav__link">
+  <a href="#database-and-api-protection" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Status Metrics
+        Database and API Protection
       
     </span>
   </a>
@@ -5350,10 +4893,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#error-metrics" class="md-nav__link">
+  <a href="#drift-detection-and-federation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Metrics
+        Drift Detection and Federation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret Rotation
       
     </span>
   </a>
@@ -5364,20 +4918,15 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#scraping-metrics" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#real-prometheus-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scraping Metrics
+        Real Prometheus Queries
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5390,14 +4939,47 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Logging">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Setup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#log-levels" class="md-nav__link">
+  <a href="#resource-stuck-in-paused" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Levels
+        Resource stuck in Paused
       
     </span>
   </a>
@@ -5405,10 +4987,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#viewing-logs" class="md-nav__link">
+  <a href="#missing-management-endpoint" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Viewing Logs
+        Missing management endpoint
       
     </span>
   </a>
@@ -5416,10 +4998,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#log-format" class="md-nav__link">
+  <a href="#trace-propagation-not-working-end-to-end" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Log Format
+        Trace propagation not working end-to-end
       
     </span>
   </a>
@@ -5432,357 +5014,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#health-checks" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Health Checks
+        See Also
       
     </span>
   </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#gitops-integration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GitOps Integration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="GitOps Integration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#argo-cd-health-assessment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Argo CD Health Assessment
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#flux-cd-health-assessment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Flux CD Health Assessment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#circuit-breaker-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Circuit Breaker Status
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting-with-status" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting with Status
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting with Status">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resource-stuck-in-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resource Stuck in Pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reconciliation-failures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reconciliation Failures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-tracing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Distributed Tracing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Distributed Tracing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#enabling-tracing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enabling Tracing
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-traced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Traced
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#end-to-end-tracing-with-keycloak" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        End-to-End Tracing with Keycloak
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#viewing-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Viewing Traces
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Viewing Traces">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#jaeger" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Jaeger
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#grafana-tempo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Grafana Tempo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#trace-propagation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Trace Propagation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debugging with Traces
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#integration-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Integration Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Integration Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#with-opentelemetry-collector" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With OpenTelemetry Collector
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#with-grafana-tempo" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        With Grafana Tempo
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-considerations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Considerations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#debugging-test-failures-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debugging Test Failures with Traces
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Debugging Test Failures with Traces">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How It Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#analyzing-traces-after-ci-failures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Analyzing Traces After CI Failures
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#correlating-traces-with-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Correlating Traces with Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#local-debugging-with-traces" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Local Debugging with Traces
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#trace-content" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Trace Content
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5812,564 +5050,213 @@
 
 
 <h1 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h1>
-<p>This document describes the observability features available in the Keycloak operator, including status conditions, metrics, and monitoring capabilities.</p>
-<h2 id="status-conditions">Status Conditions<a class="headerlink" href="#status-conditions" title="Permanent link">&para;</a></h2>
-<p>All custom resources (Keycloak, KeycloakRealm, KeycloakClient) expose Kubernetes-standard status conditions that can be used by GitOps tools like Argo CD and Flux CD to determine resource health.</p>
-<h3 id="standard-conditions">Standard Conditions<a class="headerlink" href="#standard-conditions" title="Permanent link">&para;</a></h3>
-<p>Each resource implements the following condition types:</p>
-<h4 id="ready">Ready<a class="headerlink" href="#ready" title="Permanent link">&para;</a></h4>
-<p>Indicates whether the resource is fully reconciled and operational.</p>
+<p>This guide covers status reporting, metrics, health endpoints, logging, and tracing for the Keycloak operator.</p>
+<h2 id="status-conditions-and-phases">Status Conditions and Phases<a class="headerlink" href="#status-conditions-and-phases" title="Permanent link">&para;</a></h2>
+<p>All primary resources expose Kubernetes-style conditions and an operator phase.</p>
+<p>Common condition types:</p>
 <ul>
-<li><strong>Status</strong>: <code>True</code>, <code>False</code>, or <code>Unknown</code></li>
-<li><strong>Reason</strong>: <code>ReconciliationSucceeded</code>, <code>ReconciliationFailed</code>, <code>ReconciliationInProgress</code></li>
-<li><strong>Usage</strong>: Primary health indicator for GitOps tools</li>
+<li><code>Ready</code></li>
+<li><code>Available</code></li>
+<li><code>Progressing</code></li>
+<li><code>Degraded</code></li>
 </ul>
-<h4 id="available">Available<a class="headerlink" href="#available" title="Permanent link">&para;</a></h4>
-<p>Indicates whether the resource is available for use (Kubernetes standard).</p>
+<p>Common reasons include:</p>
 <ul>
-<li><strong>Status</strong>: <code>True</code> or <code>False</code></li>
-<li><strong>Reason</strong>: <code>ReconciliationSucceeded</code>, <code>ReconciliationFailed</code></li>
-<li><strong>Usage</strong>: Determines if the resource can serve its purpose</li>
+<li><code>ReconciliationSucceeded</code></li>
+<li><code>ReconciliationFailed</code></li>
+<li><code>ReconciliationInProgress</code></li>
+<li><code>ReconciliationPaused</code></li>
 </ul>
-<h4 id="progressing">Progressing<a class="headerlink" href="#progressing" title="Permanent link">&para;</a></h4>
-<p>Indicates an ongoing reconciliation operation (Kubernetes standard).</p>
+<p>Common phases you will see in practice:</p>
 <ul>
-<li><strong>Status</strong>: <code>True</code> or <code>False</code></li>
-<li><strong>Reason</strong>: <code>ReconciliationInProgress</code></li>
-<li><strong>Usage</strong>: Shows active reconciliation work</li>
+<li><code>Pending</code></li>
+<li><code>Reconciling</code></li>
+<li><code>Ready</code></li>
+<li><code>Degraded</code></li>
+<li><code>Failed</code></li>
+<li><code>Updating</code></li>
+<li><code>Paused</code></li>
 </ul>
-<h4 id="degraded">Degraded<a class="headerlink" href="#degraded" title="Permanent link">&para;</a></h4>
-<p>Indicates the resource is operational but not in optimal state.</p>
+<h2 id="observed-generation">Observed Generation<a class="headerlink" href="#observed-generation" title="Permanent link">&para;</a></h2>
+<p><code>status.observedGeneration</code> tells you which spec generation the operator has processed.</p>
 <ul>
-<li><strong>Status</strong>: <code>True</code> or <code>False</code></li>
-<li><strong>Reason</strong>: <code>PartialFunctionality</code>, <code>ReconciliationFailed</code></li>
-<li><strong>Usage</strong>: Alerts about suboptimal conditions</li>
+<li>when it matches <code>metadata.generation</code>, the resource has been reconciled against the latest spec</li>
+<li>when it does not match, reconciliation is still pending or in progress</li>
 </ul>
-<h3 id="checking-resource-status">Checking Resource Status<a class="headerlink" href="#checking-resource-status" title="Permanent link">&para;</a></h3>
-<p>View the status of a resource:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Get resource with status</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Check conditions specifically</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.conditions}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Check if a resource is ready</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.conditions[?(@.type==&quot;Ready&quot;)].status}&#39;</span>
-</span></code></pre></div>
-<h3 id="example-status-output">Example Status Output<a class="headerlink" href="#example-status-output" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak instance is ready</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">lastUpdated</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-10-15T20:00:00Z&quot;</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;True&quot;</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReconciliationSucceeded</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reconciliation completed successfully</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span><span class="nt">lastTransitionTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-10-15T20:00:00Z&quot;</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Available</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;True&quot;</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReconciliationSucceeded</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource is available</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">      </span><span class="nt">lastTransitionTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-10-15T20:00:00Z&quot;</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">      </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">  </span><span class="nt">deployment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">    </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:8080</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="nt">public</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:8080</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">    </span><span class="nt">management</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:9000</span>
-</span></code></pre></div>
-<h2 id="observedgeneration">ObservedGeneration<a class="headerlink" href="#observedgeneration" title="Permanent link">&para;</a></h2>
-<p>All resources track <code>observedGeneration</code> which indicates the generation of the spec that was last reconciled. This is crucial for GitOps workflows:</p>
-<ul>
-<li><strong>Match</strong>: When <code>status.observedGeneration</code> equals <code>metadata.generation</code>, the resource is fully reconciled</li>
-<li><strong>Mismatch</strong>: When they differ, reconciliation is pending or in progress</li>
-<li><strong>Usage</strong>: GitOps tools use this to detect drift and sync status</li>
-</ul>
-<p>Example check:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check if resource is fully synced</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>jq<span class="w"> </span><span class="s1">&#39;if .status.observedGeneration == .metadata.generation then &quot;Synced&quot; else &quot;OutOfSync&quot; end&#39;</span>
+<p>Example:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;{generation: .metadata.generation, observedGeneration: .status.observedGeneration}&#39;</span>
 </span></code></pre></div>
 <h2 id="resource-specific-status-fields">Resource-Specific Status Fields<a class="headerlink" href="#resource-specific-status-fields" title="Permanent link">&para;</a></h2>
-<h3 id="keycloak-status">Keycloak Status<a class="headerlink" href="#keycloak-status" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">deployment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span><span class="w">  </span><span class="c1"># Name of the deployment</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span><span class="w">      </span><span class="c1"># Name of the service</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">adminSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-admin-credentials</span><span class="w">  </span><span class="c1"># Admin credentials secret</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://...</span><span class="w">    </span><span class="c1"># Admin API endpoint</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">public</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://...</span><span class="w">   </span><span class="c1"># Public endpoint</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">management</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://...</span><span class="w"> </span><span class="c1"># Management endpoint (health checks)</span>
+<h3 id="keycloak">Keycloak<a class="headerlink" href="#keycloak" title="Permanent link">&para;</a></h3>
+<p><code>Keycloak.status</code> includes fields such as:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">status</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">deployment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-keycloak</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">adminSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-admin-credentials</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:8080</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">public</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:8080</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">management</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak-keycloak.default.svc.cluster.local:9000</span>
 </span></code></pre></div>
-<h3 id="keycloakrealm-status">KeycloakRealm Status<a class="headerlink" href="#keycloakrealm-status" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">realmName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span><span class="w">  </span><span class="c1"># Actual realm name in Keycloak</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">keycloakInstance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default/keycloak</span><span class="w">  </span><span class="c1"># Referenced Keycloak instance</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">features</span><span class="p">:</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">userRegistration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">passwordReset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">identityProviders</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">userFederationProviders</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">customThemes</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<p>Notes:</p>
+<ul>
+<li><code>management</code> is present only when the Keycloak version supports the separate management port.</li>
+<li>Keycloak 24.x uses port <code>8080</code> for health endpoints.</li>
+<li>Keycloak 25.x and later use port <code>9000</code> for the management interface.</li>
+</ul>
+<h3 id="keycloakrealm">KeycloakRealm<a class="headerlink" href="#keycloakrealm" title="Permanent link">&para;</a></h3>
+<p><code>KeycloakRealm.status</code> includes:</p>
+<ul>
+<li><code>realmName</code></li>
+<li><code>keycloakInstance</code></li>
+<li><code>features</code></li>
+<li><code>endpoints</code></li>
+<li><code>userFederationStatus</code></li>
+</ul>
+<p>The realm reconciler also populates standard OIDC endpoints in status when it can resolve the Keycloak base URL.</p>
+<h3 id="keycloakclient">KeycloakClient<a class="headerlink" href="#keycloakclient" title="Permanent link">&para;</a></h3>
+<p><code>KeycloakClient.status</code> includes:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">status</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">internalId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345678-1234-1234-1234-123456789abc</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">realm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">keycloakInstance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default/my-keycloak</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">credentialsSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client-credentials</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">authorizationGranted</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="nt">auth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/auth</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/token</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="nt">userinfo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/userinfo</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="nt">jwks</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/certs</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">    </span><span class="nt">endSession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/logout</span>
 </span></code></pre></div>
-<h3 id="keycloakclient-status">KeycloakClient Status<a class="headerlink" href="#keycloakclient-status" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">client_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client</span><span class="w">  </span><span class="c1"># Client ID</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">client_uuid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">abc-123</span><span class="w">  </span><span class="c1"># UUID in Keycloak</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">realm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span><span class="w">  </span><span class="c1"># Realm name</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">keycloak_instance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default/keycloak</span><span class="w">  </span><span class="c1"># Keycloak instance reference</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">credentials_secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client-credentials</span><span class="w">  </span><span class="c1"># Client credentials secret</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nt">public_client</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Whether this is a public client</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">auth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/token</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">userinfo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/userinfo</span>
-</span></code></pre></div>
+<h2 id="metrics-endpoint">Metrics Endpoint<a class="headerlink" href="#metrics-endpoint" title="Permanent link">&para;</a></h2>
+<p>The operator pod exposes its own health and metrics server on:</p>
+<ul>
+<li>host: <code>METRICS_HOST</code> or <code>0.0.0.0</code></li>
+<li>port: <code>METRICS_PORT</code> or <code>8081</code></li>
+</ul>
+<p>Endpoints:</p>
+<ul>
+<li><code>/metrics</code></li>
+<li><code>/healthz</code></li>
+<li><code>/ready</code></li>
+</ul>
+<p>This endpoint belongs to the operator deployment and is what the chart's <code>ServiceMonitor</code> scrapes when <code>monitoring.enabled=true</code>.</p>
+<p>Do not confuse the operator metrics port <code>8081</code> with the managed Keycloak management port <code>9000</code>. Keycloak application metrics and management endpoints are separate from the operator's <code>/metrics</code> endpoint.</p>
 <h2 id="prometheus-metrics">Prometheus Metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h2>
-<p>The operator exposes Prometheus metrics on port 8081 at <code>/metrics</code>.</p>
-<h3 id="available-metrics">Available Metrics<a class="headerlink" href="#available-metrics" title="Permanent link">&para;</a></h3>
-<h4 id="reconciliation-metrics">Reconciliation Metrics<a class="headerlink" href="#reconciliation-metrics" title="Permanent link">&para;</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a># Reconciliation operations counter
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>keycloak_operator_reconciliation_total{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, result=&quot;success|failure&quot;}
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a># Reconciliation duration histogram
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>keycloak_operator_reconciliation_duration_seconds{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, operation=&quot;reconcile|update|delete&quot;}
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a># Active resources gauge
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>keycloak_operator_active_resources{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, phase=&quot;Ready|Failed|Pending&quot;}
+<h3 id="reconciliation">Reconciliation<a class="headerlink" href="#reconciliation" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>keycloak_operator_reconciliation_total{resource_type,namespace,result}
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>keycloak_operator_reconciliation_duration_seconds{resource_type,namespace,operation}
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>keycloak_operator_reconciliation_errors_total{resource_type,namespace,error_type,retryable}
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>keycloak_operator_reconciliation_skipped_total{resource_type,namespace}
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>keycloak_operator_active_resources{resource_type,namespace,phase}
 </span></code></pre></div>
-<h4 id="resource-status-metrics">Resource Status Metrics<a class="headerlink" href="#resource-status-metrics" title="Permanent link">&para;</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a># Resource status by phase
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>keycloak_operator_active_resources{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, phase=&quot;Ready|Failed|Pending&quot;}
+<h3 id="database-and-api-protection">Database and API Protection<a class="headerlink" href="#database-and-api-protection" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>keycloak_operator_database_connection_status{namespace,database_type}
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>keycloak_operator_database_connection_duration_seconds{namespace,database_type}
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>keycloak_operator_api_rate_limit_wait_seconds{namespace,limit_type}
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>keycloak_operator_api_rate_limit_acquired_total{namespace,limit_type}
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>keycloak_operator_api_rate_limit_timeouts_total{namespace,limit_type}
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>keycloak_operator_api_rate_limit_budget_available{namespace}
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>keycloak_operator_circuit_breaker_state{keycloak_instance,keycloak_namespace}
 </span></code></pre></div>
-<h4 id="error-metrics">Error Metrics<a class="headerlink" href="#error-metrics" title="Permanent link">&para;</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a># Error counter by type
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>keycloak_operator_reconciliation_errors_total{error_type=&quot;...&quot;, resource_type=&quot;...&quot;, namespace=&quot;...&quot;, retryable=&quot;true|false&quot;}
+<h3 id="drift-detection-and-federation">Drift Detection and Federation<a class="headerlink" href="#drift-detection-and-federation" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>keycloak_operator_orphaned_resources{resource_type,operator_instance}
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>keycloak_operator_config_drift{resource_type,cr_namespace}
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>keycloak_operator_unmanaged_resources{resource_type}
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>keycloak_operator_drift_check_duration_seconds{resource_type}
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>keycloak_operator_drift_check_errors_total{resource_type}
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>keycloak_operator_drift_check_last_success_timestamp
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>keycloak_operator_user_federation_status{realm,provider_id}
 </span></code></pre></div>
-<h3 id="scraping-metrics">Scraping Metrics<a class="headerlink" href="#scraping-metrics" title="Permanent link">&para;</a></h3>
-<p>Configure Prometheus to scrape the operator:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator-metrics</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8081</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8081</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
-</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="nn">---</span>
-</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
-</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceMonitor</span>
-</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
-</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
-</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
-</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
-</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<h3 id="secret-rotation">Secret Rotation<a class="headerlink" href="#secret-rotation" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>keycloak_operator_secret_rotation_total{namespace,result}
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>keycloak_operator_secret_rotation_errors_total{namespace}
+</span></code></pre></div>
+<h2 id="real-prometheus-queries">Real Prometheus Queries<a class="headerlink" href="#real-prometheus-queries" title="Permanent link">&para;</a></h2>
+<p>Slow reconciliations:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>histogram_quantile(0.95, sum by (le, resource_type) (rate(keycloak_operator_reconciliation_duration_seconds_bucket[5m])))
+</span></code></pre></div>
+<p>Failed reconciliations:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>sum by (resource_type, namespace) (increase(keycloak_operator_reconciliation_errors_total[5m]))
+</span></code></pre></div>
+<p>Open circuit breakers:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>keycloak_operator_circuit_breaker_state == 1
+</span></code></pre></div>
+<p>Disconnected federation providers:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>keycloak_operator_user_federation_status == 0
 </span></code></pre></div>
 <h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
-<p>The operator uses structured logging with correlation IDs for request tracing.</p>
-<h3 id="log-levels">Log Levels<a class="headerlink" href="#log-levels" title="Permanent link">&para;</a></h3>
+<p>The operator supports structured logging and selective noise reduction.</p>
+<p>Useful settings include:</p>
 <ul>
-<li><strong>DEBUG</strong>: Detailed operational information</li>
-<li><strong>INFO</strong>: General operational messages</li>
-<li><strong>WARNING</strong>: Warning conditions (degraded but functioning)</li>
-<li><strong>ERROR</strong>: Error conditions requiring attention</li>
+<li><code>LOG_LEVEL</code></li>
+<li><code>JSON_LOGS</code></li>
+<li><code>CORRELATION_IDS</code></li>
+<li><code>LOG_HEALTH_PROBES</code></li>
+<li><code>WEBHOOK_LOG_LEVEL</code></li>
 </ul>
-<h3 id="viewing-logs">Viewing Logs<a class="headerlink" href="#viewing-logs" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Follow operator logs</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># View logs with correlation ID</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;correlation_id=abc-123&quot;</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Check reconciliation logs for specific resource</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">  </span>grep<span class="w"> </span><span class="s2">&quot;resource_name=my-keycloak&quot;</span>
+<p>Example:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator
 </span></code></pre></div>
-<h3 id="log-format">Log Format<a class="headerlink" href="#log-format" title="Permanent link">&para;</a></h3>
-<p>Logs include structured fields:</p>
-<div class="language-json highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="p">{</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-15T20:00:00Z&quot;</span><span class="p">,</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;KeycloakReconciler&quot;</span><span class="p">,</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Reconciliation completed successfully&quot;</span><span class="p">,</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">&quot;resource_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;keycloak&quot;</span><span class="p">,</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span><span class="nt">&quot;resource_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my-keycloak&quot;</span><span class="p">,</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="nt">&quot;namespace&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span><span class="nt">&quot;correlation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc-123&quot;</span><span class="p">,</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span><span class="nt">&quot;duration&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.5</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="p">}</span>
+<h2 id="tracing">Tracing<a class="headerlink" href="#tracing" title="Permanent link">&para;</a></h2>
+<p>Tracing is configured through the operator chart under <code>operator.tracing</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">operator</span><span class="p">:</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">tracing</span><span class="p">:</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://otel-collector.monitoring:4317</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="nt">sampleRate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">    </span><span class="nt">propagateToKeycloak</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span></code></pre></div>
-<h2 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h2>
-<p>The operator pod exposes health endpoints:</p>
+<p>Key points:</p>
 <ul>
-<li><strong>Liveness</strong>: HTTP GET on <code>/healthz</code> (port 8081)</li>
-<li><strong>Readiness</strong>: HTTP GET on <code>/ready</code> (port 8081)</li>
+<li><code>insecure</code> defaults to <code>false</code></li>
+<li>set <code>insecure: true</code> only for local development or when TLS is terminated elsewhere</li>
+<li><code>propagateToKeycloak: true</code> tells the chart to render a <code>spec.tracing</code> block into the managed <code>Keycloak</code> CR so Keycloak exports traces to the same collector</li>
+<li>the propagated Keycloak tracing configuration uses the same collector endpoint and sample rate, but Keycloak reports as its own service rather than as the operator</li>
+<li><code>propagateToKeycloak: true</code> only works for chart-managed Keycloak instances and only when the managed Keycloak version supports built-in tracing</li>
+<li>built-in Keycloak tracing requires Keycloak <code>26.0.0+</code></li>
 </ul>
-<h2 id="gitops-integration">GitOps Integration<a class="headerlink" href="#gitops-integration" title="Permanent link">&para;</a></h2>
-<h3 id="argo-cd-health-assessment">Argo CD Health Assessment<a class="headerlink" href="#argo-cd-health-assessment" title="Permanent link">&para;</a></h3>
-<p>Argo CD automatically uses the <code>Ready</code> condition to determine resource health:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Argo CD will show:</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># - Healthy: Ready=True</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="c1"># - Progressing: Progressing=True or observedGeneration mismatch</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># - Degraded: Ready=False or Degraded=True</span>
-</span></code></pre></div>
-<h3 id="flux-cd-health-assessment">Flux CD Health Assessment<a class="headerlink" href="#flux-cd-health-assessment" title="Permanent link">&para;</a></h3>
-<p>Flux CD checks the <code>Ready</code> condition and <code>observedGeneration</code>:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kustomize.toolkit.fluxcd.io/v1</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kustomization</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-resources</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="nt">healthChecks</span><span class="p">:</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">      </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span></code></pre></div>
-<h2 id="circuit-breaker-status">Circuit Breaker Status<a class="headerlink" href="#circuit-breaker-status" title="Permanent link">&para;</a></h2>
-<p>The operator uses a circuit breaker to protect the Keycloak API from overload. When the circuit breaker opens:</p>
-<ol>
-<li>The operator logs: <code>Circuit breaker open for Keycloak at http://...</code></li>
-<li>API calls return HTTP 503 (Service Unavailable)</li>
-<li>Reconciliation is retried with exponential backoff</li>
-<li>The circuit resets after 60 seconds of no failures</li>
-</ol>
-<p>Check circuit breaker state in logs:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;circuit breaker&quot;</span>
-</span></code></pre></div>
-<h2 id="troubleshooting-with-status">Troubleshooting with Status<a class="headerlink" href="#troubleshooting-with-status" title="Permanent link">&para;</a></h2>
-<h3 id="resource-stuck-in-pending">Resource Stuck in Pending<a class="headerlink" href="#resource-stuck-in-pending" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Check status conditions</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Look for the message in status</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.message}&#39;</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># Check if generation matches (sync status)</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span>jq<span class="w"> </span><span class="s1">&#39;{generation: .metadata.generation, observedGeneration: .status.observedGeneration}&#39;</span>
-</span></code></pre></div>
-<h3 id="reconciliation-failures">Reconciliation Failures<a class="headerlink" href="#reconciliation-failures" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Check Ready condition for reason</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>jq<span class="w"> </span><span class="s1">&#39;.status.conditions[] | select(.type==&quot;Ready&quot;)&#39;</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1"># View recent events</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--field-selector<span class="w"> </span>involvedObject.name<span class="o">=</span>my-keycloak
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="c1"># Check operator logs for this resource</span>
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;resource_name=my-keycloak&quot;</span>
-</span></code></pre></div>
-<h3 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Query Prometheus for slow reconciliations</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>histogram_quantile<span class="o">(</span><span class="m">0</span>.95,
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>rate<span class="o">(</span>kopf_reconciliation_duration_seconds_bucket<span class="o">[</span>5m<span class="o">])</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="o">)</span><span class="w"> </span>by<span class="w"> </span><span class="o">(</span>resource_type<span class="o">)</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="c1"># Check active reconciliation count</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>kopf_reconciliation_active
-</span></code></pre></div>
-<h2 id="distributed-tracing">Distributed Tracing<a class="headerlink" href="#distributed-tracing" title="Permanent link">&para;</a></h2>
-<p>The Keycloak operator supports OpenTelemetry distributed tracing for end-to-end visibility into reconciliation operations. When enabled, traces are exported to an OTLP collector and can be viewed in tools like Jaeger, Tempo, or any OTEL-compatible backend.</p>
-<h3 id="enabling-tracing">Enabling Tracing<a class="headerlink" href="#enabling-tracing" title="Permanent link">&para;</a></h3>
-<p>Configure tracing in your Helm values:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">operator</span><span class="p">:</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">tracing</span><span class="p">:</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="c1"># Enable OpenTelemetry tracing</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="c1"># OTLP collector endpoint (gRPC protocol)</span>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="c1"># Examples:</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">    </span><span class="c1"># - &quot;http://otel-collector.monitoring:4317&quot; (in-cluster)</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">    </span><span class="c1"># - &quot;http://tempo.monitoring:4317&quot; (Grafana Tempo)</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="c1"># - &quot;http://jaeger-collector.monitoring:4317&quot; (Jaeger)</span>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://otel-collector.monitoring:4317&quot;</span>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">    </span><span class="c1"># Service name for traces (identifies the operator)</span>
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;keycloak-operator&quot;</span>
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>
-</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="w">    </span><span class="c1"># Trace sampling rate (0.0-1.0)</span>
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a><span class="w">    </span><span class="c1"># 1.0 = 100% of traces, 0.1 = 10% of traces</span>
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a><span class="w">    </span><span class="c1"># Lower values reduce overhead in high-throughput environments</span>
-</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a><span class="w">    </span><span class="nt">sampleRate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
-</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>
-</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a><span class="w">    </span><span class="c1"># Use insecure connection to OTLP collector (no TLS)</span>
-</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a><span class="w">    </span><span class="nt">insecure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>
-</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a><span class="w">    </span><span class="c1"># Propagate tracing to managed Keycloak instances</span>
-</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a><span class="w">    </span><span class="c1"># Enables end-to-end distributed tracing</span>
-</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="w">    </span><span class="nt">propagateToKeycloak</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span></code></pre></div>
-<h3 id="what-gets-traced">What Gets Traced<a class="headerlink" href="#what-gets-traced" title="Permanent link">&para;</a></h3>
-<p>When tracing is enabled, the operator creates spans for:</p>
-<ol>
-<li><strong>Kopf Handlers</strong>: Reconciliation operations for Keycloak, KeycloakRealm, and KeycloakClient resources</li>
-<li><strong>HTTP Requests</strong>: All outgoing HTTP requests to Keycloak are automatically instrumented</li>
-<li><strong>Keycloak API Calls</strong>: Admin API operations include trace context</li>
-</ol>
-<p>Each span includes semantic attributes:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>k8s.namespace: default
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>k8s.resource.name: my-keycloak
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>k8s.resource.type: keycloak
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>kopf.handler: handle_keycloak_create
-</span></code></pre></div>
-<h3 id="end-to-end-tracing-with-keycloak">End-to-End Tracing with Keycloak<a class="headerlink" href="#end-to-end-tracing-with-keycloak" title="Permanent link">&para;</a></h3>
-<p>When <code>propagateToKeycloak: true</code>, the operator configures managed Keycloak instances to export traces to the same collector. This enables:</p>
+<p>With propagation enabled, the operator and the managed Keycloak pods can participate in the same distributed trace across reconciliation work, ingress traffic, and Keycloak request handling.</p>
+<p>Environment variables:</p>
 <ul>
-<li>Visibility into Keycloak internal operations (authentication, token issuance)</li>
-<li>Trace correlation between operator reconciliation and Keycloak processing</li>
-<li>Full request lifecycle from operator to Keycloak database</li>
+<li><code>OTEL_TRACING_ENABLED</code></li>
+<li><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></li>
+<li><code>OTEL_SERVICE_NAME</code></li>
+<li><code>OTEL_SAMPLE_RATE</code></li>
+<li><code>OTEL_EXPORTER_OTLP_INSECURE</code></li>
+<li><code>OTEL_PROPAGATE_TO_KEYCLOAK</code></li>
 </ul>
-<p><strong>Requirements</strong>: Keycloak 26.x or later (has built-in OpenTelemetry support via Quarkus)</p>
-<p>The Keycloak CR will automatically include:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">  </span><span class="nt">tracing</span><span class="p">:</span>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://otel-collector.monitoring:4317&quot;</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;keycloak&quot;</span>
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">    </span><span class="nt">sampleRate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<h2 id="monitoring-setup">Monitoring Setup<a class="headerlink" href="#monitoring-setup" title="Permanent link">&para;</a></h2>
+<p>The operator chart can create a <code>ServiceMonitor</code> when <code>monitoring.enabled=true</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">monitoring</span><span class="p">:</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">scrapeTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 </span></code></pre></div>
-<h3 id="viewing-traces">Viewing Traces<a class="headerlink" href="#viewing-traces" title="Permanent link">&para;</a></h3>
-<h4 id="jaeger">Jaeger<a class="headerlink" href="#jaeger" title="Permanent link">&para;</a></h4>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Port-forward Jaeger UI</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>monitoring<span class="w"> </span>svc/jaeger-query<span class="w"> </span><span class="m">16686</span>:16686
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1"># Open in browser: http://localhost:16686</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="c1"># Search for service: keycloak-operator</span>
-</span></code></pre></div>
-<h4 id="grafana-tempo">Grafana Tempo<a class="headerlink" href="#grafana-tempo" title="Permanent link">&para;</a></h4>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Access Grafana</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>monitoring<span class="w"> </span>svc/grafana<span class="w"> </span><span class="m">3000</span>:3000
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Navigate to Explore &gt; Tempo</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="c1"># Search by service name: keycloak-operator</span>
-</span></code></pre></div>
-<h3 id="trace-propagation">Trace Propagation<a class="headerlink" href="#trace-propagation" title="Permanent link">&para;</a></h3>
-<p>The operator uses W3C Trace Context (<code>traceparent</code> header) for trace propagation. This is automatically added to:</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="resource-stuck-in-paused">Resource stuck in <code>Paused</code><a class="headerlink" href="#resource-stuck-in-paused" title="Permanent link">&para;</a></h3>
+<p>Check whether operator pause controls are enabled for that resource type.</p>
+<h3 id="missing-management-endpoint">Missing management endpoint<a class="headerlink" href="#missing-management-endpoint" title="Permanent link">&para;</a></h3>
+<p>This is normal for Keycloak 24.x. The separate management port exists only for 25.x and later.</p>
+<h3 id="trace-propagation-not-working-end-to-end">Trace propagation not working end-to-end<a class="headerlink" href="#trace-propagation-not-working-end-to-end" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Keycloak Admin API requests</li>
-<li>Any HTTP requests made via httpx or aiohttp clients</li>
+<li>verify the operator tracing config</li>
+<li>verify <code>propagateToKeycloak: true</code> is set when you expect the managed Keycloak pods to emit traces too</li>
+<li>verify Keycloak version is <code>26.0.0+</code></li>
+<li>verify collector reachability from both operator and Keycloak pods</li>
 </ul>
-<p>Example trace context header:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
-</span></code></pre></div>
-<h3 id="debugging-with-traces">Debugging with Traces<a class="headerlink" href="#debugging-with-traces" title="Permanent link">&para;</a></h3>
-<p>Traces are particularly useful for debugging:</p>
-<ol>
-<li><strong>Slow Reconciliations</strong>: Identify which Keycloak API calls are slow</li>
-<li><strong>Failures</strong>: See the exact sequence of operations before an error</li>
-<li><strong>Cross-Service Issues</strong>: Trace requests from operator through Keycloak to database</li>
-</ol>
-<p>Example: Finding slow realm reconciliations</p>
-<ol>
-<li>Search for traces with <code>service.name = keycloak-operator</code></li>
-<li>Filter by operation: <code>reconcile_realm</code></li>
-<li>Sort by duration to find outliers</li>
-<li>Drill into spans to see individual API calls</li>
-</ol>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>The following environment variables control tracing:</p>
-<table>
-<thead>
-<tr>
-<th>Variable</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>OTEL_TRACING_ENABLED</code></td>
-<td>Enable tracing</td>
-<td><code>false</code></td>
-</tr>
-<tr>
-<td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></td>
-<td>OTLP collector endpoint</td>
-<td><code>http://localhost:4317</code></td>
-</tr>
-<tr>
-<td><code>OTEL_SERVICE_NAME</code></td>
-<td>Service name for traces</td>
-<td><code>keycloak-operator</code></td>
-</tr>
-<tr>
-<td><code>OTEL_SAMPLE_RATE</code></td>
-<td>Sampling rate (0.0-1.0)</td>
-<td><code>1.0</code></td>
-</tr>
-<tr>
-<td><code>OTEL_EXPORTER_OTLP_INSECURE</code></td>
-<td>Use insecure connection</td>
-<td><code>true</code></td>
-</tr>
-<tr>
-<td><code>OTEL_PROPAGATE_TO_KEYCLOAK</code></td>
-<td>Propagate to Keycloak</td>
-<td><code>true</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="integration-examples">Integration Examples<a class="headerlink" href="#integration-examples" title="Permanent link">&para;</a></h3>
-<h4 id="with-opentelemetry-collector">With OpenTelemetry Collector<a class="headerlink" href="#with-opentelemetry-collector" title="Permanent link">&para;</a></h4>
-<p>Deploy the OpenTelemetry Collector to receive and export traces:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector-config</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="nt">data</span><span class="p">:</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="w">  </span><span class="nt">config.yaml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">    </span><span class="no">receivers:</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a><span class="w">      </span><span class="no">otlp:</span>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">        </span><span class="no">protocols:</span>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">          </span><span class="no">grpc:</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">            </span><span class="no">endpoint: 0.0.0.0:4317</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="w">    </span><span class="no">processors:</span>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="w">      </span><span class="no">batch:</span>
-</span><span id="__span-24-16"><a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a><span class="w">        </span><span class="no">timeout: 1s</span>
-</span><span id="__span-24-17"><a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>
-</span><span id="__span-24-18"><a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a><span class="w">    </span><span class="no">exporters:</span>
-</span><span id="__span-24-19"><a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a><span class="w">      </span><span class="no">jaeger:</span>
-</span><span id="__span-24-20"><a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="w">        </span><span class="no">endpoint: jaeger-collector.monitoring:14250</span>
-</span><span id="__span-24-21"><a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="w">        </span><span class="no">tls:</span>
-</span><span id="__span-24-22"><a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a><span class="w">          </span><span class="no">insecure: true</span>
-</span><span id="__span-24-23"><a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>
-</span><span id="__span-24-24"><a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a><span class="w">    </span><span class="no">service:</span>
-</span><span id="__span-24-25"><a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a><span class="w">      </span><span class="no">pipelines:</span>
-</span><span id="__span-24-26"><a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a><span class="w">        </span><span class="no">traces:</span>
-</span><span id="__span-24-27"><a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a><span class="w">          </span><span class="no">receivers: [otlp]</span>
-</span><span id="__span-24-28"><a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a><span class="w">          </span><span class="no">processors: [batch]</span>
-</span><span id="__span-24-29"><a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a><span class="w">          </span><span class="no">exporters: [jaeger]</span>
-</span><span id="__span-24-30"><a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a><span class="nn">---</span>
-</span><span id="__span-24-31"><a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-</span><span id="__span-24-32"><a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-</span><span id="__span-24-33"><a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-24-34"><a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector</span>
-</span><span id="__span-24-35"><a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring</span>
-</span><span id="__span-24-36"><a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-24-37"><a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-24-38"><a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-24-39"><a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-24-40"><a id="__codelineno-24-40" name="__codelineno-24-40" href="#__codelineno-24-40"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector</span>
-</span><span id="__span-24-41"><a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
-</span><span id="__span-24-42"><a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-24-43"><a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
-</span><span id="__span-24-44"><a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector</span>
-</span><span id="__span-24-45"><a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-24-46"><a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
-</span><span id="__span-24-47"><a id="__codelineno-24-47" name="__codelineno-24-47" href="#__codelineno-24-47"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">collector</span>
-</span><span id="__span-24-48"><a id="__codelineno-24-48" name="__codelineno-24-48" href="#__codelineno-24-48"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel/opentelemetry-collector-contrib:0.96.0</span>
-</span><span id="__span-24-49"><a id="__codelineno-24-49" name="__codelineno-24-49" href="#__codelineno-24-49"></a><span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
-</span><span id="__span-24-50"><a id="__codelineno-24-50" name="__codelineno-24-50" href="#__codelineno-24-50"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4317</span>
-</span><span id="__span-24-51"><a id="__codelineno-24-51" name="__codelineno-24-51" href="#__codelineno-24-51"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otlp-grpc</span>
-</span><span id="__span-24-52"><a id="__codelineno-24-52" name="__codelineno-24-52" href="#__codelineno-24-52"></a><span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
-</span><span id="__span-24-53"><a id="__codelineno-24-53" name="__codelineno-24-53" href="#__codelineno-24-53"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config</span>
-</span><span id="__span-24-54"><a id="__codelineno-24-54" name="__codelineno-24-54" href="#__codelineno-24-54"></a><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/otelcol-contrib/config.yaml</span>
-</span><span id="__span-24-55"><a id="__codelineno-24-55" name="__codelineno-24-55" href="#__codelineno-24-55"></a><span class="w">          </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config.yaml</span>
-</span><span id="__span-24-56"><a id="__codelineno-24-56" name="__codelineno-24-56" href="#__codelineno-24-56"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
-</span><span id="__span-24-57"><a id="__codelineno-24-57" name="__codelineno-24-57" href="#__codelineno-24-57"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">config</span>
-</span><span id="__span-24-58"><a id="__codelineno-24-58" name="__codelineno-24-58" href="#__codelineno-24-58"></a><span class="w">        </span><span class="nt">configMap</span><span class="p">:</span>
-</span><span id="__span-24-59"><a id="__codelineno-24-59" name="__codelineno-24-59" href="#__codelineno-24-59"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector-config</span>
-</span><span id="__span-24-60"><a id="__codelineno-24-60" name="__codelineno-24-60" href="#__codelineno-24-60"></a><span class="nn">---</span>
-</span><span id="__span-24-61"><a id="__codelineno-24-61" name="__codelineno-24-61" href="#__codelineno-24-61"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-24-62"><a id="__codelineno-24-62" name="__codelineno-24-62" href="#__codelineno-24-62"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
-</span><span id="__span-24-63"><a id="__codelineno-24-63" name="__codelineno-24-63" href="#__codelineno-24-63"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-24-64"><a id="__codelineno-24-64" name="__codelineno-24-64" href="#__codelineno-24-64"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector</span>
-</span><span id="__span-24-65"><a id="__codelineno-24-65" name="__codelineno-24-65" href="#__codelineno-24-65"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring</span>
-</span><span id="__span-24-66"><a id="__codelineno-24-66" name="__codelineno-24-66" href="#__codelineno-24-66"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-24-67"><a id="__codelineno-24-67" name="__codelineno-24-67" href="#__codelineno-24-67"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-24-68"><a id="__codelineno-24-68" name="__codelineno-24-68" href="#__codelineno-24-68"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel-collector</span>
-</span><span id="__span-24-69"><a id="__codelineno-24-69" name="__codelineno-24-69" href="#__codelineno-24-69"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
-</span><span id="__span-24-70"><a id="__codelineno-24-70" name="__codelineno-24-70" href="#__codelineno-24-70"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4317</span>
-</span><span id="__span-24-71"><a id="__codelineno-24-71" name="__codelineno-24-71" href="#__codelineno-24-71"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otlp-grpc</span>
-</span></code></pre></div>
-<h4 id="with-grafana-tempo">With Grafana Tempo<a class="headerlink" href="#with-grafana-tempo" title="Permanent link">&para;</a></h4>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">operator</span><span class="p">:</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span><span class="nt">tracing</span><span class="p">:</span>
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://tempo.monitoring:4317&quot;</span>
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;keycloak-operator&quot;</span>
-</span></code></pre></div>
-<h3 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h3>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Sampling</strong>: For high-throughput environments, reduce <code>sampleRate</code> (e.g., 0.1 for 10%)</li>
-<li><strong>Batch Processing</strong>: The operator uses <code>BatchSpanProcessor</code> for efficient trace export</li>
-<li><strong>Overhead</strong>: With 1.0 sampling, expect ~5-10% overhead on reconciliation time</li>
-<li><strong>Storage</strong>: Traces consume storage in your backend; configure retention appropriately</li>
-</ul>
-<h2 id="debugging-test-failures-with-traces">Debugging Test Failures with Traces<a class="headerlink" href="#debugging-test-failures-with-traces" title="Permanent link">&para;</a></h2>
-<p>The operator's integration test infrastructure includes trace collection for post-mortem debugging of test failures.</p>
-<h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>OTEL Collector Deployment</strong>: The test cluster includes an OpenTelemetry Collector that writes traces to JSONL files</li>
-<li><strong>Test Context Markers</strong>: Each test is logged with <code>[TRACE_CONTEXT]</code> markers that include test names and timestamps</li>
-<li><strong>Trace Retrieval</strong>: After tests complete, traces are extracted from the collector pod and saved as artifacts</li>
-</ol>
-<h3 id="analyzing-traces-after-ci-failures">Analyzing Traces After CI Failures<a class="headerlink" href="#analyzing-traces-after-ci-failures" title="Permanent link">&para;</a></h3>
-<p>When integration tests fail in CI:</p>
-<ol>
-<li>Download the <code>test-logs-*</code> artifact from the failed GitHub Actions run</li>
-<li>Look in <code>test-logs/traces/</code> for <code>traces.jsonl</code></li>
-<li>Use the analysis tool to find relevant traces:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Show summary of all traces</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>test-logs/traces/traces.jsonl<span class="w"> </span>--summary
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="c1"># Show only error spans</span>
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>test-logs/traces/traces.jsonl<span class="w"> </span>--errors-only
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="c1"># Filter by test name</span>
-</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>test-logs/traces/traces.jsonl<span class="w"> </span>--filter<span class="w"> </span><span class="s2">&quot;test_create_realm&quot;</span>
-</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
-</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="c1"># Show traces in tree format</span>
-</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>test-logs/traces/traces.jsonl<span class="w"> </span>--tree
-</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
-</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="c1"># Filter by time range (use timestamps from test logs)</span>
-</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>test-logs/traces/traces.jsonl<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="w">    </span>--time-range<span class="w"> </span><span class="s2">&quot;2024-01-01T10:00:00&quot;</span><span class="w"> </span><span class="s2">&quot;2024-01-01T10:05:00&quot;</span>
-</span></code></pre></div>
-<h3 id="correlating-traces-with-tests">Correlating Traces with Tests<a class="headerlink" href="#correlating-traces-with-tests" title="Permanent link">&para;</a></h3>
-<p>Test logs include markers like:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>[TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>[TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed
-</span></code></pre></div>
-<p>Use these timestamps with <code>--time-range</code> to find traces for specific tests.</p>
-<h3 id="local-debugging-with-traces">Local Debugging with Traces<a class="headerlink" href="#local-debugging-with-traces" title="Permanent link">&para;</a></h3>
-<p>When running tests locally with <code>task test:all</code>, traces are collected to <code>.tmp/traces/</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Run tests</span>
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>task<span class="w"> </span>test:all
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># Analyze traces from the test run</span>
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>.tmp/traces/traces.jsonl<span class="w"> </span>--summary
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>.tmp/traces/traces.jsonl<span class="w"> </span>--errors-only
-</span></code></pre></div>
-<h3 id="trace-content">Trace Content<a class="headerlink" href="#trace-content" title="Permanent link">&para;</a></h3>
-<p>Traces capture:</p>
-<ul>
-<li><strong>Reconciliation loops</strong>: Start/end of each reconcile operation</li>
-<li><strong>Keycloak API calls</strong>: HTTP method, endpoint, status code, duration</li>
-<li><strong>Resource operations</strong>: Create, update, delete of Keycloak resources</li>
-<li><strong>Errors</strong>: Exception details and stack traces</li>
-<li><strong>Context</strong>: Namespace, resource name, reconciliation phase</li>
+<li><a href="../drift-detection/">Drift Detection</a></li>
+<li><a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
+<li><a href="../../operations/troubleshooting/">Troubleshooting</a></li>
 </ul>
 
 

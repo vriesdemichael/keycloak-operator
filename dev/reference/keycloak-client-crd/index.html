@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1501,17 +1529,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#minimal-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1523,62 +1540,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spec-fields" class="md-nav__link">
+  <a href="#core-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spec Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Spec Fields">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Configuration
+        Core Fields
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#realm-reference-required" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#url-fields-and-redirect-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Realm Reference (Required)
+        URL Fields And Redirect Validation
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#client-type-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
       
-        Client Type Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#oauth2oidc-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OAuth2/OIDC Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+        <li class="md-nav__item">
   <a href="#client-settings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1591,10 +1574,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-settings" class="md-nav__link">
+  <a href="#authentication-and-flow-controls" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Settings
+        Authentication and flow controls
       
     </span>
   </a>
@@ -1602,21 +1585,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#oauth2-flow-configuration" class="md-nav__link">
+  <a href="#consent-and-token-shaping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OAuth2 Flow Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#consent-and-token-settings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consent and Token Settings
+        Consent and token shaping
       
     </span>
   </a>
@@ -1627,12 +1599,46 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#authentication-flows" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#authentication-flow-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authentication Flows
+        Authentication Flow Overrides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scopes-mappers-roles-and-service-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scopes, Mappers, Roles, And Service Accounts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fine-grained-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fine-Grained Authorization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fine-Grained Authorization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#top-level-authorization-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level authorization settings
       
     </span>
   </a>
@@ -1640,10 +1646,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scopes-and-mappers" class="md-nav__link">
+  <a href="#supported-policy-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scopes and Mappers
+        Supported policy types
       
     </span>
   </a>
@@ -1651,10 +1657,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#roles-and-permissions" class="md-nav__link">
+  <a href="#supported-permission-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Roles and Permissions
+        Supported permission types
       
     </span>
   </a>
@@ -1662,21 +1668,60 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#advanced-configuration" class="md-nav__link">
+  <a href="#security-note-on-javascript-policies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Advanced Configuration
+        Security note on JavaScript policies
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#secret-management" class="md-nav__link">
     <span class="md-ellipsis">
       
         Secret Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#managed-secret-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed secret options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existing-secret-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing secret option
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret rotation
       
     </span>
   </a>
@@ -1700,22 +1745,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#complete-examples" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complete Examples
+        Examples
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Complete Examples">
+    <nav class="md-nav" aria-label="Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#web-application-confidential" class="md-nav__link">
+  <a href="#confidential-web-app-with-managed-secret-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Web Application (Confidential)
+        Confidential web app with managed secret rotation
       
     </span>
   </a>
@@ -1723,10 +1768,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#single-page-application-public-with-pkce" class="md-nav__link">
+  <a href="#spa-with-pkce" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single Page Application (Public with PKCE)
+        SPA with PKCE
       
     </span>
   </a>
@@ -1734,43 +1779,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mobile-application-public-with-pkce" class="md-nav__link">
+  <a href="#resource-server-with-authorization-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mobile Application (Public with PKCE)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#api-resource-server-bearer-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API / Resource Server (Bearer-Only)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-account-machine-to-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Account (Machine-to-Machine)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#client-with-custom-claims" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client with Custom Claims
+        Resource server with authorization services
       
     </span>
   </a>
@@ -1779,17 +1791,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retrieving-client-credentials" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retrieving Client Credentials
-      
-    </span>
-  </a>
   
 </li>
       
@@ -4803,17 +4804,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#minimal-example" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4825,62 +4815,28 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#spec-fields" class="md-nav__link">
+  <a href="#core-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Spec Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Spec Fields">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#core-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Configuration
+        Core Fields
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#realm-reference-required" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#url-fields-and-redirect-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Realm Reference (Required)
+        URL Fields And Redirect Validation
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#client-type-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
       
-        Client Type Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#oauth2oidc-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OAuth2/OIDC Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
+        <li class="md-nav__item">
   <a href="#client-settings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4893,10 +4849,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-settings" class="md-nav__link">
+  <a href="#authentication-and-flow-controls" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Settings
+        Authentication and flow controls
       
     </span>
   </a>
@@ -4904,21 +4860,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#oauth2-flow-configuration" class="md-nav__link">
+  <a href="#consent-and-token-shaping" class="md-nav__link">
     <span class="md-ellipsis">
       
-        OAuth2 Flow Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#consent-and-token-settings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consent and Token Settings
+        Consent and token shaping
       
     </span>
   </a>
@@ -4929,12 +4874,46 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#authentication-flows" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#authentication-flow-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authentication Flows
+        Authentication Flow Overrides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scopes-mappers-roles-and-service-accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scopes, Mappers, Roles, And Service Accounts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fine-grained-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fine-Grained Authorization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fine-Grained Authorization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#top-level-authorization-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-level authorization settings
       
     </span>
   </a>
@@ -4942,10 +4921,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scopes-and-mappers" class="md-nav__link">
+  <a href="#supported-policy-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scopes and Mappers
+        Supported policy types
       
     </span>
   </a>
@@ -4953,10 +4932,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#roles-and-permissions" class="md-nav__link">
+  <a href="#supported-permission-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Roles and Permissions
+        Supported permission types
       
     </span>
   </a>
@@ -4964,21 +4943,60 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#advanced-configuration" class="md-nav__link">
+  <a href="#security-note-on-javascript-policies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Advanced Configuration
+        Security note on JavaScript policies
       
     </span>
   </a>
   
 </li>
         
-          <li class="md-nav__item">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#secret-management" class="md-nav__link">
     <span class="md-ellipsis">
       
         Secret Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#managed-secret-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed secret options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#existing-secret-option" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Existing secret option
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret rotation
       
     </span>
   </a>
@@ -5002,22 +5020,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#complete-examples" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Complete Examples
+        Examples
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Complete Examples">
+    <nav class="md-nav" aria-label="Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#web-application-confidential" class="md-nav__link">
+  <a href="#confidential-web-app-with-managed-secret-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Web Application (Confidential)
+        Confidential web app with managed secret rotation
       
     </span>
   </a>
@@ -5025,10 +5043,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#single-page-application-public-with-pkce" class="md-nav__link">
+  <a href="#spa-with-pkce" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single Page Application (Public with PKCE)
+        SPA with PKCE
       
     </span>
   </a>
@@ -5036,43 +5054,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mobile-application-public-with-pkce" class="md-nav__link">
+  <a href="#resource-server-with-authorization-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Mobile Application (Public with PKCE)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#api-resource-server-bearer-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API / Resource Server (Bearer-Only)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-account-machine-to-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Account (Machine-to-Machine)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#client-with-custom-claims" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client with Custom Claims
+        Resource server with authorization services
       
     </span>
   </a>
@@ -5081,17 +5066,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#retrieving-client-credentials" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Retrieving Client Credentials
-      
-    </span>
-  </a>
   
 </li>
       
@@ -5132,1060 +5106,588 @@
 
 
 <h1 id="keycloakclient-crd-reference">KeycloakClient CRD Reference<a class="headerlink" href="#keycloakclient-crd-reference" title="Permanent link">&para;</a></h1>
-<p>Complete reference for the <code>KeycloakClient</code> Custom Resource Definition.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The <code>KeycloakClient</code> CRD defines a Keycloak client - an OAuth2/OIDC application that uses Keycloak for authentication and authorization. Clients can be web applications, mobile apps, APIs, or service-to-service integrations.</p>
+<p>Reference for the <code>KeycloakClient</code> custom resource.</p>
+<p>A client represents an OAuth2, OIDC, SAML, or Docker registry integration managed inside a realm. The operator supports ordinary login clients, public SPA/mobile clients, bearer-only APIs, service-account clients, and resource-server authorization models.</p>
 <p><strong>API Version:</strong> <code>vriesdemichael.github.io/v1</code>
 <strong>Kind:</strong> <code>KeycloakClient</code>
-<strong>Plural:</strong> <code>keycloakclients</code>
-<strong>Singular:</strong> <code>keycloakclient</code>
-<strong>Short Names:</strong> <code>kcc</code></p>
+<strong>Short Name:</strong> <code>kcc</code></p>
 <h2 id="minimal-example">Minimal Example<a class="headerlink" href="#minimal-example" title="Permanent link">&para;</a></h2>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-team</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-team</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
 </span></code></pre></div>
-<h2 id="spec-fields">Spec Fields<a class="headerlink" href="#spec-fields" title="Permanent link">&para;</a></h2>
-<h3 id="core-configuration">Core Configuration<a class="headerlink" href="#core-configuration" title="Permanent link">&para;</a></h3>
+<h2 id="core-fields">Core Fields<a class="headerlink" href="#core-fields" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>clientId</code></td>
-<td><code>string</code></td>
-<td><strong>Yes</strong></td>
-<td>-</td>
-<td>Unique client identifier (1-255 characters)</td>
+<td>string</td>
+<td>required unique client identifier</td>
 </tr>
 <tr>
 <td><code>clientName</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Human-readable client name</td>
+<td>string</td>
+<td>optional display name</td>
 </tr>
 <tr>
 <td><code>description</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Client description</td>
+<td>string</td>
+<td>optional description</td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp-production</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">clientName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Production</span><span class="nv"> </span><span class="s">Web</span><span class="nv"> </span><span class="s">Application&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Customer-facing</span><span class="nv"> </span><span class="s">web</span><span class="nv"> </span><span class="s">application&quot;</span>
-</span></code></pre></div></p>
-<h3 id="realm-reference-required">Realm Reference (Required)<a class="headerlink" href="#realm-reference-required" title="Permanent link">&para;</a></h3>
-<p>Reference to the parent KeycloakRealm.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>realmRef.name</code></td>
-<td><code>string</code></td>
-<td><strong>Yes</strong></td>
-<td>-</td>
-<td>Name of the KeycloakRealm CR</td>
+<td>string</td>
+<td>referenced realm resource</td>
 </tr>
 <tr>
 <td><code>realmRef.namespace</code></td>
-<td><code>string</code></td>
-<td><strong>Yes</strong></td>
-<td>-</td>
-<td>Namespace of the KeycloakRealm CR</td>
+<td>string</td>
+<td>namespace of that realm resource</td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span></code></pre></div></p>
-<h3 id="client-type-configuration">Client Type Configuration<a class="headerlink" href="#client-type-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure the basic client type and protocol.</p>
-<table>
-<thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<td><code>protocol</code></td>
+<td>string</td>
+<td><code>openid-connect</code>, <code>saml</code>, or <code>docker-v2</code></td>
 </tr>
-</thead>
-<tbody>
 <tr>
 <td><code>publicClient</code></td>
 <td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Whether this is a public client (no client secret). Use <code>true</code> for SPAs and mobile apps.</td>
+<td>public clients do not use client secrets</td>
 </tr>
 <tr>
 <td><code>bearerOnly</code></td>
 <td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Bearer-only client (for APIs that only verify tokens, don't initiate login)</td>
-</tr>
-<tr>
-<td><code>protocol</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td><code>openid-connect</code></td>
-<td>Client protocol. Options: <code>openid-connect</code>, <code>saml</code>, <code>docker-v2</code></td>
+<td>API-style client that validates tokens but does not initiate login</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Client Types:</strong></p>
+<h2 id="url-fields-and-redirect-validation">URL Fields And Redirect Validation<a class="headerlink" href="#url-fields-and-redirect-validation" title="Permanent link">&para;</a></h2>
+<p>Relevant fields:</p>
 <ul>
-<li><strong>Confidential Client</strong> (<code>publicClient: false</code>): Server-side applications that can securely store client secrets (traditional web apps, backend services)</li>
-<li><strong>Public Client</strong> (<code>publicClient: true</code>): Applications that cannot securely store secrets (SPAs, mobile apps, CLIs)</li>
-<li><strong>Bearer-Only</strong> (<code>bearerOnly: true</code>): APIs that only validate tokens, don't initiate login flows</li>
+<li><code>redirectUris</code></li>
+<li><code>webOrigins</code></li>
+<li><code>postLogoutRedirectUris</code></li>
+<li><code>rootUrl</code></li>
+<li><code>adminUrl</code></li>
+<li><code>baseUrl</code></li>
 </ul>
-<p><strong>Example - Confidential:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Server-side web app</span>
-</span></code></pre></div></p>
-<p><strong>Example - Public:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Single Page Application</span>
-</span></code></pre></div></p>
-<p><strong>Example - Bearer-Only:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">bearerOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Resource server / API</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span></code></pre></div></p>
-<h3 id="oauth2oidc-configuration">OAuth2/OIDC Configuration<a class="headerlink" href="#oauth2oidc-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure redirect URIs and web origins for OAuth2/OIDC flows.</p>
+<p>The operator validates redirect URI wildcard use more strictly than the older docs described:</p>
+<ul>
+<li>bare <code>*</code> is rejected</li>
+<li>wildcard use is valid at the end of a path, like <code>https://example.com/*</code></li>
+<li>wildcard use in the hostname is rejected</li>
+<li>custom URI schemes are supported, such as <code>myapp://callback</code> or <code>myapp:*</code></li>
+</ul>
+<p>Example:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com/callback</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com/*</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">postLogoutRedirectUris</span><span class="p">:</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com</span>
+</span></code></pre></div>
+<h2 id="client-settings">Client Settings<a class="headerlink" href="#client-settings" title="Permanent link">&para;</a></h2>
+<p>The <code>settings</code> block holds the bulk of client behavior.</p>
+<h3 id="authentication-and-flow-controls">Authentication and flow controls<a class="headerlink" href="#authentication-and-flow-controls" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><code>redirectUris</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Valid redirect URIs (callback URLs). Use <code>*</code> for local development only.</td>
-</tr>
-<tr>
-<td><code>webOrigins</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Valid web origins for CORS. Use <code>*</code> for local development only.</td>
-</tr>
-<tr>
-<td><code>postLogoutRedirectUris</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Valid post-logout redirect URIs</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example - Web Application:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/callback&quot;</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/silent-renew&quot;</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com&quot;</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="nt">postLogoutRedirectUris</span><span class="p">:</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Example - Development (⚠️ Do not use in production):</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;http://localhost:3000/*&quot;</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*&quot;</span><span class="w">  </span><span class="c1"># Allow all origins</span>
-</span></code></pre></div></p>
-<h3 id="client-settings">Client Settings<a class="headerlink" href="#client-settings" title="Permanent link">&para;</a></h3>
-<p>Advanced client configuration options.</p>
-<h4 id="basic-settings">Basic Settings<a class="headerlink" href="#basic-settings" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>settings.enabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Enable/disable the client</td>
-</tr>
-<tr>
-<td><code>settings.alwaysDisplayInConsole</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Always display in admin console</td>
-</tr>
 <tr>
 <td><code>settings.clientAuthenticatorType</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td><code>client-secret</code></td>
-<td>Client authentication type. Options: <code>client-secret</code>, <code>client-jwt</code>, <code>client-secret-jwt</code>, <code>client-x509</code></td>
+<td><code>client-secret</code>, <code>client-jwt</code>, <code>client-secret-jwt</code>, or <code>client-x509</code></td>
 </tr>
-</tbody>
-</table>
-<h4 id="oauth2-flow-configuration">OAuth2 Flow Configuration<a class="headerlink" href="#oauth2-flow-configuration" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>settings.standardFlowEnabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Enable standard flow (authorization code flow) - recommended for web apps</td>
+<td>authorization code flow</td>
 </tr>
 <tr>
 <td><code>settings.implicitFlowEnabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Enable implicit flow (deprecated, use PKCE instead)</td>
+<td>implicit flow, usually avoid for modern apps</td>
 </tr>
 <tr>
 <td><code>settings.directAccessGrantsEnabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Enable direct access grants (resource owner password credentials flow)</td>
+<td>password grant</td>
 </tr>
 <tr>
 <td><code>settings.serviceAccountsEnabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Enable service accounts (client credentials flow) for M2M</td>
+<td>client credentials flow</td>
+</tr>
+<tr>
+<td><code>settings.authorizationServicesEnabled</code></td>
+<td>required for fine-grained authorization</td>
 </tr>
 </tbody>
 </table>
-<p><strong>OAuth2 Flow Guide:</strong></p>
-<ul>
-<li><strong>Authorization Code Flow</strong> (<code>standardFlowEnabled: true</code>): Best for traditional web apps with backend</li>
-<li><strong>Authorization Code + PKCE</strong> (<code>standardFlowEnabled: true</code>, <code>publicClient: true</code>): Best for SPAs and mobile apps</li>
-<li><strong>Client Credentials</strong> (<code>serviceAccountsEnabled: true</code>): Best for machine-to-machine (service accounts)</li>
-<li><strong>Resource Owner Password</strong> (<code>directAccessGrantsEnabled: true</code>): Only use when other flows are not possible</li>
-</ul>
-<p><strong>Example - Web App:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span></code></pre></div></p>
-<p><strong>Example - SPA with PKCE:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span></code></pre></div></p>
-<p><strong>Example - Service Account (M2M):</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span></code></pre></div></p>
-<h4 id="consent-and-token-settings">Consent and Token Settings<a class="headerlink" href="#consent-and-token-settings" title="Permanent link">&para;</a></h4>
+<h3 id="consent-and-token-shaping">Consent and token shaping<a class="headerlink" href="#consent-and-token-shaping" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>settings.consentRequired</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Require user consent</td>
+<td>require user consent</td>
 </tr>
 <tr>
 <td><code>settings.displayOnConsentScreen</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Display on consent screen</td>
+<td>visibility in consent UI</td>
 </tr>
 <tr>
 <td><code>settings.includeInTokenScope</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Include in token scope</td>
+<td>include in scope calculations</td>
+</tr>
+<tr>
+<td><code>settings.frontchannelLogout</code></td>
+<td>enable front-channel logout</td>
+</tr>
+<tr>
+<td><code>settings.fullScopeAllowed</code></td>
+<td>allow full-scope role mapping</td>
 </tr>
 <tr>
 <td><code>settings.accessTokenLifespan</code></td>
-<td>integer</td>
-<td>No</td>
-<td>-</td>
-<td>Access token lifespan in seconds (overrides realm default)</td>
+<td>client override for access token lifespan</td>
 </tr>
 <tr>
 <td><code>settings.refreshTokenLifespan</code></td>
-<td>integer</td>
-<td>No</td>
-<td>-</td>
-<td>Refresh token lifespan in seconds (overrides realm default)</td>
+<td>client override for refresh token lifespan</td>
+</tr>
+<tr>
+<td><code>settings.clientSessionIdleTimeout</code></td>
+<td>client session idle timeout</td>
+</tr>
+<tr>
+<td><code>settings.clientSessionMaxLifespan</code></td>
+<td>client session max lifespan</td>
+</tr>
+<tr>
+<td><code>settings.pkceCodeChallengeMethod</code></td>
+<td><code>S256</code> or <code>plain</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">consentRequired</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Require user consent</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">accessTokenLifespan</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span><span class="w">  </span><span class="c1"># 10 minutes</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">    </span><span class="nt">refreshTokenLifespan</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">86400</span><span class="w">  </span><span class="c1"># 24 hours</span>
-</span></code></pre></div></p>
-<h3 id="authentication-flows">Authentication Flows<a class="headerlink" href="#authentication-flows" title="Permanent link">&para;</a></h3>
-<p>Override default authentication flows for this client.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>authenticationFlows.browserFlow</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Browser authentication flow override</td>
-</tr>
-<tr>
-<td><code>authenticationFlows.directGrantFlow</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Direct grant authentication flow override</td>
-</tr>
-<tr>
-<td><code>authenticationFlows.clientAuthenticationFlow</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Client authentication flow override</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">authenticationFlows</span><span class="p">:</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">browserFlow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">browser-with-mfa</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">directGrantFlow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">direct-grant-with-otp</span>
-</span></code></pre></div></p>
-<h3 id="scopes-and-mappers">Scopes and Mappers<a class="headerlink" href="#scopes-and-mappers" title="Permanent link">&para;</a></h3>
-<p>Configure client scopes and protocol mappers for claims customization.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>defaultClientScopes</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Default client scopes (always included)</td>
-</tr>
-<tr>
-<td><code>optionalClientScopes</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Optional client scopes (user can opt-in)</td>
-</tr>
-<tr>
-<td><code>protocolMappers</code></td>
-<td>[]object</td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Protocol mappers for custom claims</td>
-</tr>
-<tr>
-<td><code>protocolMappers[].name</code></td>
-<td><code>string</code></td>
-<td><strong>Yes</strong></td>
-<td>-</td>
-<td>Mapper name</td>
-</tr>
-<tr>
-<td><code>protocolMappers[].protocol</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td><code>openid-connect</code></td>
-<td>Protocol (e.g., <code>openid-connect</code>, <code>saml</code>)</td>
-</tr>
-<tr>
-<td><code>protocolMappers[].protocolMapper</code></td>
-<td><code>string</code></td>
-<td><strong>Yes</strong></td>
-<td>-</td>
-<td>Mapper type</td>
-</tr>
-<tr>
-<td><code>protocolMappers[].config</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Mapper configuration</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Common Protocol Mappers:</strong></p>
+<h2 id="authentication-flow-overrides">Authentication Flow Overrides<a class="headerlink" href="#authentication-flow-overrides" title="Permanent link">&para;</a></h2>
+<p>The <code>authenticationFlows</code> section can point the client at realm-defined flow aliases:</p>
 <ul>
-<li><code>oidc-usermodel-attribute-mapper</code>: Map user attribute to claim</li>
-<li><code>oidc-usermodel-property-mapper</code>: Map user property to claim</li>
-<li><code>oidc-group-membership-mapper</code>: Map group memberships to claim</li>
-<li><code>oidc-audience-mapper</code>: Add audience to token</li>
-<li><code>oidc-hardcoded-claim-mapper</code>: Add static claim</li>
+<li><code>browserFlow</code></li>
+<li><code>directGrantFlow</code></li>
+<li><code>clientAuthenticationFlow</code></li>
 </ul>
-<p><strong>Example - User Attribute Mapper:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">protocolMappers</span><span class="p">:</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department-mapper</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openid-connect</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-usermodel-attribute-mapper</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">        </span><span class="nt">user.attribute</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">        </span><span class="nt">claim.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="w">        </span><span class="nt">jsonType.label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">String</span>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">        </span><span class="nt">id.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">        </span><span class="nt">userinfo.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Example - Audience Mapper:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">protocolMappers</span><span class="p">:</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-audience</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openid-connect</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-audience-mapper</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">        </span><span class="nt">included.client.audience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-server</span>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Example - Hardcoded Claim:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">protocolMappers</span><span class="p">:</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment-claim</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openid-connect</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-hardcoded-claim-mapper</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">        </span><span class="nt">claim.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">        </span><span class="nt">claim.value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span></code></pre></div></p>
-<h3 id="roles-and-permissions">Roles and Permissions<a class="headerlink" href="#roles-and-permissions" title="Permanent link">&para;</a></h3>
-<p>Configure client-specific roles and service account permissions.</p>
+<p>Example:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">authenticationFlows</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">browserFlow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">browser-with-otp</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">clientAuthenticationFlow</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hardened-confidential-client</span>
+</span></code></pre></div>
+<h2 id="scopes-mappers-roles-and-service-accounts">Scopes, Mappers, Roles, And Service Accounts<a class="headerlink" href="#scopes-mappers-roles-and-service-accounts" title="Permanent link">&para;</a></h2>
+<p>Supported sections include:</p>
+<ul>
+<li><code>defaultClientScopes</code></li>
+<li><code>optionalClientScopes</code></li>
+<li><code>protocolMappers</code></li>
+<li><code>clientRoles</code></li>
+<li><code>serviceAccountRoles.realmRoles</code></li>
+<li><code>serviceAccountRoles.clientRoles</code></li>
+</ul>
+<p>That covers the common cases of:</p>
+<ul>
+<li>mapping custom claims</li>
+<li>attaching audiences</li>
+<li>creating client roles</li>
+<li>granting realm or client roles to the service-account user</li>
+</ul>
+<h2 id="fine-grained-authorization">Fine-Grained Authorization<a class="headerlink" href="#fine-grained-authorization" title="Permanent link">&para;</a></h2>
+<p>This is the largest feature gap in the old page and is fully modeled now.</p>
+<p>To use it:</p>
+<ul>
+<li>set <code>settings.authorizationServicesEnabled: true</code></li>
+<li>define <code>authorizationSettings</code></li>
+</ul>
+<h3 id="top-level-authorization-settings">Top-level authorization settings<a class="headerlink" href="#top-level-authorization-settings" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>clientRoles</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Client-specific roles to create</td>
+<td><code>authorizationSettings.policyEnforcementMode</code></td>
+<td><code>ENFORCING</code>, <code>PERMISSIVE</code>, or <code>DISABLED</code></td>
 </tr>
 <tr>
-<td><code>serviceAccountRoles.realmRoles</code></td>
-<td>[]<code>string</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Realm roles to assign to service account</td>
+<td><code>authorizationSettings.decisionStrategy</code></td>
+<td><code>UNANIMOUS</code>, <code>AFFIRMATIVE</code>, or <code>CONSENSUS</code></td>
 </tr>
 <tr>
-<td><code>serviceAccountRoles.clientRoles</code></td>
-<td>map<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/string.html#module-string"><code>string</code></a><code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Client roles to assign to service account (by client ID)</td>
+<td><code>authorizationSettings.allowRemoteResourceManagement</code></td>
+<td>enable protection API management</td>
+</tr>
+<tr>
+<td><code>authorizationSettings.scopes</code></td>
+<td>named actions such as <code>read</code> or <code>write</code></td>
+</tr>
+<tr>
+<td><code>authorizationSettings.resources</code></td>
+<td>protected resources and associated scopes</td>
+</tr>
+<tr>
+<td><code>authorizationSettings.policies</code></td>
+<td>who is allowed</td>
+</tr>
+<tr>
+<td><code>authorizationSettings.permissions</code></td>
+<td>what those policies apply to</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example - Client Roles:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">clientRoles</span><span class="p">:</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">editor</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">viewer</span>
-</span></code></pre></div></p>
-<p><strong>Example - Service Account with Permissions:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="nt">serviceAccountRoles</span><span class="p">:</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">    </span><span class="nt">realmRoles</span><span class="p">:</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">offline_access</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uma_authorization</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">    </span><span class="nt">clientRoles</span><span class="p">:</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">      </span><span class="nt">api-server</span><span class="p">:</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read:data</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write:data</span>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">      </span><span class="nt">admin-console</span><span class="p">:</span>
-</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view-users</span>
-</span></code></pre></div></p>
-<h3 id="advanced-configuration">Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Permanent link">&para;</a></h3>
+<h3 id="supported-policy-types">Supported policy types<a class="headerlink" href="#supported-policy-types" title="Permanent link">&para;</a></h3>
+<p>The model supports these policy containers:</p>
+<ul>
+<li><code>rolePolicies</code></li>
+<li><code>userPolicies</code></li>
+<li><code>groupPolicies</code></li>
+<li><code>clientPolicies</code></li>
+<li><code>timePolicies</code></li>
+<li><code>regexPolicies</code></li>
+<li><code>aggregatePolicies</code></li>
+<li><code>javascriptPolicies</code></li>
+</ul>
+<h3 id="supported-permission-types">Supported permission types<a class="headerlink" href="#supported-permission-types" title="Permanent link">&para;</a></h3>
+<p>The model supports:</p>
+<ul>
+<li><code>resourcePermissions</code></li>
+<li><code>scopePermissions</code></li>
+</ul>
+<h3 id="security-note-on-javascript-policies">Security note on JavaScript policies<a class="headerlink" href="#security-note-on-javascript-policies" title="Permanent link">&para;</a></h3>
+<p><code>javascriptPolicies</code> are disabled by default at the model level unless <code>allowJavaScriptPolicies: true</code> is set.</p>
+<p>That is deliberate. JavaScript policies require Keycloak script-upload support and carry a real security review burden. Treat them as an exception, not a normal authorization tool.</p>
+<p>Example:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">authorizationServicesEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">authorizationSettings</span><span class="p">:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">policyEnforcementMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENFORCING</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">decisionStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UNANIMOUS</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">        </span><span class="nt">uris</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/api/documents/*</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">    </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">      </span><span class="nt">rolePolicies</span><span class="p">:</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">document-editors</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">          </span><span class="nt">roles</span><span class="p">:</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">editor</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">      </span><span class="nt">groupPolicies</span><span class="p">:</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23" href="#__codelineno-3-23"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">finance-team</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24" href="#__codelineno-3-24"></a><span class="w">          </span><span class="nt">groups</span><span class="p">:</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/finance</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">      </span><span class="nt">scopePermissions</span><span class="p">:</span>
+</span><span id="__span-3-28"><a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents-read</span>
+</span><span id="__span-3-29"><a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-3-30"><a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents</span>
+</span><span id="__span-3-31"><a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="w">          </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-3-32"><a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+</span><span id="__span-3-33"><a id="__codelineno-3-33" name="__codelineno-3-33" href="#__codelineno-3-33"></a><span class="w">          </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-3-34"><a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">finance-team</span>
+</span><span id="__span-3-35"><a id="__codelineno-3-35" name="__codelineno-3-35" href="#__codelineno-3-35"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents-write</span>
+</span><span id="__span-3-36"><a id="__codelineno-3-36" name="__codelineno-3-36" href="#__codelineno-3-36"></a><span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-3-37"><a id="__codelineno-3-37" name="__codelineno-3-37" href="#__codelineno-3-37"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents</span>
+</span><span id="__span-3-38"><a id="__codelineno-3-38" name="__codelineno-3-38" href="#__codelineno-3-38"></a><span class="w">          </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-3-39"><a id="__codelineno-3-39" name="__codelineno-3-39" href="#__codelineno-3-39"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-3-40"><a id="__codelineno-3-40" name="__codelineno-3-40" href="#__codelineno-3-40"></a><span class="w">          </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-3-41"><a id="__codelineno-3-41" name="__codelineno-3-41" href="#__codelineno-3-41"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">document-editors</span>
+</span></code></pre></div>
+<h2 id="secret-management">Secret Management<a class="headerlink" href="#secret-management" title="Permanent link">&para;</a></h2>
+<p>The operator supports both managed and externally supplied secrets.</p>
+<h3 id="managed-secret-options">Managed secret options<a class="headerlink" href="#managed-secret-options" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>attributes</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Additional client attributes</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="nt">attributes</span><span class="p">:</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="nt">pkce.code.challenge.method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">S256</span><span class="w">  </span><span class="c1"># Require PKCE with SHA-256</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">    </span><span class="nt">post.logout.redirect.uris</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;+&quot;</span><span class="w">  </span><span class="c1"># Allow any registered redirect URI</span>
-</span></code></pre></div></p>
-<h3 id="secret-management">Secret Management<a class="headerlink" href="#secret-management" title="Permanent link">&para;</a></h3>
-<p>Configure how client credentials are managed.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>regenerateSecret</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Regenerate client secret on update</td>
+<td><code>manageSecret</code></td>
+<td>create and maintain a Kubernetes secret for client credentials</td>
 </tr>
 <tr>
 <td><code>secretName</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td><code>&lt;client-name&gt;-client-secret</code></td>
-<td>Name of Kubernetes secret for client credentials</td>
+<td>override the managed secret name</td>
 </tr>
 <tr>
-<td><code>manageSecret</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Create and manage Kubernetes secret for credentials</td>
+<td><code>secretMetadata.labels</code> / <code>annotations</code></td>
+<td>decorate the managed secret</td>
 </tr>
 <tr>
-<td><code>secretMetadata.labels</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Labels to add to the managed secret</td>
-</tr>
-<tr>
-<td><code>secretMetadata.annotations</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Annotations to add to the managed secret</td>
-</tr>
-<tr>
-<td><code>clientSecret.name</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Name of existing secret containing the client secret</td>
-</tr>
-<tr>
-<td><code>clientSecret.key</code></td>
-<td><code>string</code></td>
-<td>No</td>
-<td>-</td>
-<td>Key in secret data containing the value</td>
+<td><code>regenerateSecret</code></td>
+<td>force a new client secret on update</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Manual Client Secret:</strong>
-To use an existing secret instead of generating one, specify <code>clientSecret</code>. This is useful for migrations or when secrets are managed externally (e.g., by SealedSecrets or ExternalSecrets). When set, <code>secretRotation</code> must be disabled.</p>
-<p><strong>Automatic Features:</strong>
-- <strong>Recreation:</strong> If the managed secret is deleted, the operator automatically recreates it.
-- <strong>Garbage Collection:</strong> Secrets have an <code>OwnerReference</code> to the Client CR, ensuring they are deleted when the client is deleted.</p>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">manageSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp-credentials</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">regenerateSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Only regenerate manually</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">secretMetadata</span><span class="p">:</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Credentials</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">webapp&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Example - Manual Secret:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">legacy-app</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">manageSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="c1"># Use existing secret &quot;legacy-secret&quot;</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="nt">clientSecret</span><span class="p">:</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">legacy-client-secret</span>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">  </span><span class="nt">secretRotation</span><span class="p">:</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Must be disabled when using manual secret</span>
-</span></code></pre></div></p>
-<p>The operator creates a secret with the following keys:
-- <code>client-id</code>: Client ID
-- <code>client-secret</code>: Client secret (confidential clients only)
-- <code>issuer</code>: OIDC issuer URL
-- <code>token-endpoint</code>: Token endpoint URL
-- <code>auth-endpoint</code>: Authorization endpoint URL</p>
-<h2 id="status-fields">Status Fields<a class="headerlink" href="#status-fields" title="Permanent link">&para;</a></h2>
+<h3 id="existing-secret-option">Existing secret option<a class="headerlink" href="#existing-secret-option" title="Permanent link">&para;</a></h3>
+<p>Use <code>clientSecret</code> when the secret value already exists and should not be generated by the operator.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">clientSecret</span><span class="p">:</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">legacy-client-secret</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+</span></code></pre></div>
+<p>Constraints enforced by validation:</p>
+<ul>
+<li><code>clientSecret</code> cannot be used with <code>publicClient: true</code></li>
+<li><code>clientSecret</code> cannot be combined with <code>secretRotation.enabled: true</code></li>
+</ul>
+<h3 id="secret-rotation">Secret rotation<a class="headerlink" href="#secret-rotation" title="Permanent link">&para;</a></h3>
+<p>The <code>secretRotation</code> block documents actual operator behavior:</p>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>phase</code></td>
-<td><code>string</code></td>
-<td>Current phase: <code>Pending</code>, <code>Provisioning</code>, <code>Ready</code>, <code>Failed</code>, <code>Updating</code>, <code>Degraded</code></td>
-</tr>
-<tr>
-<td><code>message</code></td>
-<td><code>string</code></td>
-<td>Human-readable status message</td>
-</tr>
-<tr>
-<td><code>reason</code></td>
-<td><code>string</code></td>
-<td>Reason for current phase</td>
-</tr>
-<tr>
-<td><code>observedGeneration</code></td>
-<td>integer</td>
-<td>Generation of spec that was last processed</td>
-</tr>
-<tr>
-<td><code>clientId</code></td>
-<td><code>string</code></td>
-<td>Client ID in Keycloak</td>
-</tr>
-<tr>
-<td><code>internalId</code></td>
-<td><code>string</code></td>
-<td>Internal Keycloak client ID (UUID)</td>
-</tr>
-<tr>
-<td><code>realm</code></td>
-<td><code>string</code></td>
-<td>Realm name</td>
-</tr>
-<tr>
-<td><code>publicClient</code></td>
+<td><code>secretRotation.enabled</code></td>
 <td>boolean</td>
-<td>Whether this is a public client</td>
+<td>enable automatic secret rotation</td>
 </tr>
 <tr>
-<td><code>keycloakInstance</code></td>
-<td><code>string</code></td>
-<td>Keycloak instance managing this client</td>
+<td><code>secretRotation.rotationPeriod</code></td>
+<td>string</td>
+<td>interval such as <code>90d</code>, <code>24h</code>, or <code>10s</code></td>
 </tr>
 <tr>
-<td><code>credentialsSecret</code></td>
-<td><code>string</code></td>
-<td>Name of secret containing client credentials</td>
+<td><code>secretRotation.rotationTime</code></td>
+<td>string</td>
+<td>optional <code>HH:MM</code> target time</td>
 </tr>
 <tr>
-<td><code>endpoints.auth</code></td>
-<td><code>string</code></td>
-<td>OIDC authorization endpoint</td>
-</tr>
-<tr>
-<td><code>endpoints.token</code></td>
-<td><code>string</code></td>
-<td>OIDC token endpoint</td>
-</tr>
-<tr>
-<td><code>endpoints.userinfo</code></td>
-<td><code>string</code></td>
-<td>OIDC userinfo endpoint</td>
-</tr>
-<tr>
-<td><code>endpoints.jwks</code></td>
-<td><code>string</code></td>
-<td>OIDC JWKS endpoint</td>
-</tr>
-<tr>
-<td><code>endpoints.issuer</code></td>
-<td><code>string</code></td>
-<td>OIDC issuer</td>
-</tr>
-<tr>
-<td><code>endpoints.endSession</code></td>
-<td><code>string</code></td>
-<td>OIDC end session endpoint</td>
-</tr>
-<tr>
-<td><code>createdRoles</code></td>
-<td>[]<code>string</code></td>
-<td>List of created client roles</td>
-</tr>
-<tr>
-<td><code>appliedMappers</code></td>
-<td>[]<code>string</code></td>
-<td>List of applied protocol mappers</td>
-</tr>
-<tr>
-<td><code>lastHealthCheck</code></td>
-<td><code>string</code> (datetime)</td>
-<td>Last health check timestamp</td>
-</tr>
-<tr>
-<td><code>lastUpdated</code></td>
-<td><code>string</code> (datetime)</td>
-<td>Last update timestamp</td>
+<td><code>secretRotation.timezone</code></td>
+<td>string</td>
+<td>IANA timezone such as <code>UTC</code> or <code>Europe/Amsterdam</code></td>
 </tr>
 </tbody>
 </table>
-<h2 id="complete-examples">Complete Examples<a class="headerlink" href="#complete-examples" title="Permanent link">&para;</a></h2>
-<h3 id="web-application-confidential">Web Application (Confidential)<a class="headerlink" href="#web-application-confidential" title="Permanent link">&para;</a></h3>
-<p>Traditional server-side web application with backend.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp-production</span>
-</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="w">  </span><span class="nt">clientName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Production</span><span class="nv"> </span><span class="s">Web</span><span class="nv"> </span><span class="s">App&quot;</span>
-</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>
-</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>
-</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Confidential client</span>
-</span><span id="__span-21-16"><a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a>
-</span><span id="__span-21-17"><a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-21-18"><a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/callback&quot;</span>
-</span><span id="__span-21-19"><a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/silent-renew&quot;</span>
-</span><span id="__span-21-20"><a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
-</span><span id="__span-21-21"><a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com&quot;</span>
-</span><span id="__span-21-22"><a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a><span class="w">  </span><span class="nt">postLogoutRedirectUris</span><span class="p">:</span>
-</span><span id="__span-21-23"><a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com&quot;</span>
-</span><span id="__span-21-24"><a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a>
-</span><span id="__span-21-25"><a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-21-26"><a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Authorization code flow</span>
-</span><span id="__span-21-27"><a id="__codelineno-21-27" name="__codelineno-21-27" href="#__codelineno-21-27"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-21-28"><a id="__codelineno-21-28" name="__codelineno-21-28" href="#__codelineno-21-28"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-21-29"><a id="__codelineno-21-29" name="__codelineno-21-29" href="#__codelineno-21-29"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-21-30"><a id="__codelineno-21-30" name="__codelineno-21-30" href="#__codelineno-21-30"></a><span class="w">    </span><span class="nt">consentRequired</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-21-31"><a id="__codelineno-21-31" name="__codelineno-21-31" href="#__codelineno-21-31"></a>
-</span><span id="__span-21-32"><a id="__codelineno-21-32" name="__codelineno-21-32" href="#__codelineno-21-32"></a><span class="w">  </span><span class="nt">defaultClientScopes</span><span class="p">:</span>
-</span><span id="__span-21-33"><a id="__codelineno-21-33" name="__codelineno-21-33" href="#__codelineno-21-33"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">profile</span>
-</span><span id="__span-21-34"><a id="__codelineno-21-34" name="__codelineno-21-34" href="#__codelineno-21-34"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">email</span>
-</span><span id="__span-21-35"><a id="__codelineno-21-35" name="__codelineno-21-35" href="#__codelineno-21-35"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">roles</span>
+<p>Scheduling semantics:</p>
+<ul>
+<li>the rotation period determines how often the secret becomes eligible</li>
+<li>if <code>rotationTime</code> is set, the operator waits for the next matching wall-clock time in the configured timezone</li>
+<li>if no <code>rotationTime</code> is set, rotation occurs as soon as the period is reached on the reconcile path</li>
+</ul>
+<p>The managed secret contains these keys when applicable:</p>
+<ul>
+<li><code>client-id</code></li>
+<li><code>client-secret</code></li>
+<li><code>issuer</code></li>
+<li><code>token-endpoint</code></li>
+<li><code>auth-endpoint</code></li>
+</ul>
+<h2 id="status-fields">Status Fields<a class="headerlink" href="#status-fields" title="Permanent link">&para;</a></h2>
+<p>Important status fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>phase</code>, <code>message</code>, <code>reason</code></td>
+<td>current reconciliation state</td>
+</tr>
+<tr>
+<td><code>observedGeneration</code></td>
+<td>last processed generation</td>
+</tr>
+<tr>
+<td><code>clientId</code>, <code>internalId</code></td>
+<td>logical and internal Keycloak identifiers</td>
+</tr>
+<tr>
+<td><code>realm</code></td>
+<td>target realm name</td>
+</tr>
+<tr>
+<td><code>publicClient</code></td>
+<td>whether the current client is public</td>
+</tr>
+<tr>
+<td><code>keycloakInstance</code></td>
+<td>managing Keycloak instance reference</td>
+</tr>
+<tr>
+<td><code>credentialsSecret</code></td>
+<td>secret name used for generated credentials</td>
+</tr>
+<tr>
+<td><code>endpoints.*</code></td>
+<td>issuer, auth, token, userinfo, JWKS, and logout endpoints</td>
+</tr>
+<tr>
+<td><code>authorizationGranted</code></td>
+<td>whether the realm currently authorizes this namespace</td>
+</tr>
+<tr>
+<td><code>authorizationMessage</code></td>
+<td>authorization summary</td>
+</tr>
+<tr>
+<td><code>createdRoles</code>, <code>appliedMappers</code></td>
+<td>reconciliation outputs</td>
+</tr>
+<tr>
+<td><code>lastHealthCheck</code>, <code>lastUpdated</code></td>
+<td>timing metadata</td>
+</tr>
+<tr>
+<td><code>lastReconcileEventTime</code></td>
+<td>drift-detection watermark</td>
+</tr>
+</tbody>
+</table>
+<p>Common phases are <code>Pending</code>, <code>Provisioning</code>, <code>Reconciling</code>, <code>Ready</code>, <code>Updating</code>, <code>Degraded</code>, and <code>Failed</code>.</p>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="confidential-web-app-with-managed-secret-rotation">Confidential web app with managed secret rotation<a class="headerlink" href="#confidential-web-app-with-managed-secret-rotation" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="nt">clientName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Team A Web App</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com/callback</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span><span class="nt">postLogoutRedirectUris</span><span class="p">:</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://app.example.com</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">  </span><span class="nt">secretRotation</span><span class="p">:</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="nt">rotationPeriod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30d</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">    </span><span class="nt">rotationTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;02:00&quot;</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">    </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UTC</span>
 </span></code></pre></div>
-<h3 id="single-page-application-public-with-pkce">Single Page Application (Public with PKCE)<a class="headerlink" href="#single-page-application-public-with-pkce" title="Permanent link">&para;</a></h3>
-<p>Modern SPA using authorization code flow with PKCE.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spa</span>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spa-production</span>
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>
-</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Public client (no secret)</span>
-</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>
-</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/callback&quot;</span>
-</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/silent-renew.html&quot;</span>
-</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
-</span><span id="__span-22-20"><a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com&quot;</span>
-</span><span id="__span-22-21"><a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a>
-</span><span id="__span-22-22"><a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-22-23"><a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Auth code + PKCE</span>
-</span><span id="__span-22-24"><a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-22-25"><a id="__codelineno-22-25" name="__codelineno-22-25" href="#__codelineno-22-25"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-22-26"><a id="__codelineno-22-26" name="__codelineno-22-26" href="#__codelineno-22-26"></a>
-</span><span id="__span-22-27"><a id="__codelineno-22-27" name="__codelineno-22-27" href="#__codelineno-22-27"></a><span class="w">  </span><span class="nt">attributes</span><span class="p">:</span>
-</span><span id="__span-22-28"><a id="__codelineno-22-28" name="__codelineno-22-28" href="#__codelineno-22-28"></a><span class="w">    </span><span class="nt">pkce.code.challenge.method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">S256</span><span class="w">  </span><span class="c1"># Require PKCE with SHA-256</span>
+<h3 id="spa-with-pkce">SPA with PKCE<a class="headerlink" href="#spa-with-pkce" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spa</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spa</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://spa.example.com/*</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="nt">webOrigins</span><span class="p">:</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://spa.example.com</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">    </span><span class="nt">pkceCodeChallengeMethod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">S256</span>
 </span></code></pre></div>
-<h3 id="mobile-application-public-with-pkce">Mobile Application (Public with PKCE)<a class="headerlink" href="#mobile-application-public-with-pkce" title="Permanent link">&para;</a></h3>
-<p>Mobile app using custom URI schemes.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobile-app</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobile-app</span>
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>
-</span><span id="__span-23-10"><a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-23-12"><a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-23-13"><a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>
-</span><span id="__span-23-14"><a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-23-15"><a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>
-</span><span id="__span-23-16"><a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-23-17"><a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;myapp://callback&quot;</span><span class="w">  </span><span class="c1"># Custom URI scheme</span>
-</span><span id="__span-23-18"><a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;com.example.myapp://callback&quot;</span><span class="w">  </span><span class="c1"># Reverse domain notation</span>
-</span><span id="__span-23-19"><a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>
-</span><span id="__span-23-20"><a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-23-21"><a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Auth code + PKCE</span>
-</span><span id="__span-23-22"><a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a><span class="w">    </span><span class="nt">implicitFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-23-23"><a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-23-24"><a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a>
-</span><span id="__span-23-25"><a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a><span class="w">  </span><span class="nt">attributes</span><span class="p">:</span>
-</span><span id="__span-23-26"><a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a><span class="w">    </span><span class="nt">pkce.code.challenge.method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">S256</span>
-</span></code></pre></div>
-<h3 id="api-resource-server-bearer-only">API / Resource Server (Bearer-Only)<a class="headerlink" href="#api-resource-server-bearer-only" title="Permanent link">&para;</a></h3>
-<p>Backend API that only validates tokens.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-server</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-server</span>
-</span><span id="__span-24-9"><a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>
-</span><span id="__span-24-10"><a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-24-11"><a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-24-12"><a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-24-13"><a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>
-</span><span id="__span-24-14"><a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a><span class="w">  </span><span class="nt">bearerOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Only validates tokens, doesn&#39;t initiate login</span>
-</span><span id="__span-24-15"><a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span></code></pre></div>
-<h3 id="service-account-machine-to-machine">Service Account (Machine-to-Machine)<a class="headerlink" href="#service-account-machine-to-machine" title="Permanent link">&para;</a></h3>
-<p>Backend service using client credentials flow.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backend-service</span>
-</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backend-service</span>
-</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
-</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>
-</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="w">  </span><span class="nt">publicClient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>
-</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
-</span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># No interactive flows</span>
-</span><span id="__span-25-18"><a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-25-19"><a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Client credentials flow</span>
-</span><span id="__span-25-20"><a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>
-</span><span id="__span-25-21"><a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a><span class="w">  </span><span class="nt">serviceAccountRoles</span><span class="p">:</span>
-</span><span id="__span-25-22"><a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a><span class="w">    </span><span class="nt">realmRoles</span><span class="p">:</span>
-</span><span id="__span-25-23"><a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">offline_access</span>
-</span><span id="__span-25-24"><a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a><span class="w">    </span><span class="nt">clientRoles</span><span class="p">:</span>
-</span><span id="__span-25-25"><a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a><span class="w">      </span><span class="nt">api-server</span><span class="p">:</span>
-</span><span id="__span-25-26"><a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read:data</span>
-</span><span id="__span-25-27"><a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write:data</span>
-</span></code></pre></div>
-<h3 id="client-with-custom-claims">Client with Custom Claims<a class="headerlink" href="#client-with-custom-claims" title="Permanent link">&para;</a></h3>
-<p>Client with custom protocol mappers for additional claims.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp-with-claims</span>
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
-</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
-</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production-realm</span>
-</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>
-</span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="w">  </span><span class="nt">redirectUris</span><span class="p">:</span>
-</span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;https://app.example.com/callback&quot;</span>
-</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>
-</span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="w">  </span><span class="nt">protocolMappers</span><span class="p">:</span>
-</span><span id="__span-26-18"><a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a><span class="w">    </span><span class="c1"># Map user department to claim</span>
-</span><span id="__span-26-19"><a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department</span>
-</span><span id="__span-26-20"><a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-usermodel-attribute-mapper</span>
-</span><span id="__span-26-21"><a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-26-22"><a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="w">        </span><span class="nt">user.attribute</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department</span>
-</span><span id="__span-26-23"><a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a><span class="w">        </span><span class="nt">claim.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">department</span>
-</span><span id="__span-26-24"><a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a><span class="w">        </span><span class="nt">jsonType.label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">String</span>
-</span><span id="__span-26-25"><a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a><span class="w">        </span><span class="nt">id.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-26"><a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-27"><a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a><span class="w">        </span><span class="nt">userinfo.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-28"><a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a>
-</span><span id="__span-26-29"><a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a><span class="w">    </span><span class="c1"># Map groups to claim</span>
-</span><span id="__span-26-30"><a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">groups</span>
-</span><span id="__span-26-31"><a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-group-membership-mapper</span>
-</span><span id="__span-26-32"><a id="__codelineno-26-32" name="__codelineno-26-32" href="#__codelineno-26-32"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-26-33"><a id="__codelineno-26-33" name="__codelineno-26-33" href="#__codelineno-26-33"></a><span class="w">        </span><span class="nt">claim.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">groups</span>
-</span><span id="__span-26-34"><a id="__codelineno-26-34" name="__codelineno-26-34" href="#__codelineno-26-34"></a><span class="w">        </span><span class="nt">full.path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
-</span><span id="__span-26-35"><a id="__codelineno-26-35" name="__codelineno-26-35" href="#__codelineno-26-35"></a><span class="w">        </span><span class="nt">id.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-36"><a id="__codelineno-26-36" name="__codelineno-26-36" href="#__codelineno-26-36"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-37"><a id="__codelineno-26-37" name="__codelineno-26-37" href="#__codelineno-26-37"></a><span class="w">        </span><span class="nt">userinfo.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-38"><a id="__codelineno-26-38" name="__codelineno-26-38" href="#__codelineno-26-38"></a>
-</span><span id="__span-26-39"><a id="__codelineno-26-39" name="__codelineno-26-39" href="#__codelineno-26-39"></a><span class="w">    </span><span class="c1"># Add static environment claim</span>
-</span><span id="__span-26-40"><a id="__codelineno-26-40" name="__codelineno-26-40" href="#__codelineno-26-40"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">environment</span>
-</span><span id="__span-26-41"><a id="__codelineno-26-41" name="__codelineno-26-41" href="#__codelineno-26-41"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-hardcoded-claim-mapper</span>
-</span><span id="__span-26-42"><a id="__codelineno-26-42" name="__codelineno-26-42" href="#__codelineno-26-42"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-26-43"><a id="__codelineno-26-43" name="__codelineno-26-43" href="#__codelineno-26-43"></a><span class="w">        </span><span class="nt">claim.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">env</span>
-</span><span id="__span-26-44"><a id="__codelineno-26-44" name="__codelineno-26-44" href="#__codelineno-26-44"></a><span class="w">        </span><span class="nt">claim.value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-</span><span id="__span-26-45"><a id="__codelineno-26-45" name="__codelineno-26-45" href="#__codelineno-26-45"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-26-46"><a id="__codelineno-26-46" name="__codelineno-26-46" href="#__codelineno-26-46"></a>
-</span><span id="__span-26-47"><a id="__codelineno-26-47" name="__codelineno-26-47" href="#__codelineno-26-47"></a><span class="w">    </span><span class="c1"># Add audience</span>
-</span><span id="__span-26-48"><a id="__codelineno-26-48" name="__codelineno-26-48" href="#__codelineno-26-48"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-audience</span>
-</span><span id="__span-26-49"><a id="__codelineno-26-49" name="__codelineno-26-49" href="#__codelineno-26-49"></a><span class="w">      </span><span class="nt">protocolMapper</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oidc-audience-mapper</span>
-</span><span id="__span-26-50"><a id="__codelineno-26-50" name="__codelineno-26-50" href="#__codelineno-26-50"></a><span class="w">      </span><span class="nt">config</span><span class="p">:</span>
-</span><span id="__span-26-51"><a id="__codelineno-26-51" name="__codelineno-26-51" href="#__codelineno-26-51"></a><span class="w">        </span><span class="nt">included.client.audience</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">api-server</span>
-</span><span id="__span-26-52"><a id="__codelineno-26-52" name="__codelineno-26-52" href="#__codelineno-26-52"></a><span class="w">        </span><span class="nt">access.token.claim</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span></code></pre></div>
-<h2 id="retrieving-client-credentials">Retrieving Client Credentials<a class="headerlink" href="#retrieving-client-credentials" title="Permanent link">&para;</a></h2>
-<p>For confidential clients, credentials are stored in a Kubernetes secret:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># Get client secret</span>
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>webapp-client-secret<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span>-n<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client-secret}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>
-</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="c1"># Get all credentials</span>
-</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>webapp-client-secret<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a><span class="w">  </span>-n<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.data | map_values(@base64d)&#39;</span>
+<h3 id="resource-server-with-authorization-services">Resource server with authorization services<a class="headerlink" href="#resource-server-with-authorization-services" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents-api</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">clientId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents-api</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-a</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="nt">bearerOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">  </span><span class="nt">settings</span><span class="p">:</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">    </span><span class="nt">standardFlowEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="nt">directAccessGrantsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">    </span><span class="nt">serviceAccountsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">    </span><span class="nt">authorizationServicesEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">  </span><span class="nt">authorizationSettings</span><span class="p">:</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="nt">policyEnforcementMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENFORCING</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="nt">decisionStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UNANIMOUS</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents</span>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">        </span><span class="nt">uris</span><span class="p">:</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/api/documents/*</span>
+</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="w">        </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-7-29"><a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+</span><span id="__span-7-30"><a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-7-31"><a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">    </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-7-32"><a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="w">      </span><span class="nt">rolePolicies</span><span class="p">:</span>
+</span><span id="__span-7-33"><a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">editors</span>
+</span><span id="__span-7-34"><a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a><span class="w">          </span><span class="nt">roles</span><span class="p">:</span>
+</span><span id="__span-7-35"><a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">editor</span>
+</span><span id="__span-7-36"><a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a><span class="w">    </span><span class="nt">permissions</span><span class="p">:</span>
+</span><span id="__span-7-37"><a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a><span class="w">      </span><span class="nt">scopePermissions</span><span class="p">:</span>
+</span><span id="__span-7-38"><a id="__codelineno-7-38" name="__codelineno-7-38" href="#__codelineno-7-38"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">edit-documents</span>
+</span><span id="__span-7-39"><a id="__codelineno-7-39" name="__codelineno-7-39" href="#__codelineno-7-39"></a><span class="w">          </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-7-40"><a id="__codelineno-7-40" name="__codelineno-7-40" href="#__codelineno-7-40"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">documents</span>
+</span><span id="__span-7-41"><a id="__codelineno-7-41" name="__codelineno-7-41" href="#__codelineno-7-41"></a><span class="w">          </span><span class="nt">scopes</span><span class="p">:</span>
+</span><span id="__span-7-42"><a id="__codelineno-7-42" name="__codelineno-7-42" href="#__codelineno-7-42"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+</span><span id="__span-7-43"><a id="__codelineno-7-43" name="__codelineno-7-43" href="#__codelineno-7-43"></a><span class="w">          </span><span class="nt">policies</span><span class="p">:</span>
+</span><span id="__span-7-44"><a id="__codelineno-7-44" name="__codelineno-7-44" href="#__codelineno-7-44"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">editors</span>
 </span></code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<p><strong>Related CRD References:</strong></p>
 <ul>
-<li><a href="../keycloak-crd/">Keycloak CRD Reference</a> - Configure Keycloak instances</li>
-<li><a href="../keycloak-realm-crd/">KeycloakRealm CRD Reference</a> - Configure realms</li>
-</ul>
-<p><strong>Configuration Guides:</strong></p>
-<ul>
-<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup</a> - Complete client configuration with OAuth2 testing</li>
-<li><a href="../../quickstart/">Quick Start Guide</a> - Create your first client</li>
-</ul>
-<p><strong>Examples:</strong></p>
-<ul>
-<li><a href="../../examples/clients/">Client Examples</a> - Production-ready client configurations</li>
-<li>Web Applications - Authorization Code Flow with PKCE</li>
-<li>Single Page Applications - Implicit/Authorization Code Flow</li>
-<li>Service Accounts - Client Credentials Flow</li>
-<li>Mobile Apps - Authorization Code Flow with PKCE</li>
-</ul>
-<p><strong>Architecture &amp; Operations:</strong></p>
-<ul>
-<li><a href="../../concepts/architecture/">Architecture</a> - How client reconciliation works</li>
-<li><a href="../../concepts/security/#level-2-client-creation">Security Model</a> - How clients authenticate</li>
-<li><a href="../../operations/troubleshooting/#client-issues">Troubleshooting: Client Issues</a> - Common client problems</li>
+<li><a href="../keycloak-realm-crd/">KeycloakRealm CRD Reference</a></li>
+<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup</a></li>
+<li><a href="../../rbac-implementation/">RBAC Implementation</a></li>
+<li><a href="../../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/">ADR 017: Kubernetes RBAC Over Keycloak Security</a></li>
 </ul>
 
 

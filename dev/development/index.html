@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1685,38 +1713,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-setup" class="md-nav__link">
+  <a href="#expected-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Setup
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Environment Setup">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-commit-hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-commit Hooks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coding-standards" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coding Standards
+        Expected Workflow
       
     </span>
   </a>
@@ -1724,10 +1724,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-the-operator-locally" class="md-nav__link">
+  <a href="#repository-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running the Operator Locally
+        Repository Layout
       
     </span>
   </a>
@@ -1735,287 +1735,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing" class="md-nav__link">
+  <a href="#local-development-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Testing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#unit-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unit Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#integration-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Integration Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-commit-testing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Commit Testing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Code Architecture
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Code Architecture">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design Principles
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-add-new-crd-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Add New CRD Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Add New CRD Fields">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-update-the-pydantic-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Update the Pydantic Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-update-keycloak-api-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Update Keycloak API Models
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-generate-crd-json-schemas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Generate CRD JSON Schemas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-update-the-reconciler" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Update the Reconciler
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-add-unit-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Add Unit Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-add-integration-test" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Add Integration Test
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-update-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Update Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-run-complete-test-suite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Run Complete Test Suite
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-add-new-reconciliation-logic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Add New Reconciliation Logic
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Add New Reconciliation Logic">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-identify-the-trigger" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Identify the Trigger
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-add-handler-if-needed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Add Handler (if needed)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-create-reconciler-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Create Reconciler Service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-make-it-idempotent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Make it Idempotent
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-add-error-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Add Error Handling
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-add-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Add Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-test-thoroughly" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Test Thoroughly
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#docs-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docs Workflow
+        Local Development Path
       
     </span>
   </a>
@@ -2023,10 +1746,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generating-api-reference" class="md-nav__link">
+  <a href="#quality-and-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generating API Reference
+        Quality And Testing
       
     </span>
   </a>
@@ -2034,10 +1757,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#release-checklist-draft" class="md-nav__link">
+  <a href="#decision-records" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Release Checklist (Draft)
+        Decision Records
       
     </span>
   </a>
@@ -2045,80 +1768,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#documentation-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
+        Documentation Workflow
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#common-development-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common Development Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Tips
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#contributing" class="md-nav__link">
+  <a href="#release-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Contributing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Contributing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pull-request-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pull Request Process
+        Release Workflow
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#common-pitfalls" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Getting Help
+        Common Pitfalls
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#related-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Guides
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4959,38 +4648,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-setup" class="md-nav__link">
+  <a href="#expected-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Setup
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Environment Setup">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-commit-hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-commit Hooks
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#coding-standards" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coding Standards
+        Expected Workflow
       
     </span>
   </a>
@@ -4998,10 +4659,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#running-the-operator-locally" class="md-nav__link">
+  <a href="#repository-layout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Running the Operator Locally
+        Repository Layout
       
     </span>
   </a>
@@ -5009,287 +4670,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#testing" class="md-nav__link">
+  <a href="#local-development-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Testing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Testing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#unit-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Unit Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#integration-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Integration Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-commit-testing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Commit Testing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Code Architecture
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Code Architecture">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#design-principles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design Principles
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-add-new-crd-fields" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Add New CRD Fields
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Add New CRD Fields">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-update-the-pydantic-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Update the Pydantic Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-update-keycloak-api-models" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Update Keycloak API Models
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-generate-crd-json-schemas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Generate CRD JSON Schemas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-update-the-reconciler" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Update the Reconciler
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-add-unit-tests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Add Unit Tests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-add-integration-test" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Add Integration Test
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-update-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Update Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-run-complete-test-suite" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Run Complete Test Suite
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-add-new-reconciliation-logic" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to Add New Reconciliation Logic
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="How to Add New Reconciliation Logic">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-identify-the-trigger" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Identify the Trigger
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-add-handler-if-needed" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Add Handler (if needed)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-create-reconciler-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Create Reconciler Service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-make-it-idempotent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Make it Idempotent
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-add-error-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Add Error Handling
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-add-metrics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Add Metrics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#7-test-thoroughly" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Test Thoroughly
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#docs-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docs Workflow
+        Local Development Path
       
     </span>
   </a>
@@ -5297,10 +4681,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#generating-api-reference" class="md-nav__link">
+  <a href="#quality-and-testing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Generating API Reference
+        Quality And Testing
       
     </span>
   </a>
@@ -5308,10 +4692,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#release-checklist-draft" class="md-nav__link">
+  <a href="#decision-records" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Release Checklist (Draft)
+        Decision Records
       
     </span>
   </a>
@@ -5319,80 +4703,46 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#documentation-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
+        Documentation Workflow
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#common-development-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common Development Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Tips
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#contributing" class="md-nav__link">
+  <a href="#release-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Contributing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Contributing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pull-request-process" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pull Request Process
+        Release Workflow
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#common-pitfalls" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Getting Help
+        Common Pitfalls
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#related-guides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related Guides
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5422,623 +4772,180 @@
 
 
 <h1 id="development-guide">Development Guide<a class="headerlink" href="#development-guide" title="Permanent link">&para;</a></h1>
-<p>This guide covers everything you need to know to develop, test, and contribute to the Keycloak Operator.</p>
+<p>This guide is the developer-facing entry point for working on the operator, charts, and docs.</p>
+<p>Start with the repository workflow in <code>AGENTS.md</code> and <code>RELEASES.md</code>, then use this page as the shorter operational companion for setup, architecture, and day-to-day commands.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
-<p>Before starting development, ensure you have these tools installed:</p>
+<p>The repository currently expects these tools locally:</p>
 <table>
 <thead>
 <tr>
 <th>Tool</th>
-<th>Version</th>
-<th>Purpose</th>
-<th>Installation</th>
+<th>Expected version</th>
+<th>Why it is needed</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Python</strong></td>
-<td>3.11+</td>
-<td>Operator runtime</td>
-<td><a href="https://python.org">python.org</a></td>
+<td>Python</td>
+<td><code>&gt;=3.14</code></td>
+<td>operator runtime and local commands</td>
 </tr>
 <tr>
-<td><strong>uv</strong></td>
-<td>Latest</td>
-<td>Python package manager</td>
-<td><code>curl -LsSf https://astral.sh/uv/install.sh \| sh</code></td>
+<td><code>uv</code></td>
+<td>current</td>
+<td>Python environment and task execution</td>
 </tr>
 <tr>
-<td><strong>Docker</strong></td>
-<td>20.10+</td>
-<td>Build container images</td>
-<td><a href="https://docker.com">docker.com</a></td>
+<td>Docker</td>
+<td>current</td>
+<td>building operator and test images</td>
 </tr>
 <tr>
-<td><strong>kubectl</strong></td>
-<td>1.26+</td>
-<td>Kubernetes CLI</td>
-<td><a href="https://kubernetes.io/docs/tasks/tools/">kubernetes.io</a></td>
+<td>kind</td>
+<td>current</td>
+<td>fresh-cluster integration testing</td>
 </tr>
 <tr>
-<td><strong>kind</strong></td>
-<td>0.20+</td>
-<td>Local Kubernetes clusters</td>
-<td><a href="https://kind.sigs.k8s.io">kind.sigs.k8s.io</a></td>
+<td>kubectl</td>
+<td>current</td>
+<td>Kubernetes inspection and debugging</td>
 </tr>
 <tr>
-<td><strong>helm</strong></td>
-<td>3.8+</td>
-<td>Package manager</td>
-<td><a href="https://helm.sh">helm.sh</a></td>
+<td>Helm</td>
+<td>current</td>
+<td>chart rendering and operator deployment</td>
 </tr>
 <tr>
-<td><strong>go-task</strong></td>
-<td>Latest</td>
-<td>Build automation</td>
-<td><a href="https://taskfile.dev">taskfile.dev</a></td>
+<td>go-task</td>
+<td>current</td>
+<td>canonical task runner</td>
 </tr>
 <tr>
-<td><strong>yq</strong></td>
-<td>4.x</td>
-<td>YAML processing</td>
-<td><a href="https://github.com/mikefarah/yq">github.com/mikefarah/yq</a></td>
+<td>yq</td>
+<td>current</td>
+<td>YAML processing in scripts and release tasks</td>
 </tr>
 <tr>
-<td><strong>jq</strong></td>
-<td>1.6+</td>
-<td>JSON processing</td>
-<td>Usually available via package manager</td>
+<td>jq</td>
+<td>current</td>
+<td>JSON processing in scripts</td>
 </tr>
 </tbody>
 </table>
-<h2 id="environment-setup">Environment Setup<a class="headerlink" href="#environment-setup" title="Permanent link">&para;</a></h2>
-<p>Check for required tools and install pre-commit hooks:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Clone the repository</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/vriesdemichael/keycloak-operator.git
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">cd</span><span class="w"> </span>keycloak-operator
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Verify tools and install hooks</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>task<span class="w"> </span>dev:setup
+<p>If you are missing prerequisites, run:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>task<span class="w"> </span>dev:setup
 </span></code></pre></div>
-<p>This will:
-- Set up pre-commit hooks for code quality
-- Verify your local environment has all required tools (docker, kind, helm, yq, etc.)</p>
-<p>Note: Python dependencies are managed by <code>uv</code> and will be automatically installed when running commands like <code>uv run</code> or <code>task test:unit</code>.</p>
-<h3 id="pre-commit-hooks">Pre-commit Hooks<a class="headerlink" href="#pre-commit-hooks" title="Permanent link">&para;</a></h3>
-<p>Pre-commit hooks automatically run code quality checks before each commit:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Install hooks (done automatically with &#39;task dev:setup&#39;)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>task<span class="w"> </span>dev:hooks
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Run hooks manually on all files</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>quality<span class="w"> </span>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Skip hooks for a specific commit (not recommended)</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>git<span class="w"> </span>commit<span class="w"> </span>--no-verify
-</span></code></pre></div>
-<p>The hooks will:
-- Format code with Ruff
-- Lint code with Ruff (with auto-fix)
-- Run type checking with Basedpyright
-- Check YAML, Markdown, and other file formats
-- Validate conventional commit messages</p>
-<h2 id="coding-standards">Coding Standards<a class="headerlink" href="#coding-standards" title="Permanent link">&para;</a></h2>
-<p>The project enforces high code quality standards. Always run quality checks before committing:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Run all quality checks (linting, formatting, type checking)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>task<span class="w"> </span>quality:check
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Individual checks</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>task<span class="w"> </span>quality:format<span class="w">          </span><span class="c1"># Format code with Ruff</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>task<span class="w"> </span>quality:lint<span class="w">           </span><span class="c1"># Lint code with Ruff (with auto-fix)</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>task<span class="w"> </span>quality:type-check<span class="w">     </span><span class="c1"># Type check with Basedpyright</span>
-</span></code></pre></div>
-<p><strong>Development Workflow:</strong>
-1. Make your code changes
-2. Run <code>task quality:check</code> to fix formatting and find issues
-3. Fix any type errors or linting issues
-4. Run <code>task test:unit</code> to verify unit tests pass
-5. Commit your changes (pre-commit hooks will run automatically)</p>
-<p><strong>Note:</strong> Pre-commit hooks enforce these standards automatically, but you can also run them manually.</p>
-<h2 id="running-the-operator-locally">Running the Operator Locally<a class="headerlink" href="#running-the-operator-locally" title="Permanent link">&para;</a></h2>
-<p>You can run the operator process directly (it will watch the cluster your kubeconfig points to):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>keycloak-operator
-</span></code></pre></div>
-<p>This is useful for:
-- Quick testing of code changes
-- Debugging with print statements or debuggers
-- Watching logs in real-time
-- Rapid iteration without building container images</p>
-<p><strong>Requirements:</strong>
-- Active Kubernetes cluster (minikube, kind, or remote cluster)
-- kubectl configured to point to that cluster
-- CRDs installed on the cluster
-- (Optional) Keycloak instance running in the cluster</p>
-<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<p>The project has comprehensive test coverage with two types of tests:</p>
-<h3 id="unit-tests">Unit Tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h3>
-<p>Fast tests that mock Kubernetes and Keycloak interactions:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Run all unit tests</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>task<span class="w"> </span>test:unit
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Run specific test file</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/unit/test_keycloak_admin.py
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Run with coverage report</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/unit<span class="w"> </span>--cov<span class="o">=</span>src/keycloak_operator<span class="w"> </span>--cov-report<span class="o">=</span>html
-</span></code></pre></div>
-<p><strong>When to write unit tests:</strong>
-- Testing business logic in reconcilers
-- Validating data transformations
-- Testing utility functions
-- Verifying error handling</p>
-<h3 id="integration-tests">Integration Tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h3>
-<p>Real Kubernetes tests using Kind clusters:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Run complete test suite (creates fresh cluster, runs tests)</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>task<span class="w"> </span>test:all
-</span></code></pre></div>
-<p><strong>Integration test workflow:</strong>
-1. Recreates Kind cluster
-2. Installs CloudNativePG operator
-3. Deploys test Keycloak instance
-4. Builds operator container image
-5. Deploys operator via Helm
-6. Runs tests against real cluster</p>
-<p><strong>When to write integration tests:</strong>
-- Testing end-to-end resource creation/update/deletion
-- Verifying operator behavior in real Kubernetes environment
-- Testing multi-resource interactions
-- Validating status updates and reconciliation loops</p>
-<p>See <a href="testing/">Testing Guide</a> for detailed testing patterns and best practices.</p>
-<h3 id="pre-commit-testing">Pre-Commit Testing<a class="headerlink" href="#pre-commit-testing" title="Permanent link">&para;</a></h3>
-<p><strong>CRITICAL:</strong> Always run the complete test suite before committing changes to operator code:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Required before committing operator or chart changes</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>task<span class="w"> </span>test:all
-</span></code></pre></div>
-<p>This ensures:
-- Code quality checks pass
-- Unit tests pass
-- Integration tests pass on fresh cluster
-- No regressions introduced</p>
-<h2 id="code-architecture">Code Architecture<a class="headerlink" href="#code-architecture" title="Permanent link">&para;</a></h2>
-<p>The operator follows a clean layered architecture:</p>
-<pre class="mermaid"><code>%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
-graph TB
-    root["📁 src/keycloak_operator/"]
-
-    models["📁 models/&lt;br/&gt;&lt;small&gt;Pydantic models for CRDs&lt;/small&gt;"]
-    keycloak_py["📄 keycloak.py&lt;br/&gt;&lt;small&gt;Keycloak CRD spec/status&lt;/small&gt;"]
-    realm_py["📄 realm.py&lt;br/&gt;&lt;small&gt;KeycloakRealm CRD spec/status&lt;/small&gt;"]
-    client_py["📄 client.py&lt;br/&gt;&lt;small&gt;KeycloakClient CRD spec/status&lt;/small&gt;"]
-    keycloak_api["📄 keycloak_api.py&lt;br/&gt;&lt;small&gt;Keycloak Admin API models&lt;/small&gt;"]
-
-    handlers["📁 handlers/&lt;br/&gt;&lt;small&gt;Kopf event handlers (thin layer)&lt;/small&gt;"]
-    h_keycloak["📄 keycloak.py"]
-    h_realm["📄 realm.py"]
-    h_client["📄 client.py"]
-    h_timers["📄 timers.py&lt;br/&gt;&lt;small&gt;Drift detection&lt;/small&gt;"]
-
-    services["📁 services/&lt;br/&gt;&lt;small&gt;Business logic (thick layer)&lt;/small&gt;"]
-    s_keycloak["📄 keycloak_reconciler.py"]
-    s_realm["📄 realm_reconciler.py"]
-    s_client["📄 client_reconciler.py"]
-    s_drift["📄 drift_detection.py"]
-
-    utils["📁 utils/&lt;br/&gt;&lt;small&gt;Reusable utilities&lt;/small&gt;"]
-    u_admin["📄 keycloak_admin.py"]
-    u_k8s["📄 kubernetes.py"]
-    u_rate["📄 rate_limiter.py"]
-    u_valid["📄 validation.py"]
-
-    observability["📁 observability/&lt;br/&gt;&lt;small&gt;Monitoring &amp; logging&lt;/small&gt;"]
-    o_metrics["📄 metrics.py"]
-    o_logging["📄 logging.py"]
-
-    errors["📁 errors/&lt;br/&gt;&lt;small&gt;Custom exceptions&lt;/small&gt;"]
-    e_ops["📄 operator_errors.py"]
-
-    root --&gt; models
-    root --&gt; handlers
-    root --&gt; services
-    root --&gt; utils
-    root --&gt; observability
-    root --&gt; errors
-
-    models --&gt; keycloak_py
-    models --&gt; realm_py
-    models --&gt; client_py
-    models --&gt; keycloak_api
-
-    handlers --&gt; h_keycloak
-    handlers --&gt; h_realm
-    handlers --&gt; h_client
-    handlers --&gt; h_timers
-
-    services --&gt; s_keycloak
-    services --&gt; s_realm
-    services --&gt; s_client
-    services --&gt; s_drift
-
-    utils --&gt; u_admin
-    utils --&gt; u_k8s
-    utils --&gt; u_rate
-    utils --&gt; u_valid
-
-    observability --&gt; o_metrics
-    observability --&gt; o_logging
-
-    errors --&gt; e_ops
-
-    style root fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style models fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style handlers fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style services fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style utils fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style observability fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
-    style errors fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff</code></pre>
-<h3 id="design-principles">Design Principles<a class="headerlink" href="#design-principles" title="Permanent link">&para;</a></h3>
+<p>That task checks the local toolchain and installs the pre-commit hooks.</p>
+<h2 id="expected-workflow">Expected Workflow<a class="headerlink" href="#expected-workflow" title="Permanent link">&para;</a></h2>
+<p>The repository is opinionated. The normal loop is:</p>
 <ol>
-<li><strong>Handlers are thin</strong> - They validate input and delegate to reconcilers</li>
-<li><strong>Reconcilers are idempotent</strong> - Running twice produces same result</li>
-<li><strong>Services contain business logic</strong> - No Kubernetes/Kopf coupling</li>
-<li><strong>Models are type-safe</strong> - Pydantic validates all data</li>
-<li><strong>Utils are reusable</strong> - No business logic in utilities</li>
+<li>create a feature branch</li>
+<li>make the change</li>
+<li>run quality checks</li>
+<li>run the relevant tests</li>
+<li>run <code>task test:all</code> before committing code or chart changes</li>
+<li>commit with a conventional commit message that matches <code>RELEASES.md</code></li>
 </ol>
-<p>See <a href="../concepts/architecture/">Architecture</a> for detailed architecture diagrams and explanations.</p>
-<h2 id="how-to-add-new-crd-fields">How to Add New CRD Fields<a class="headerlink" href="#how-to-add-new-crd-fields" title="Permanent link">&para;</a></h2>
-<p>Follow these steps to add a new field to an existing CRD:</p>
-<h3 id="1-update-the-pydantic-model">1. Update the Pydantic Model<a class="headerlink" href="#1-update-the-pydantic-model" title="Permanent link">&para;</a></h3>
-<p>Edit the appropriate model file (<code>models/keycloak.py</code>, <code>models/realm.py</code>, or <code>models/client.py</code>):</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Example: Adding email verification to KeycloakRealm</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">RealmSecurity</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Security settings for the realm.&quot;&quot;&quot;</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">registration_allowed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">reset_password_allowed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="c1"># NEW FIELD</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">verify_email</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Require users to verify their email address&quot;</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="p">)</span>
+<p>Useful commands:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>task<span class="w"> </span>quality:check
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>task<span class="w"> </span>test:unit
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>task<span class="w"> </span>test:all
 </span></code></pre></div>
-<h3 id="2-update-keycloak-api-models">2. Update Keycloak API Models<a class="headerlink" href="#2-update-keycloak-api-models" title="Permanent link">&para;</a></h3>
-<p>If the Keycloak version is bumped, or you need to update the Pydantic models for the Keycloak Admin API:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Regenerate Keycloak API models from OpenAPI spec</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>task<span class="w"> </span>keycloak:models
+<h2 id="repository-layout">Repository Layout<a class="headerlink" href="#repository-layout" title="Permanent link">&para;</a></h2>
+<p>The current Python package layout is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>src/keycloak_operator/
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>|-- compatibility/   🔀 version adapters for 24.x, 25.x, and 26.x behavior
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>|-- errors/          🚨 operator-specific exception types
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>|-- handlers/        🎯 Kopf event entrypoints
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>|-- models/          🧱 CRD specs and generated Keycloak API models
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>|-- observability/   📈 health, leader election, logging, metrics, tracing
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>|-- services/        ⚙️  reconcilers and reconciliation support services
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>|-- utils/           🧰 Kubernetes, RBAC, pause, ownership, version, rate limiting
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>|-- webhooks/        🛡️  admission validation
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>|-- constants.py     📌 shared constants
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>|-- operator.py      🚀 application entrypoint
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>`-- settings.py      🔧 runtime configuration
 </span></code></pre></div>
-<h3 id="3-generate-crd-json-schemas">3. Generate CRD JSON Schemas<a class="headerlink" href="#3-generate-crd-json-schemas" title="Permanent link">&para;</a></h3>
-<p>To update the JSON schemas used for IDE autocomplete (based on the CRD YAML files):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Generate JSON schemas for IDEs</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>task<span class="w"> </span>crds:schemas
+<p>Important implementation boundaries:</p>
+<ul>
+<li>handlers stay thin and hand off to reconcilers</li>
+<li>services contain reconciliation logic and operational behavior</li>
+<li>compatibility adapters absorb Keycloak version differences</li>
+<li>observability code owns health, metrics, tracing, and leader-election behavior</li>
+<li>webhooks handle admission-time validation before resources enter reconciliation</li>
+</ul>
+<h2 id="local-development-path">Local Development Path<a class="headerlink" href="#local-development-path" title="Permanent link">&para;</a></h2>
+<p>Do not expect a host-side <code>uv run keycloak-operator</code> workflow to be the supported development path here. Local development is exercised through the container image path, with the operator loaded into Kind and run in-cluster.</p>
+<p>In practice, use the task-driven flows:</p>
+<ul>
+<li><code>task test:integration</code> for a fresh-cluster integration run</li>
+<li><code>task test:all</code> for the full project gate</li>
+</ul>
+<p>That matches how the operator is actually built, loaded, and exercised during development.</p>
+<h2 id="quality-and-testing">Quality And Testing<a class="headerlink" href="#quality-and-testing" title="Permanent link">&para;</a></h2>
+<p>Run quality checks with the Taskfile instead of stitching commands together by hand:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>task<span class="w"> </span>quality:check
 </span></code></pre></div>
-<h3 id="4-update-the-reconciler">4. Update the Reconciler<a class="headerlink" href="#4-update-the-reconciler" title="Permanent link">&para;</a></h3>
-<p>Add logic to handle the new field in the appropriate reconciler:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># In services/realm_reconciler.py</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">_build_realm_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">KeycloakRealmSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RealmRepresentation</span><span class="p">:</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build Keycloak realm configuration from CRD spec.&quot;&quot;&quot;</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">RealmRepresentation</span><span class="p">(</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>        <span class="n">realm</span><span class="o">=</span><span class="n">spec</span><span class="o">.</span><span class="n">realm_name</span><span class="p">,</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="c1"># ... existing fields ...</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="p">)</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">security</span><span class="p">:</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>        <span class="n">config</span><span class="o">.</span><span class="n">registration_allowed</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">security</span><span class="o">.</span><span class="n">registration_allowed</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>        <span class="n">config</span><span class="o">.</span><span class="n">reset_credentials_allowed</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">security</span><span class="o">.</span><span class="n">reset_password_allowed</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
-</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>        <span class="c1"># NEW FIELD HANDLING</span>
-</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        <span class="n">config</span><span class="o">.</span><span class="n">verify_email</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">security</span><span class="o">.</span><span class="n">verify_email</span>
-</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
-</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="k">return</span> <span class="n">config</span>
+<p>Testing guidance lives in the dedicated <a href="testing/">Testing Guide</a>, but the key rules are:</p>
+<ul>
+<li>use <code>task test:unit</code> for fast unit feedback</li>
+<li>use <code>task test:all</code> for the full project gate</li>
+<li>integration tests rely on a fresh Kind cluster and the patterns in <code>tests/integration/TESTING.md</code></li>
+</ul>
+<h2 id="decision-records">Decision Records<a class="headerlink" href="#decision-records" title="Permanent link">&para;</a></h2>
+<p>Architectural and development decisions live in <code>docs/decisions/</code>.</p>
+<p>Before making non-trivial changes, review the decision records so you do not accidentally work against an established rule. When you need a full rendered doc set, use:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>task<span class="w"> </span>docs:build
 </span></code></pre></div>
-<h3 id="4-add-unit-tests">4. Add Unit Tests<a class="headerlink" href="#4-add-unit-tests" title="Permanent link">&para;</a></h3>
-<p>Test the new field behavior:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># In tests/unit/test_realm_reconciler.py</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_realm_with_email_verification</span><span class="p">():</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Test realm creation with email verification enabled.&quot;&quot;&quot;</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">spec</span> <span class="o">=</span> <span class="n">KeycloakRealmSpec</span><span class="p">(</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="n">realm_name</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        <span class="n">security</span><span class="o">=</span><span class="n">RealmSecurity</span><span class="p">(</span><span class="n">verify_email</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="p">)</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">reconciler</span><span class="o">.</span><span class="n">_build_realm_config</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">verify_email</span> <span class="ow">is</span> <span class="kc">True</span>
+<h2 id="documentation-workflow">Documentation Workflow<a class="headerlink" href="#documentation-workflow" title="Permanent link">&para;</a></h2>
+<p>Use the Taskfile for docs validation:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>task<span class="w"> </span>docs:build
 </span></code></pre></div>
-<h3 id="5-add-integration-test">5. Add Integration Test<a class="headerlink" href="#5-add-integration-test" title="Permanent link">&para;</a></h3>
-<p>Test end-to-end behavior:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># In tests/integration/test_realm.py</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_realm_email_verification</span><span class="p">(</span><span class="n">test_namespace</span><span class="p">):</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Test realm with email verification configured.&quot;&quot;&quot;</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">realm_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;test-email-</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">realm</span> <span class="o">=</span> <span class="n">create_realm_resource</span><span class="p">(</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        <span class="n">name</span><span class="o">=</span><span class="n">realm_name</span><span class="p">,</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="n">namespace</span><span class="o">=</span><span class="n">test_namespace</span><span class="p">,</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>        <span class="n">spec</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>            <span class="s2">&quot;realmName&quot;</span><span class="p">:</span> <span class="n">realm_name</span><span class="p">,</span>
-</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>            <span class="s2">&quot;security&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;verifyEmail&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
-</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>        <span class="p">}</span>
-</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="p">)</span>
-</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>
-</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="c1"># Wait for realm to be ready</span>
-</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>    <span class="k">await</span> <span class="n">wait_for_realm_ready</span><span class="p">(</span><span class="n">realm_name</span><span class="p">,</span> <span class="n">test_namespace</span><span class="p">)</span>
-</span><span id="__span-12-18"><a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>
-</span><span id="__span-12-19"><a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    <span class="c1"># Verify in Keycloak</span>
-</span><span id="__span-12-20"><a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>    <span class="n">keycloak_realm</span> <span class="o">=</span> <span class="k">await</span> <span class="n">admin_client</span><span class="o">.</span><span class="n">get_realm</span><span class="p">(</span><span class="n">realm_name</span><span class="p">)</span>
-</span><span id="__span-12-21"><a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>    <span class="k">assert</span> <span class="n">keycloak_realm</span><span class="o">.</span><span class="n">verify_email</span> <span class="ow">is</span> <span class="kc">True</span>
+<p>For maintainers working with versioned docs metadata:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>mike<span class="w"> </span>list
 </span></code></pre></div>
-<h3 id="6-update-documentation">6. Update Documentation<a class="headerlink" href="#6-update-documentation" title="Permanent link">&para;</a></h3>
-<p>Update the CRD reference documentation:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Add field to docs/reference/keycloak-realm-crd.md</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="p">|</span><span class="w"> </span>Field<span class="w"> </span><span class="p">|</span><span class="w"> </span>Type<span class="w"> </span><span class="p">|</span><span class="w"> </span>Required<span class="w"> </span><span class="p">|</span><span class="w"> </span>Default<span class="w"> </span><span class="p">|</span><span class="w"> </span>Description<span class="w"> </span><span class="p">|</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="p">|</span>-------<span class="p">|</span>------<span class="p">|</span>----------<span class="p">|</span>---------<span class="p">|</span>-------------<span class="p">|</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="p">|</span><span class="w"> </span><span class="sb">`</span>security.verifyEmail<span class="sb">`</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>boolean<span class="w"> </span><span class="p">|</span><span class="w"> </span>No<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="sb">`</span><span class="nb">false</span><span class="sb">`</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Require<span class="w"> </span>email<span class="w"> </span>verification<span class="w"> </span><span class="p">|</span>
-</span></code></pre></div>
-<h3 id="7-run-complete-test-suite">7. Run Complete Test Suite<a class="headerlink" href="#7-run-complete-test-suite" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>task<span class="w"> </span>test:all
-</span></code></pre></div>
-<h2 id="how-to-add-new-reconciliation-logic">How to Add New Reconciliation Logic<a class="headerlink" href="#how-to-add-new-reconciliation-logic" title="Permanent link">&para;</a></h2>
-<p>Follow these steps to add a new feature requiring reconciliation:</p>
-<h3 id="1-identify-the-trigger">1. Identify the Trigger<a class="headerlink" href="#1-identify-the-trigger" title="Permanent link">&para;</a></h3>
-<p>Determine what should trigger this reconciliation:
-- <strong>Create event</strong>: New resource created
-- <strong>Update event</strong>: Resource spec changed
-- <strong>Delete event</strong>: Resource deleted
-- <strong>Timer event</strong>: Periodic reconciliation (drift detection)</p>
-<h3 id="2-add-handler-if-needed">2. Add Handler (if needed)<a class="headerlink" href="#2-add-handler-if-needed" title="Permanent link">&para;</a></h3>
-<p>If this is a new resource type, create a handler:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># In handlers/my_resource.py</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">kopf</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="nd">@kopf</span><span class="o">.</span><span class="n">on</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s1">&#39;vriesdemichael.github.io&#39;</span><span class="p">,</span> <span class="s1">&#39;v1&#39;</span><span class="p">,</span> <span class="s1">&#39;myresources&#39;</span><span class="p">)</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_my_resource</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle MyResource creation.&quot;&quot;&quot;</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="n">reconciler</span> <span class="o">=</span> <span class="n">MyResourceReconciler</span><span class="p">()</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="k">await</span> <span class="n">reconciler</span><span class="o">.</span><span class="n">reconcile</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="nd">@kopf</span><span class="o">.</span><span class="n">on</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s1">&#39;vriesdemichael.github.io&#39;</span><span class="p">,</span> <span class="s1">&#39;v1&#39;</span><span class="p">,</span> <span class="s1">&#39;myresources&#39;</span><span class="p">)</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_my_resource</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle MyResource updates.&quot;&quot;&quot;</span>
-</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>    <span class="n">reconciler</span> <span class="o">=</span> <span class="n">MyResourceReconciler</span><span class="p">()</span>
-</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>    <span class="k">await</span> <span class="n">reconciler</span><span class="o">.</span><span class="n">reconcile</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-</span></code></pre></div>
-<h3 id="3-create-reconciler-service">3. Create Reconciler Service<a class="headerlink" href="#3-create-reconciler-service" title="Permanent link">&para;</a></h3>
-<p>Implement the business logic:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># In services/my_resource_reconciler.py</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">keycloak_operator.utils.keycloak_admin</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeycloakAdminClient</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyResourceReconciler</span><span class="p">:</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconciler for MyResource custom resources.&quot;&quot;&quot;</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconcile</span><span class="p">(</span>
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>        <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>        <span class="n">spec</span><span class="p">:</span> <span class="n">MyResourceSpec</span>
-</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Reconcile MyResource to desired state.&quot;&quot;&quot;</span>
-</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>        <span class="c1"># 1. Get current state from Keycloak</span>
-</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>        <span class="n">current</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_current_state</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>
-</span><span id="__span-16-17"><a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>        <span class="c1"># 2. Compute desired state from spec</span>
-</span><span id="__span-16-18"><a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>        <span class="n">desired</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_desired_state</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-</span><span id="__span-16-19"><a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>
-</span><span id="__span-16-20"><a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>        <span class="c1"># 3. Compute diff</span>
-</span><span id="__span-16-21"><a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>        <span class="n">changes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_diff</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">desired</span><span class="p">)</span>
-</span><span id="__span-16-22"><a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>
-</span><span id="__span-16-23"><a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>        <span class="c1"># 4. Apply changes idempotently</span>
-</span><span id="__span-16-24"><a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>        <span class="k">if</span> <span class="n">changes</span><span class="p">:</span>
-</span><span id="__span-16-25"><a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_changes</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span>
-</span><span id="__span-16-26"><a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>
-</span><span id="__span-16-27"><a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>        <span class="c1"># 5. Update status</span>
-</span><span id="__span-16-28"><a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_status</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;Ready&quot;</span><span class="p">)</span>
-</span></code></pre></div>
-<h3 id="4-make-it-idempotent">4. Make it Idempotent<a class="headerlink" href="#4-make-it-idempotent" title="Permanent link">&para;</a></h3>
-<p>Ensure reconciler can run multiple times safely:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_apply_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">changes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply changes idempotently.&quot;&quot;&quot;</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="c1"># Check if resource already exists</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">existing</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin_client</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="k">if</span> <span class="n">existing</span><span class="p">:</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>        <span class="c1"># Update only if changed</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_changed</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="n">changes</span><span class="p">):</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin_client</span><span class="o">.</span><span class="n">update_resource</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>        <span class="c1"># Create new resource</span>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin_client</span><span class="o">.</span><span class="n">create_resource</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span>
-</span></code></pre></div>
-<h3 id="5-add-error-handling">5. Add Error Handling<a class="headerlink" href="#5-add-error-handling" title="Permanent link">&para;</a></h3>
-<p>Handle errors gracefully:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">keycloak_operator.errors.operator_errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="n">ReconciliationError</span><span class="p">,</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">KeycloakAPIError</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="p">)</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconcile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MyResourceSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconcile with error handling.&quot;&quot;&quot;</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reconcile_impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_status</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;Ready&quot;</span><span class="p">)</span>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    <span class="k">except</span> <span class="n">KeycloakAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keycloak API error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_status</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;Failed&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>        <span class="k">raise</span> <span class="n">ReconciliationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to reconcile </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error reconciling </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_status</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;Failed&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>        <span class="k">raise</span>
-</span></code></pre></div>
-<h3 id="6-add-metrics">6. Add Metrics<a class="headerlink" href="#6-add-metrics" title="Permanent link">&para;</a></h3>
-<p>Track reconciliation metrics:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">keycloak_operator.observability.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">reconciliation_duration</span><span class="p">,</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">reconciliation_total</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="p">)</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconcile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">MyResourceSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconcile with metrics.&quot;&quot;&quot;</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="k">with</span> <span class="n">reconciliation_duration</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;myresource&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>        <span class="k">try</span><span class="p">:</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reconcile_impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>            <span class="n">reconciliation_total</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span>
-</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>                <span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;myresource&quot;</span><span class="p">,</span>
-</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;success&quot;</span>
-</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>            <span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
-</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>            <span class="n">reconciliation_total</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span>
-</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>                <span class="n">resource_type</span><span class="o">=</span><span class="s2">&quot;myresource&quot;</span><span class="p">,</span>
-</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span>
-</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>            <span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
-</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>            <span class="k">raise</span>
-</span></code></pre></div>
-<h3 id="7-test-thoroughly">7. Test Thoroughly<a class="headerlink" href="#7-test-thoroughly" title="Permanent link">&para;</a></h3>
-<p>Add comprehensive tests:
-- Unit tests for business logic
-- Integration tests for end-to-end behavior
-- Error case tests
-- Idempotency tests (run reconcile twice, verify same result)</p>
-<h2 id="docs-workflow">Docs Workflow<a class="headerlink" href="#docs-workflow" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Live reload documentation (for viewing only, not for development)</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>mkdocs<span class="w"> </span>serve
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="c1"># Build static site</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>mkdocs<span class="w"> </span>build
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Verify no build errors</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>uv<span class="w"> </span>run<span class="w"> </span>--group<span class="w"> </span>docs<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict
-</span></code></pre></div>
-<h2 id="generating-api-reference">Generating API Reference<a class="headerlink" href="#generating-api-reference" title="Permanent link">&para;</a></h2>
-<p>API reference pages are generated automatically by mkdocstrings using the nav entry defined in <code>mkdocs.yml</code>. Add new modules under <code>keycloak_operator/</code> and they will appear after a rebuild if referenced.</p>
-<p>To add a new explicit page:</p>
-<div class="language-markdown highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>::: keycloak_operator.utils.kubernetes
-</span></code></pre></div>
-<h2 id="release-checklist-draft">Release Checklist (Draft)<a class="headerlink" href="#release-checklist-draft" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Update version in <code>pyproject.toml</code></li>
-<li>Ensure changelog section is complete</li>
-<li>Run full test suite &amp; type check</li>
-<li>Build &amp; tag container image</li>
-<li>Push docs (e.g. GitHub Pages workflow)</li>
-</ol>
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="common-development-issues">Common Development Issues<a class="headerlink" href="#common-development-issues" title="Permanent link">&para;</a></h3>
+<p><code>mkdocs serve</code> is for humans previewing documentation locally. Do not use it as an automated agent workflow.</p>
+<h2 id="release-workflow">Release Workflow<a class="headerlink" href="#release-workflow" title="Permanent link">&para;</a></h2>
+<p>Do not maintain a parallel release checklist in this page. The authoritative release and commit-scoping rules are in <code>RELEASES.md</code>.</p>
+<p>Read that file before committing if your change affects releaseable components.</p>
+<h2 id="common-pitfalls">Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Symptom</th>
-<th>Cause</th>
-<th>Resolution</th>
+<th>Usually means</th>
+<th>Fix</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>ModuleNotFoundError</code></td>
-<td>Dependencies not installed</td>
-<td>Run <code>uv sync</code> or use <code>uv run</code></td>
+<td><code>ModuleNotFoundError</code> or missing dependencies</td>
+<td>command was not run through <code>uv</code> or <code>task</code></td>
+<td>rerun with <code>uv run ...</code> or the Taskfile target</td>
 </tr>
 <tr>
-<td><code>No module named 'keycloak_operator'</code></td>
-<td>Not using uv run</td>
-<td>Always use <code>uv run &lt;command&gt;</code></td>
+<td>type-check or pre-commit failures</td>
+<td>formatting, lint, or typing drift</td>
+<td>run <code>task quality:check</code> and fix the real issue</td>
 </tr>
 <tr>
-<td>Type errors block tests</td>
-<td>Missing type annotations</td>
-<td>Run <code>uv run ty check</code> and fix issues</td>
+<td>integration failures with DNS errors</td>
+<td>test skipped port-forwarding</td>
+<td>follow <code>tests/integration/TESTING.md</code> and use <code>keycloak_port_forward</code></td>
 </tr>
 <tr>
-<td>Pre-commit hook fails</td>
-<td>Code quality issues</td>
-<td>Run <code>task quality:check</code> to auto-fix</td>
-</tr>
-<tr>
-<td>Integration tests fail</td>
-<td>Cluster not ready</td>
-<td>Run <code>task cluster:destroy &amp;&amp; task test:all</code></td>
-</tr>
-<tr>
-<td>Port conflicts in tests</td>
-<td>Previous test run still active</td>
-<td>Run <code>pkill -f port-forward</code></td>
-</tr>
-<tr>
-<td>Missing API docs</td>
-<td>Module not referenced</td>
-<td>Add <code>dotted.path</code> in markdown</td>
-</tr>
-<tr>
-<td>404 for docs page</td>
-<td>Wrong nav path</td>
-<td>Check <code>mkdocs.yml</code> navigation</td>
-</tr>
-<tr>
-<td>Cannot connect to Keycloak</td>
-<td>Port-forward not running</td>
-<td>Use <code>keycloak_port_forward</code> fixture</td>
+<td>docs build passes locally but links are stale</td>
+<td>page moved without cross-link updates</td>
+<td>run <code>task docs:build</code> and fix warnings before committing</td>
 </tr>
 </tbody>
 </table>
-<h3 id="development-tips">Development Tips<a class="headerlink" href="#development-tips" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Fast iteration</strong>: Use <code>task test:integration</code> which handles cluster management automatically</li>
-<li><strong>Debug tests</strong>: Add <code>--pdb</code> flag to pytest to drop into debugger on failure</li>
-<li><strong>Parallel testing</strong>: Integration tests run with 8 workers by default, use unique names</li>
-<li><strong>Rate limiting</strong>: Tests automatically respect rate limits, don't bypass them</li>
-<li><strong>Token issues</strong>: Check <code>kubectl get secret -A | grep token</code> for token discovery problems</li>
-</ol>
-<h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
-<h3 id="pull-request-process">Pull Request Process<a class="headerlink" href="#pull-request-process" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Create a branch</strong> from <code>main</code>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feat/my-awesome-feature
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Make your changes</strong> following the coding standards</p>
-</li>
-<li>
-<p><strong>Run complete test suite</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>task<span class="w"> </span>test:all
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Commit with conventional commits</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add awesome feature&quot;</span>
-</span></code></pre></div></p>
-</li>
-</ol>
-<p>Commit types:
-   - <code>feat:</code> New feature
-   - <code>fix:</code> Bug fix
-   - <code>docs:</code> Documentation only
-   - <code>refactor:</code> Code restructuring
-   - <code>test:</code> Adding tests
-   - <code>chore:</code> Maintenance tasks</p>
-<ol>
-<li>
-<p><strong>Push and create PR</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feat/my-awesome-feature
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Address review comments</strong> and update PR</p>
-</li>
-</ol>
-<p>See AGENTS.md in the repository root for detailed development workflow and Git practices.</p>
-<h3 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h3>
+<h2 id="related-guides">Related Guides<a class="headerlink" href="#related-guides" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Documentation</strong>: Start with <a href="../quickstart/">Quick Start</a></li>
-<li><strong>Issues</strong>: <a href="https://github.com/vriesdemichael/keycloak-operator/issues">GitHub Issues</a></li>
-<li><strong>Discussions</strong>: <a href="https://github.com/vriesdemichael/keycloak-operator/discussions">GitHub Discussions</a></li>
-<li><strong>Architecture</strong>: <a href="../concepts/architecture/">Architecture Guide</a></li>
-<li><strong>Testing</strong>: <a href="testing/">Testing Guide</a></li>
+<li><a href="testing/">Testing Guide</a></li>
+<li><a href="../concepts/architecture/">Architecture</a></li>
+<li><a href="../reference/keycloak-version-support/">Version Support</a></li>
 </ul>
-<p>Return to <a href="../">Home</a>.</p>
 
 
 

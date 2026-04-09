@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1127,10 +1155,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture-overview" class="md-nav__link">
+  <a href="#what-ha-means-here" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Overview
+        What HA Means Here
       
     </span>
   </a>
@@ -1138,22 +1166,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start-ha-configuration" class="md-nav__link">
+  <a href="#managed-keycloak-ha-basics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start: HA Configuration
+        Managed Keycloak HA Basics
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Quick Start: HA Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-ha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator HA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-ha-with-cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database HA With CNPG
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-sizing-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Sizing Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-strategy-for-ha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade Strategy For HA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scheduling-and-disruption-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling And Disruption Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failover-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failover Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Failover Validation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#keycloak-ha" class="md-nav__link">
+  <a href="#keycloak-pod-failure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keycloak HA
+        Keycloak Pod Failure
       
     </span>
   </a>
@@ -1161,10 +1255,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#postgresql-ha" class="md-nav__link">
+  <a href="#cnpg-primary-failover" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL HA
+        CNPG Primary Failover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traffic-continuity-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traffic Continuity Check
       
     </span>
   </a>
@@ -1177,349 +1282,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#component-configuration" class="md-nav__link">
+  <a href="#monitoring-and-alerting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Component Configuration
+        Monitoring And Alerting
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Component Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-operator-ha" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Operator HA
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-load-balancer-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Load Balancer Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-pod-disruption-budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Pod Disruption Budget
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-resource-limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Resource Limits
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#failover-testing" class="md-nav__link">
+  <a href="#s3-backup-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Failover Testing
+        S3 Backup Prerequisites
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Failover Testing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#simulate-keycloak-pod-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Keycloak Pod Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulate-database-primary-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Database Primary Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulate-node-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Node Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#monitoring-ha-health" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Monitoring HA Health
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Monitoring HA Health">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#check-keycloak-replicas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Keycloak Replicas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-database-replication" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Database Replication
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prometheus-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prometheus Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#zone-distribution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Zone Distribution
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Zone Distribution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#multi-zone-keycloak" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Zone Keycloak
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-zone-database" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Zone Database
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-tuning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Tuning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance Tuning">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#connection-pooling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connection Pooling
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#disaster-recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disaster Recovery
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Disaster Recovery">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#backup-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backup Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-region-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Region Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#recovery-time-objective-rto" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recovery Time Objective (RTO)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting-ha" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting HA
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting HA">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#split-brain-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Split Brain Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#replication-lag-too-high" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Replication Lag Too High
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#session-affinity-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Session Affinity Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        See Also
       
     </span>
   </a>
@@ -4899,10 +4687,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture-overview" class="md-nav__link">
+  <a href="#what-ha-means-here" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Overview
+        What HA Means Here
       
     </span>
   </a>
@@ -4910,22 +4698,88 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start-ha-configuration" class="md-nav__link">
+  <a href="#managed-keycloak-ha-basics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start: HA Configuration
+        Managed Keycloak HA Basics
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Quick Start: HA Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-ha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator HA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-ha-with-cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database HA With CNPG
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-sizing-guidance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource Sizing Guidance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-strategy-for-ha" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade Strategy For HA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scheduling-and-disruption-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduling And Disruption Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failover-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failover Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Failover Validation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#keycloak-ha" class="md-nav__link">
+  <a href="#keycloak-pod-failure" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keycloak HA
+        Keycloak Pod Failure
       
     </span>
   </a>
@@ -4933,10 +4787,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#postgresql-ha" class="md-nav__link">
+  <a href="#cnpg-primary-failover" class="md-nav__link">
     <span class="md-ellipsis">
       
-        PostgreSQL HA
+        CNPG Primary Failover
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#traffic-continuity-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traffic Continuity Check
       
     </span>
   </a>
@@ -4949,349 +4814,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#component-configuration" class="md-nav__link">
+  <a href="#monitoring-and-alerting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Component Configuration
+        Monitoring And Alerting
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Component Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-operator-ha" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Operator HA
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-load-balancer-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Load Balancer Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-pod-disruption-budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Pod Disruption Budget
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-resource-limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Resource Limits
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#failover-testing" class="md-nav__link">
+  <a href="#s3-backup-prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Failover Testing
+        S3 Backup Prerequisites
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Failover Testing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#simulate-keycloak-pod-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Keycloak Pod Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulate-database-primary-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Database Primary Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#simulate-node-failure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Simulate Node Failure
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#monitoring-ha-health" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Monitoring HA Health
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Monitoring HA Health">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#check-keycloak-replicas" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Keycloak Replicas
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-database-replication" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Database Replication
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#prometheus-queries" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prometheus Queries
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#zone-distribution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Zone Distribution
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Zone Distribution">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#multi-zone-keycloak" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Zone Keycloak
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-zone-database" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Zone Database
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-tuning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Tuning
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Performance Tuning">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#connection-pooling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Connection Pooling
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#disaster-recovery" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Disaster Recovery
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Disaster Recovery">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#backup-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backup Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#multi-region-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Multi-Region Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#recovery-time-objective-rto" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recovery Time Objective (RTO)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#troubleshooting-ha" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Troubleshooting HA
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting HA">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#split-brain-detection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Split Brain Detection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#replication-lag-too-high" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Replication Lag Too High
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#session-affinity-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Session Affinity Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        See Also
       
     </span>
   </a>
@@ -5324,411 +4872,235 @@
 
 
 <h1 id="high-availability-deployment">High Availability Deployment<a class="headerlink" href="#high-availability-deployment" title="Permanent link">&para;</a></h1>
-<p>Configure Keycloak and PostgreSQL for high availability with automatic failover.</p>
-<h2 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
-graph TD
-    ingress["⚡ Ingress"]
+<p>This guide covers high-availability deployment for the operator, managed Keycloak, and PostgreSQL.</p>
+<p>Use Helm values as the primary configuration path. Raw manifests remain useful for supporting resources such as PodDisruptionBudgets, but the managed Keycloak configuration itself should start from the chart values.</p>
+<h2 id="what-ha-means-here">What HA Means Here<a class="headerlink" href="#what-ha-means-here" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+  ingress[Ingress]
+  opA[Operator Pod A\nactive leader]
+  opB[Operator Pod B\nstandby follower]
+  kc1[Keycloak Pod 1]
+  kc2[Keycloak Pod 2]
+  kc3[Keycloak Pod 3]
+  pgp[PostgreSQL Primary]
+  pgr1[PostgreSQL Replica 1]
+  pgr2[PostgreSQL Replica 2]
 
-    kc1["🔐 Keycloak&lt;br/&gt;Pod 1"]
-    kc2["🔐 Keycloak&lt;br/&gt;Pod 2"]
-    kc3["🔐 Keycloak&lt;br/&gt;Pod 3"]
+  opA -. reconciles .-&gt; kc1
+  opA -. reconciles .-&gt; kc2
+  opA -. reconciles .-&gt; kc3
+  opB -. ready to take over .-&gt; opA
 
-    pg_primary["🗄️ PostgreSQL&lt;br/&gt;Primary"]
-    pg_replica1["🗄️ PostgreSQL&lt;br/&gt;Replica 1"]
-    pg_replica2["🗄️ PostgreSQL&lt;br/&gt;Replica 2"]
+  ingress --&gt; kc1
+  ingress --&gt; kc2
+  ingress --&gt; kc3
 
-    ingress --&gt; kc1
-    ingress --&gt; kc2
-    ingress --&gt; kc3
+  kc1 --&gt; pgp
+  kc2 --&gt; pgp
+  kc3 --&gt; pgp
 
-    kc1 --&gt; pg_primary
-    kc2 --&gt; pg_primary
-    kc3 --&gt; pg_primary
-
-    pg_primary --&gt; pg_replica1
-    pg_primary --&gt; pg_replica2
-
-    style ingress fill:#00838f,stroke:#006064,color:#fff
-    style kc1 fill:#00838f,stroke:#006064,color:#fff
-    style kc2 fill:#00838f,stroke:#006064,color:#fff
-    style kc3 fill:#00838f,stroke:#006064,color:#fff
-    style pg_primary fill:#1565c0,stroke:#0d47a1,color:#fff
-    style pg_replica1 fill:#1565c0,stroke:#0d47a1,color:#fff
-    style pg_replica2 fill:#1565c0,stroke:#0d47a1,color:#fff</code></pre>
-<hr />
-<h2 id="quick-start-ha-configuration">Quick Start: HA Configuration<a class="headerlink" href="#quick-start-ha-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="keycloak-ha">Keycloak HA<a class="headerlink" href="#keycloak-ha" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">  </span><span class="c1"># HA: minimum 3 replicas</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000m</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="c1"># Pod anti-affinity: spread across nodes</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="nt">affinity</span><span class="p">:</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">    </span><span class="nt">podAntiAffinity</span><span class="p">:</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">      </span><span class="nt">requiredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">labelSelector</span><span class="p">:</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">            </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">              </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="w">          </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/hostname</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cnpg</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a><span class="w">    </span><span class="nt">cluster</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
-</span></code></pre></div>
-<h3 id="postgresql-ha">PostgreSQL HA<a class="headerlink" href="#postgresql-ha" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql.cnpg.io/v1</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cluster</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">instances</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">  </span><span class="c1"># 1 primary + 2 replicas</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">primaryUpdateStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unsupervised</span><span class="w">  </span><span class="c1"># Automatic failover</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">minSyncReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="nt">maxSyncReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="c1"># Spread across zones</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="nt">affinity</span><span class="p">:</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="nt">podAntiAffinityType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">required</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topology.kubernetes.io/zone</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">  </span><span class="nt">storage</span><span class="p">:</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100Gi</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fast-ssd</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
-</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">  </span><span class="nt">backup</span><span class="p">:</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="nt">barmanObjectStore</span><span class="p">:</span>
-</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">      </span><span class="nt">destinationPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3://backups/keycloak-db</span>
-</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">      </span><span class="nt">s3Credentials</span><span class="p">:</span>
-</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">        </span><span class="nt">accessKeyId</span><span class="p">:</span>
-</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup-s3-credentials</span>
-</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ACCESS_KEY_ID</span>
-</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">        </span><span class="nt">secretAccessKey</span><span class="p">:</span>
-</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup-s3-credentials</span>
-</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ACCESS_SECRET_KEY</span>
-</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">      </span><span class="nt">wal</span><span class="p">:</span>
-</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">        </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gzip</span>
-</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">      </span><span class="nt">data</span><span class="p">:</span>
-</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">        </span><span class="nt">compression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gzip</span>
-</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">    </span><span class="nt">retentionPolicy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;30d&quot;</span>
-</span></code></pre></div>
-<hr />
-<h2 id="component-configuration">Component Configuration<a class="headerlink" href="#component-configuration" title="Permanent link">&para;</a></h2>
-<h3 id="1-operator-ha">1. Operator HA<a class="headerlink" href="#1-operator-ha" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">replicas</span><span class="o">=</span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--set<span class="w"> </span>resources.requests.cpu<span class="o">=</span>200m<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--set<span class="w"> </span>resources.requests.memory<span class="o">=</span>512Mi
-</span></code></pre></div>
-<h3 id="2-load-balancer-configuration">2. Load Balancer Configuration<a class="headerlink" href="#2-load-balancer-configuration" title="Permanent link">&para;</a></h3>
-<p><strong>Ingress (Recommended)</strong>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">keycloak</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/affinity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cookie</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/session-cookie-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-affinity</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/session-cookie-hash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sha1</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
-</span></code></pre></div></p>
-<p><strong>Service LoadBalancer</strong> (Cloud):
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">service</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nlb</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span></code></pre></div></p>
-<h3 id="3-pod-disruption-budget">3. Pod Disruption Budget<a class="headerlink" href="#3-pod-disruption-budget" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy/v1</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodDisruptionBudget</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-pdb</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nt">minAvailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span></code></pre></div>
-<h3 id="4-resource-limits">4. Resource Limits<a class="headerlink" href="#4-resource-limits" title="Permanent link">&para;</a></h3>
-<p><strong>Keycloak</strong>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">keycloak</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000m</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">jvm</span><span class="p">:</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span><span class="nt">heapSize</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1536m&quot;</span>
-</span></code></pre></div></p>
-<p><strong>PostgreSQL</strong>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000m</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">limits</span><span class="p">:</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000m</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4Gi</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nt">postgresql</span><span class="p">:</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="nt">max_connections</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;200&quot;</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span><span class="nt">shared_buffers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512MB&quot;</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="nt">effective_cache_size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2GB&quot;</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="failover-testing">Failover Testing<a class="headerlink" href="#failover-testing" title="Permanent link">&para;</a></h2>
-<h3 id="simulate-keycloak-pod-failure">Simulate Keycloak Pod Failure<a class="headerlink" href="#simulate-keycloak-pod-failure" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Kill a Keycloak pod</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>keycloak-0<span class="w"> </span>-n<span class="w"> </span>keycloak-system
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Watch rollout</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-w
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Verify traffic continues (2/3 pods handling requests)</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># New pod starts automatically</span>
-</span></code></pre></div>
-<h3 id="simulate-database-primary-failure">Simulate Database Primary Failure<a class="headerlink" href="#simulate-database-primary-failure" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Identify primary</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.currentPrimary}&#39;</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Delete primary pod</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>keycloak-db-1<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Watch failover (30-60 seconds)</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span>-w
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># Verify new primary elected</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.currentPrimary}&#39;</span>
-</span></code></pre></div>
-<h3 id="simulate-node-failure">Simulate Node Failure<a class="headerlink" href="#simulate-node-failure" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Cordon node (simulates failure)</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>kubectl<span class="w"> </span>cordon<span class="w"> </span>&lt;node-name&gt;
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Watch pods reschedule</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-o<span class="w"> </span>wide<span class="w"> </span>-w
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Uncordon when done</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>kubectl<span class="w"> </span>uncordon<span class="w"> </span>&lt;node-name&gt;
-</span></code></pre></div>
-<hr />
-<h2 id="monitoring-ha-health">Monitoring HA Health<a class="headerlink" href="#monitoring-ha-health" title="Permanent link">&para;</a></h2>
-<h3 id="check-keycloak-replicas">Check Keycloak Replicas<a class="headerlink" href="#check-keycloak-replicas" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># All pods should be Running</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Check endpoints</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>endpoints<span class="w"> </span>keycloak-keycloak<span class="w"> </span>-n<span class="w"> </span>keycloak-system
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="c1"># Should show all pod IPs</span>
-</span></code></pre></div>
-<h3 id="check-database-replication">Check Database Replication<a class="headerlink" href="#check-database-replication" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Check cluster status</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Check replication lag</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span>keycloak-db-1<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span>psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT * FROM pg_stat_replication;&quot;</span>
-</span></code></pre></div>
-<h3 id="prometheus-queries">Prometheus Queries<a class="headerlink" href="#prometheus-queries" title="Permanent link">&para;</a></h3>
-<div class="language-promql highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Keycloak availability (should be 1.0 = 100%)</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">sum</span><span class="o">(</span><span class="nv">up</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak</span><span class="p">&quot;}</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">count</span><span class="o">(</span><span class="nv">up</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak</span><span class="p">&quot;}</span><span class="o">)</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Database replication lag (should be &lt; 1s)</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="k">max</span><span class="o">(</span><span class="nv">cnpg_pg_replication_lag_seconds</span><span class="o">)</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Pod restart rate (should be near 0)</span>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="kr">rate</span><span class="o">(</span><span class="nv">kube_pod_container_status_restarts_total</span><span class="p">{</span><span class="nl">namespace</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak-system</span><span class="p">&quot;}[</span><span class="s">1h</span><span class="p">]</span><span class="o">)</span>
-</span></code></pre></div>
-<hr />
-<h2 id="zone-distribution">Zone Distribution<a class="headerlink" href="#zone-distribution" title="Permanent link">&para;</a></h2>
-<h3 id="multi-zone-keycloak">Multi-Zone Keycloak<a class="headerlink" href="#multi-zone-keycloak" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">affinity</span><span class="p">:</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">podAntiAffinity</span><span class="p">:</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nt">requiredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">labelSelector</span><span class="p">:</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">          </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">            </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">        </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topology.kubernetes.io/zone</span><span class="w">  </span><span class="c1"># Spread across zones</span>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">  </span><span class="nt">nodeAffinity</span><span class="p">:</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">    </span><span class="nt">preferredDuringSchedulingIgnoredDuringExecution</span><span class="p">:</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">        </span><span class="nt">preference</span><span class="p">:</span>
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">          </span><span class="nt">matchExpressions</span><span class="p">:</span>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topology.kubernetes.io/zone</span>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="w">              </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">In</span>
-</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">              </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;us-east-1a&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;us-east-1b&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;us-east-1c&quot;</span><span class="p p-Indicator">]</span>
-</span></code></pre></div>
-<h3 id="multi-zone-database">Multi-Zone Database<a class="headerlink" href="#multi-zone-database" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">affinity</span><span class="p">:</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">podAntiAffinityType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">required</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">topology.kubernetes.io/zone</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">nodeSelector</span><span class="p">:</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="nt">node.kubernetes.io/instance-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">m5.2xlarge</span>
-</span></code></pre></div>
-<hr />
-<h2 id="performance-tuning">Performance Tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h2>
-<h3 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h3>
-<p><strong>Keycloak Database Pool</strong>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_POOL_INITIAL_SIZE</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_POOL_MIN_SIZE</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_DB_POOL_MAX_SIZE</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;50&quot;</span>
-</span></code></pre></div></p>
-<p><strong>PostgreSQL Connections</strong>:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">postgresql</span><span class="p">:</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">    </span><span class="nt">max_connections</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;200&quot;</span><span class="w">  </span><span class="c1"># Keycloak pods * connections per pod + buffer</span>
-</span></code></pre></div></p>
-<h3 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_CACHE</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ispn&quot;</span><span class="w">  </span><span class="c1"># Infinispan (default, supports clustering)</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_CACHE_STACK</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;kubernetes&quot;</span><span class="w">  </span><span class="c1"># Auto-discovery in K8s</span>
-</span></code></pre></div>
-<hr />
-<h2 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">&para;</a></h2>
-<h3 id="backup-strategy">Backup Strategy<a class="headerlink" href="#backup-strategy" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql.cnpg.io/v1</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ScheduledBackup</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-backup</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w">  </span><span class="c1"># Daily at 2 AM</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span><span class="nt">backupOwnerReference</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">self</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">  </span><span class="nt">cluster</span><span class="p">:</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
-</span></code></pre></div>
-<h3 id="multi-region-backup">Multi-Region Backup<a class="headerlink" href="#multi-region-backup" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">backup</span><span class="p">:</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">barmanObjectStore</span><span class="p">:</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">    </span><span class="nt">destinationPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s3://backups-us-east/keycloak-db</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="c1"># Replicate to secondary region</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="c1"># Then replicate S3 bucket to other region via AWS S3 replication</span>
-</span></code></pre></div>
-<h3 id="recovery-time-objective-rto">Recovery Time Objective (RTO)<a class="headerlink" href="#recovery-time-objective-rto" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Failure</th>
-<th>RTO</th>
-<th>Procedure</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Keycloak Pod</td>
-<td>Single pod failure</td>
-<td>&lt; 1 min</td>
-<td>Automatic (K8s recreates)</td>
-</tr>
-<tr>
-<td>Keycloak Node</td>
-<td>Node failure</td>
-<td>2-5 min</td>
-<td>Automatic (pods reschedule)</td>
-</tr>
-<tr>
-<td>Database Primary</td>
-<td>Primary failure</td>
-<td>30-60s</td>
-<td>Automatic (CNPG failover)</td>
-</tr>
-<tr>
-<td>Database Corruption</td>
-<td>Data corruption</td>
-<td>10-30 min</td>
-<td>Manual restore from backup</td>
-</tr>
-<tr>
-<td>Full Cluster Loss</td>
-<td>Region outage</td>
-<td>1-4 hours</td>
-<td>Manual restore in new region</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="troubleshooting-ha">Troubleshooting HA<a class="headerlink" href="#troubleshooting-ha" title="Permanent link">&para;</a></h2>
-<h3 id="split-brain-detection">Split Brain Detection<a class="headerlink" href="#split-brain-detection" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Check if multiple primaries exist (should never happen)</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span>-l<span class="w"> </span><span class="nv">role</span><span class="o">=</span>primary
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="c1"># Should show exactly 1 pod</span>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="c1"># Check cluster status</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span></code></pre></div>
-<h3 id="replication-lag-too-high">Replication Lag Too High<a class="headerlink" href="#replication-lag-too-high" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Check lag</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span>keycloak-db-1<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="w">  </span>psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="s2">    SELECT</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="s2">      client_addr,</span>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="s2">      state,</span>
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="s2">      sent_lsn,</span>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="s2">      write_lsn,</span>
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="s2">      flush_lsn,</span>
-</span><span id="__span-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="s2">      replay_lsn,</span>
-</span><span id="__span-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="s2">      sync_state,</span>
-</span><span id="__span-22-12"><a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="s2">      EXTRACT(EPOCH FROM (now() - replay_timestamp)) AS lag_seconds</span>
-</span><span id="__span-22-13"><a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="s2">    FROM pg_stat_replication;</span>
-</span><span id="__span-22-14"><a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="s2">  &quot;</span>
-</span><span id="__span-22-15"><a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>
-</span><span id="__span-22-16"><a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="c1"># Solutions:</span>
-</span><span id="__span-22-17"><a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a><span class="c1"># - Increase wal_sender_timeout</span>
-</span><span id="__span-22-18"><a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="c1"># - Check network latency between pods</span>
-</span><span id="__span-22-19"><a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="c1"># - Verify replica has sufficient resources</span>
-</span></code></pre></div>
-<h3 id="session-affinity-issues">Session Affinity Issues<a class="headerlink" href="#session-affinity-issues" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Verify ingress session affinity</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ingress<span class="w"> </span>keycloak-ingress<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>affinity
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># Test with curl</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>curl<span class="w"> </span>-v<span class="w"> </span>-c<span class="w"> </span>cookies.txt<span class="w"> </span>https://keycloak.example.com/realms/master
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>curl<span class="w"> </span>-v<span class="w"> </span>-b<span class="w"> </span>cookies.txt<span class="w"> </span>https://keycloak.example.com/realms/master
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># Should hit same pod (check response headers/logs)</span>
-</span></code></pre></div>
-<hr />
-<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
+  pgp --&gt; pgr1
+  pgp --&gt; pgr2</code></pre>
+<p>High availability has three separate layers:</p>
+<ol>
+<li>operator availability through multiple operator replicas with leader election</li>
+<li>Keycloak availability through multiple managed Keycloak replicas</li>
+<li>database availability through a replicated PostgreSQL topology, ideally CNPG</li>
+</ol>
+<p>Do not treat those as interchangeable.</p>
 <ul>
-<li><a href="../database-setup/">Database Setup Guide</a></li>
-<li><a href="./backup-restore.md">Backup &amp; Restore Guide</a></li>
-<li><a href="../end-to-end-setup/">End-to-End Setup Guide</a></li>
-<li><a href="../../operations/troubleshooting/">Troubleshooting Guide</a></li>
+<li>extra operator replicas improve control-plane availability, not Keycloak request capacity</li>
+<li>extra Keycloak replicas improve application availability and throughput</li>
+<li>database HA is mandatory if you want real failover instead of just more Keycloak pods</li>
+</ul>
+<h2 id="managed-keycloak-ha-basics">Managed Keycloak HA Basics<a class="headerlink" href="#managed-keycloak-ha-basics" title="Permanent link">&para;</a></h2>
+<p>For managed Keycloak instances, the primary HA control is <code>keycloak.replicas</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/affinity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cookie</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/session-cookie-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-affinity</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/session-cookie-hash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sha1</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500m</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000m</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
+</span></code></pre></div>
+<p>When <code>replicas &gt; 1</code>, the operator automatically configures JGroups clustering for the managed Keycloak deployment:</p>
+<ul>
+<li>a headless discovery Service is created</li>
+<li><code>KC_CACHE_STACK=kubernetes</code> is configured</li>
+<li>JGroups DNS_PING discovery is wired automatically</li>
+<li>port <code>7800</code> is exposed for cluster communication</li>
+</ul>
+<p>All currently supported Keycloak versions already satisfy the clustering stack requirement for this path.</p>
+<p>Session affinity is still recommended at the ingress or load balancer layer even though distributed caching is enabled. It reduces avoidable churn during login flows and failover events.</p>
+<h2 id="operator-ha">Operator HA<a class="headerlink" href="#operator-ha" title="Permanent link">&para;</a></h2>
+<p>Operator HA is configured separately from the managed Keycloak instance.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">operator</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">replicaCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200m</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512Mi</span>
+</span></code></pre></div>
+<p>Use at least two operator replicas in production so reconciliation continues during a pod restart or node failure.</p>
+<p>Operator HA is active-passive:</p>
+<ul>
+<li>one replica holds leadership and performs reconciliation work</li>
+<li>other replicas stay ready and take over if the leader disappears</li>
+<li>adding replicas improves availability, not reconciliation throughput</li>
+</ul>
+<h2 id="database-ha-with-cnpg">Database HA With CNPG<a class="headerlink" href="#database-ha-with-cnpg" title="Permanent link">&para;</a></h2>
+<p>CNPG is the strongest HA path because it gives you failover, backups, and recovery primitives that the operator can integrate with.</p>
+<p>Typical production-oriented values:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">cnpg</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-postgres</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">instances</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">      </span><span class="nt">storage</span><span class="p">:</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">        </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100Gi</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="nt">storageClass</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fast-ssd</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">      </span><span class="nt">postgresql</span><span class="p">:</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">        </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;200&quot;</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">        </span><span class="nt">sharedBuffers</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512MB&quot;</span>
+</span></code></pre></div>
+<p>Key CNPG concepts:</p>
+<ul>
+<li><code>instances: 3</code> gives one primary and two replicas</li>
+<li><code>minSyncReplicas</code> and <code>maxSyncReplicas</code> are CNPG-level durability controls when you manage the database cluster directly</li>
+<li>connection limits must be sized for the Keycloak replica count, admin activity, and background jobs</li>
+</ul>
+<p>For full CNPG examples, use <a href="../database-setup/">Database Setup</a>.</p>
+<h2 id="resource-sizing-guidance">Resource Sizing Guidance<a class="headerlink" href="#resource-sizing-guidance" title="Permanent link">&para;</a></h2>
+<p>Replica count, JVM memory, and database capacity move together.</p>
+<p>Practical rules:</p>
+<ul>
+<li>raising <code>keycloak.replicas</code> increases total database connection demand</li>
+<li>larger realms and login bursts usually need both more CPU and more heap</li>
+<li>ingress or load-balancer stickiness reduces cross-pod cache chatter during hot paths</li>
+<li>do not raise Keycloak replicas without checking PostgreSQL connection capacity</li>
+</ul>
+<p>A reasonable starting point for production is:</p>
+<ul>
+<li>Keycloak: <code>3</code> replicas, <code>500m</code> CPU request, <code>1Gi</code> memory request</li>
+<li>CNPG: <code>3</code> instances, storage sized for backups and WAL growth, connection limits reviewed for the expected concurrency</li>
+</ul>
+<p>Tune from there with real metrics, not cargo-cult numbers.</p>
+<h2 id="upgrade-strategy-for-ha">Upgrade Strategy For HA<a class="headerlink" href="#upgrade-strategy-for-ha" title="Permanent link">&para;</a></h2>
+<p>If you want the lowest-disruption upgrade path, configure blue-green upgrades.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">cacheIsolation</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">autoRevision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">upgradePolicy</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BlueGreen</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">backupTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">autoTeardown</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span></code></pre></div>
+<p>This gives you:</p>
+<ul>
+<li>pre-upgrade backups for supported database tiers</li>
+<li>isolated JGroups cluster identity during the cutover</li>
+<li>traffic switch only after the green deployment is ready</li>
+</ul>
+<p>See <a href="../../operations/migration/">Migration &amp; Upgrade Guide</a>.</p>
+<h2 id="scheduling-and-disruption-controls">Scheduling And Disruption Controls<a class="headerlink" href="#scheduling-and-disruption-controls" title="Permanent link">&para;</a></h2>
+<p>The managed Keycloak CR does not expose arbitrary pod affinity or anti-affinity fields today. Do not document unsupported <code>affinity</code> examples as if they were part of the CRD.</p>
+<p>For disruption control:</p>
+<ul>
+<li>use cluster scheduling policy and node topology consciously</li>
+<li>manage PodDisruptionBudgets as separate GitOps-managed manifests if you need them</li>
+<li>validate that your ingress or load balancer is distributing traffic the way you expect</li>
+</ul>
+<p>Example PDB managed alongside the Helm release:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy/v1</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodDisruptionBudget</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-pdb</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="nt">minAvailable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span></code></pre></div>
+<h2 id="failover-validation">Failover Validation<a class="headerlink" href="#failover-validation" title="Permanent link">&para;</a></h2>
+<h3 id="keycloak-pod-failure">Keycloak Pod Failure<a class="headerlink" href="#keycloak-pod-failure" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>&lt;one-keycloak-pod&gt;
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-w
+</span></code></pre></div>
+<p>What to verify:</p>
+<ul>
+<li>replacement pod becomes ready</li>
+<li>ingress still serves login requests during the disruption</li>
+<li>an active session or repeated token request continues to work</li>
+</ul>
+<h3 id="cnpg-primary-failover">CNPG Primary Failover<a class="headerlink" href="#cnpg-primary-failover" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-postgres<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.currentPrimary}{&quot;\n&quot;}&#39;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>&lt;current-primary-pod&gt;
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>keycloak-postgres<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-w
+</span></code></pre></div>
+<p>What to verify:</p>
+<ul>
+<li>a new primary is elected</li>
+<li>Keycloak reconnects automatically</li>
+<li>authentication and token issuance recover without manual reconfiguration</li>
+</ul>
+<h3 id="traffic-continuity-check">Traffic Continuity Check<a class="headerlink" href="#traffic-continuity-check" title="Permanent link">&para;</a></h3>
+<p>A useful HA test is not just pod replacement. Verify a real flow:</p>
+<ol>
+<li>authenticate through the ingress</li>
+<li>keep issuing token refreshes or authenticated requests</li>
+<li>delete a Keycloak pod or trigger CNPG failover</li>
+<li>confirm the client experience remains acceptable</li>
+</ol>
+<p>If you only watch pod status, you are testing Kubernetes cosmetics, not service continuity.</p>
+<h2 id="monitoring-and-alerting">Monitoring And Alerting<a class="headerlink" href="#monitoring-and-alerting" title="Permanent link">&para;</a></h2>
+<p>Start with these checks:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span></code></pre></div>
+<p>Useful Prometheus queries:</p>
+<div class="language-promql highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">sum</span><span class="o">(</span><span class="nv">up</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak</span><span class="p">&quot;}</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">count</span><span class="o">(</span><span class="nv">up</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak</span><span class="p">&quot;}</span><span class="o">)</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">max</span><span class="o">(</span><span class="nv">cnpg_pg_replication_lag_seconds</span><span class="o">)</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="kr">rate</span><span class="o">(</span><span class="nv">kube_pod_container_status_restarts_total</span><span class="p">{</span><span class="nl">namespace</span><span class="o">=</span><span class="p">&quot;</span><span class="s">keycloak-system</span><span class="p">&quot;}[</span><span class="s">1h</span><span class="p">]</span><span class="o">)</span>
+</span></code></pre></div>
+<p>Reasonable starting alert thresholds:</p>
+<ul>
+<li>availability below <code>1</code> for the managed Keycloak target set</li>
+<li>CNPG replication lag consistently above <code>1s</code> for latency-sensitive setups</li>
+<li>restart rates that are non-zero for a sustained window instead of a single rollout blip</li>
+</ul>
+<p>Tune the thresholds to your own traffic and SLOs.</p>
+<h2 id="s3-backup-prerequisites">S3 Backup Prerequisites<a class="headerlink" href="#s3-backup-prerequisites" title="Permanent link">&para;</a></h2>
+<p>If you use CNPG object-store backups, verify the prerequisites before treating them as HA protection:</p>
+<ul>
+<li>object storage bucket exists and is reachable</li>
+<li>credentials secret exists in the CNPG namespace</li>
+<li>lifecycle or retention rules match your recovery objectives</li>
+<li>restore procedures have been exercised, not just configured</li>
+</ul>
+<p>Backups you have never restored are optimism with YAML attached.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../database-setup/">Database Setup</a></li>
+<li><a href="../../operations/backup-restore/">Backup &amp; Restore</a></li>
+<li><a href="../../operations/migration/">Migration &amp; Upgrade Guide</a></li>
+<li><a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
 </ul>
 
 

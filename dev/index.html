@@ -838,6 +838,34 @@
   
   
     <li class="md-nav__item">
+      <a href="how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -845,7 +873,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -5010,7 +5038,7 @@
 <ul>
 <li>✅ <strong>True Multi-Tenancy</strong>: Cross-namespace realm and client provisioning</li>
 <li>✅ <strong>GitOps Native</strong>: Namespace grant lists instead of manual secret distribution</li>
-<li>✅ <strong>Declarative Authorization</strong>: RBAC + namespace grants, no separate token system</li>
+<li>✅ <strong>Declarative Provisioning Authorization</strong>: Kubernetes RBAC + namespace grants for realm/client provisioning, while applications still use normal OAuth2/OIDC tokens</li>
 <li>✅ <strong>Built for Production</strong>: Rate limiting, drift detection, admission webhooks</li>
 <li>✅ <strong>Comprehensive Status</strong>: Rich status fields with observedGeneration tracking</li>
 </ul>
@@ -5028,26 +5056,27 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--namespace<span class="w"> </span>cnpg-system<span class="w"> </span>--create-namespace
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 2. Install operator + Keycloak instance</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>keycloak-operator/keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.managed<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.database.cnpg.enabled<span class="o">=</span><span class="nb">true</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># 3. Create realm (in your app namespace)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span>keycloak-operator/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">  </span>--namespace<span class="w"> </span>my-app<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>my-app<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>keycloak-system<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;clientAuthorizationGrants={my-app}&#39;</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># 4. Create OAuth2 client</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>keycloak-operator/keycloak-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-client<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">  </span>--namespace<span class="w"> </span>my-app<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-app<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-realm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;redirectUris={https://my-app.example.com/callback}&#39;</span>
 </span></code></pre></div>
 <p><strong>📖 <a href="quickstart/">Complete Quick Start Guide →</a></strong></p>
+<p><strong>Need to choose between Helm and raw manifests?</strong> See <a href="how-to/helm-vs-cr-deployments/">Helm vs Direct CR Deployments</a>.</p>
 <h2 id="key-features">✨ Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>🔒 Secure by Default</strong> - Kubernetes RBAC controls all access, no separate auth system</li>
@@ -5059,11 +5088,12 @@
 </ul>
 <h2 id="architecture">🏗️ Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <p>The operator manages three core resources:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌──────────────┐     ┌─────────────────┐     ┌──────────────────┐
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│  Keycloak    │────▶│ KeycloakRealm   │────▶│ KeycloakClient   │
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│  (Instance)  │     │ (Identity)      │     │ (OAuth2/OIDC)    │
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>└──────────────┘     └─────────────────┘     └──────────────────┘
-</span></code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+  kc[Keycloak\nInstance]
+  realm[KeycloakRealm\nIdentity Boundary]
+  client[KeycloakClient\nOAuth2/OIDC Boundary]
+
+  kc --&gt; realm --&gt; client</code></pre>
 <ul>
 <li><strong>Keycloak</strong>: Identity server instance with PostgreSQL database</li>
 <li><strong>KeycloakRealm</strong>: Identity domain containing users, roles, and settings</li>
@@ -5073,6 +5103,7 @@
 <h3 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><a href="quickstart/">Quick Start Guide</a></strong> - Get running in 10 minutes</li>
+<li><strong><a href="how-to/helm-vs-cr-deployments/">Helm vs Direct CR Deployments</a></strong> - Recommended workflow versus advanced manual path</li>
 <li><strong><a href="concepts/architecture/">Architecture Overview</a></strong> - How the operator works</li>
 <li><strong><a href="concepts/security/">Security Model</a></strong> - Authorization and access control</li>
 </ul>
@@ -5095,45 +5126,38 @@
 <li><strong><a href="decisions/">Decision Records</a></strong> - Architecture decisions and rationale</li>
 </ul>
 <h2 id="security-authorization">🔒 Security &amp; Authorization<a class="headerlink" href="#security-authorization" title="Permanent link">&para;</a></h2>
-<p>The operator uses <strong>Kubernetes RBAC</strong> for all authorization - no separate token system.</p>
+<p>The normal path is Helm-first. Platform teams install the operator chart, application teams install the realm and client charts, and the charts create the expected RBAC wiring for the supported flow.</p>
+<p>The operator uses <strong>Kubernetes RBAC</strong> together with declarative namespace grant lists for provisioning authorization. There is no separate provisioning token system for realm/client management. That statement is about operator-side provisioning access, not about the OAuth2/OIDC tokens issued by Keycloak to applications.</p>
 <h3 id="realm-creation">Realm Creation<a class="headerlink" href="#realm-creation" title="Permanent link">&para;</a></h3>
-<p>Any user with RBAC permission to create <code>KeycloakRealm</code> resources can create realms. Control this with standard Kubernetes RoleBindings:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realm-creator</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">rules</span><span class="p">:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;vriesdemichael.github.io&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;keycloakrealms&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;create&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;update&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;patch&quot;</span><span class="p p-Indicator">]</span>
-</span></code></pre></div>
+<p>Any user or GitOps controller with Kubernetes permission to install the <code>keycloak-realm</code> chart in a namespace can create realms there. Under the hood, the realm still lands as a <code>KeycloakRealm</code> resource, so standard Kubernetes RBAC remains the ultimate control point.</p>
+<p>If you choose to manage raw manifests directly instead of Helm, treat that as an advanced/manual workflow and wire the RBAC pieces yourself. See <a href="how-to/helm-vs-cr-deployments/">Helm vs Direct CR Deployments</a> and <a href="rbac-implementation/">RBAC Implementation</a>.</p>
 <h3 id="client-creation">Client Creation<a class="headerlink" href="#client-creation" title="Permanent link">&para;</a></h3>
 <p>Clients require <strong>namespace authorization</strong> from the realm. Realm owners grant access via <code>clientAuthorizationGrants</code>:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakRealm</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-team-namespace</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging-namespace</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakRealm</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-team-namespace</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging-namespace</span>
 </span></code></pre></div>
 <p>Only namespaces in the grant list can create clients in that realm.</p>
 <p><strong>📖 <a href="concepts/security/">Full Security Model Documentation →</a></strong></p>
+<p><strong>FAQ:</strong> See <a href="faq/">FAQ</a> for common questions such as why there is no <code>User</code> CR and why the API surface is centered on realms and clients.</p>
 <h2 id="status-observability">📊 Status &amp; Observability<a class="headerlink" href="#status-observability" title="Permanent link">&para;</a></h2>
 <p>All resources provide comprehensive status information:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;True&quot;</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReconciliationSucceeded</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Realm</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">healthy</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">synchronized&quot;</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">  </span><span class="nt">realmId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;a1b2c3d4-5678-90ab-cdef-1234567890ab&quot;</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span><span class="nt">internalUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://keycloak.keycloak-system.svc:8080/realms/my-app&quot;</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span><span class="nt">publicUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://keycloak.example.com/realms/my-app&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">status</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;True&quot;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReconciliationSucceeded</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Realm</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">healthy</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">synchronized&quot;</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="nt">realmId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;a1b2c3d4-5678-90ab-cdef-1234567890ab&quot;</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="nt">internalUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;http://keycloak.keycloak-system.svc:8080/realms/my-app&quot;</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span><span class="nt">publicUrl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://keycloak.example.com/realms/my-app&quot;</span>
 </span></code></pre></div>
 <p><strong>📖 <a href="guides/observability/">Observability Guide →</a></strong></p>
 <h2 id="drift-detection">🔄 Drift Detection<a class="headerlink" href="#drift-detection" title="Permanent link">&para;</a></h2>

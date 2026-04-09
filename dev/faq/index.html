@@ -548,6 +548,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -555,7 +583,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -4522,10 +4550,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#will-this-scale-beyond-high-availability" class="md-nav__link">
+  <a href="#will-this-scale-beyond-basic-high-availability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Will this scale beyond high availability?
+        Will this scale beyond basic high availability?
       
     </span>
   </a>
@@ -4561,10 +4589,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-cant-i-access-the-keycloak-admin-console" class="md-nav__link">
+  <a href="#can-i-access-the-keycloak-admin-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why can't I access the Keycloak admin console?
+        Can I access the Keycloak admin console?
       
     </span>
   </a>
@@ -4572,10 +4600,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-do-i-verify-my-keycloak-configuration-without-the-admin-console" class="md-nav__link">
+  <a href="#how-do-i-verify-configuration-without-relying-on-the-admin-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How do I verify my Keycloak configuration without the admin console?
+        How do I verify configuration without relying on the admin console?
       
     </span>
   </a>
@@ -4650,10 +4678,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#when-should-i-use-this-operator-vs-the-official-one" class="md-nav__link">
+  <a href="#when-should-i-use-this-operator-instead-of-the-official-keycloak-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When should I use this operator vs the official one?
+        When should I use this operator instead of the official Keycloak operator?
       
     </span>
   </a>
@@ -4661,10 +4689,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-use-this-operator-with-argocd-flux" class="md-nav__link">
+  <a href="#can-i-use-this-operator-with-argo-cd-or-flux" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Can I use this operator with ArgoCD / Flux?
+        Can I use this operator with Argo CD or Flux?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-is-there-no-user-cr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why is there no User CR?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-only-keycloakrealm-and-keycloakclient-and-not-many-smaller-crds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why only KeycloakRealm and KeycloakClient, and not many smaller CRDs?
       
     </span>
   </a>
@@ -4700,10 +4750,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-do-i-revoke-access-to-a-compromised-namespace" class="md-nav__link">
+  <a href="#how-do-i-revoke-access-from-a-compromised-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How do I revoke access to a compromised namespace?
+        How do I revoke access from a compromised namespace?
       
     </span>
   </a>
@@ -4716,49 +4766,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#my-realm-is-stuck-in-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        My realm is stuck in Pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#my-realm-authorization-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        My realm authorization not working
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Getting Help
+        See Also
       
     </span>
   </a>
@@ -4862,10 +4873,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#will-this-scale-beyond-high-availability" class="md-nav__link">
+  <a href="#will-this-scale-beyond-basic-high-availability" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Will this scale beyond high availability?
+        Will this scale beyond basic high availability?
       
     </span>
   </a>
@@ -4901,10 +4912,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-cant-i-access-the-keycloak-admin-console" class="md-nav__link">
+  <a href="#can-i-access-the-keycloak-admin-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why can't I access the Keycloak admin console?
+        Can I access the Keycloak admin console?
       
     </span>
   </a>
@@ -4912,10 +4923,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-do-i-verify-my-keycloak-configuration-without-the-admin-console" class="md-nav__link">
+  <a href="#how-do-i-verify-configuration-without-relying-on-the-admin-console" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How do I verify my Keycloak configuration without the admin console?
+        How do I verify configuration without relying on the admin console?
       
     </span>
   </a>
@@ -4990,10 +5001,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#when-should-i-use-this-operator-vs-the-official-one" class="md-nav__link">
+  <a href="#when-should-i-use-this-operator-instead-of-the-official-keycloak-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When should I use this operator vs the official one?
+        When should I use this operator instead of the official Keycloak operator?
       
     </span>
   </a>
@@ -5001,10 +5012,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#can-i-use-this-operator-with-argocd-flux" class="md-nav__link">
+  <a href="#can-i-use-this-operator-with-argo-cd-or-flux" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Can I use this operator with ArgoCD / Flux?
+        Can I use this operator with Argo CD or Flux?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-is-there-no-user-cr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why is there no User CR?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-only-keycloakrealm-and-keycloakclient-and-not-many-smaller-crds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why only KeycloakRealm and KeycloakClient, and not many smaller CRDs?
       
     </span>
   </a>
@@ -5040,10 +5073,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-do-i-revoke-access-to-a-compromised-namespace" class="md-nav__link">
+  <a href="#how-do-i-revoke-access-from-a-compromised-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How do I revoke access to a compromised namespace?
+        How do I revoke access from a compromised namespace?
       
     </span>
   </a>
@@ -5056,49 +5089,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#troubleshooting" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#my-realm-is-stuck-in-pending" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        My realm is stuck in Pending
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#my-realm-authorization-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        My realm authorization not working
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Getting Help
+        See Also
       
     </span>
   </a>
@@ -5131,329 +5125,160 @@
 
 
 <h1 id="frequently-asked-questions">Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
-<p>This page provides answers to common questions about the Keycloak Operator.</p>
+<p>This page answers the questions that come up most often when teams adopt the operator.</p>
 <h2 id="authorization-security">Authorization &amp; Security<a class="headerlink" href="#authorization-security" title="Permanent link">&para;</a></h2>
 <h3 id="how-does-authorization-work-in-this-operator">How does authorization work in this operator?<a class="headerlink" href="#how-does-authorization-work-in-this-operator" title="Permanent link">&para;</a></h3>
-<p>The operator uses <strong>two-level authorization</strong>:</p>
+<p>The operator uses Kubernetes RBAC plus realm-managed namespace grants.</p>
+<p>There are two separate checks:</p>
 <ol>
-<li><strong>Realm Creation</strong>: Controlled by Kubernetes RBAC</li>
-<li>Any user with RBAC permission to create `KeycloakRealm` resources can create realms</li>
-<li>
-<p>Standard Kubernetes authorization model</p>
-</li>
-<li>
-<p><strong>Client Creation</strong>: Controlled by namespace grant lists</p>
-</li>
-<li>Realm owners specify which namespaces can create clients via `clientAuthorizationGrants`</li>
-<li>Fully declarative and GitOps-friendly</li>
+<li>creating or changing <code>KeycloakRealm</code> resources is controlled by Kubernetes RBAC</li>
+<li>creating <code>KeycloakClient</code> resources against a realm is controlled by that realm’s <code>clientAuthorizationGrants</code></li>
 </ol>
-<p><strong>Example:</strong>
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-spec:
-  clientAuthorizationGrants:
-    - my-app
-    - partner-team
-```</p>
-<p>See: <a href="../concepts/security/">Security Model</a></p>
-<hr />
+<p>Example:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakRealm</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">partner-team</span>
+</span></code></pre></div>
+<p>See <a href="../concepts/security/">Security Model</a>.</p>
 <h3 id="why-not-use-traditional-rbac-alone">Why not use traditional RBAC alone?<a class="headerlink" href="#why-not-use-traditional-rbac-alone" title="Permanent link">&para;</a></h3>
-<p><strong>Problem with pure RBAC:</strong>
-- Can't express "team A can create clients in realm X but not realm Y"
-- Requires cluster-wide RBAC updates for each team
-- Complex RoleBinding hierarchies for cross-namespace access</p>
-<p><strong>Namespace grant benefits:</strong>
-- ✅ Declarative authorization in realm manifest
-- ✅ GitOps-friendly (PR workflow for access changes)
-- ✅ Self-service for realm owners
-- ✅ Clear audit trail in Git history</p>
-<p>See: <a href="../concepts/security/#design-philosophy">Security Model</a></p>
-<hr />
+<p>Pure RBAC is not expressive enough for the main cross-namespace client ownership case.</p>
+<p>It can answer questions like “may this subject create <code>KeycloakClient</code> objects in namespace X?”, but it does not naturally answer “may namespace X create clients in realm Y but not realm Z?” without pushing that ownership logic into brittle cluster-wide RBAC structure.</p>
+<p>The realm grant list solves that cleanly:</p>
+<ul>
+<li>realm owners manage access declaratively in Git</li>
+<li>cluster admins do not need to keep updating cross-namespace RoleBindings for every realm relationship</li>
+<li>the authorization intent stays attached to the realm that owns it</li>
+</ul>
 <h3 id="how-do-i-grant-a-team-access-to-create-clients-in-my-realm">How do I grant a team access to create clients in my realm?<a class="headerlink" href="#how-do-i-grant-a-team-access-to-create-clients-in-my-realm" title="Permanent link">&para;</a></h3>
-<p>Add their namespace to your realm's `clientAuthorizationGrants`:</p>
-<p>```bash
-kubectl patch keycloakrealm my-realm -n my-namespace --type=merge -p '
-spec:
-  clientAuthorizationGrants:
-    - my-namespace
-    - team-b-namespace  # ← Add this
-'
-```</p>
-<p>Or via GitOps: update realm manifest and create PR.</p>
-<p>See: <a href="../concepts/security/#namespace-authorization-workflow">Security Model</a></p>
-<hr />
+<p>Add the team namespace to <code>clientAuthorizationGrants</code> in the realm definition and reconcile it through Helm or your GitOps workflow.</p>
+<p>If you need a temporary diagnostic check, you can inspect it directly:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>my-realm<span class="w"> </span>-n<span class="w"> </span>my-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span></code></pre></div>
+<p>See <a href="../how-to/multi-tenant/">Multi-Tenant</a>.</p>
 <h2 id="scaling-performance">Scaling &amp; Performance<a class="headerlink" href="#scaling-performance" title="Permanent link">&para;</a></h2>
-<h3 id="will-this-scale-beyond-high-availability">Will this scale beyond high availability?<a class="headerlink" href="#will-this-scale-beyond-high-availability" title="Permanent link">&para;</a></h3>
-<p><strong>Yes.</strong> The operator is designed for horizontal scaling:</p>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Scaling Limit</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Operator</strong></td>
-<td>100+ replicas</td>
-<td>Stateless, leader election</td>
-</tr>
-<tr>
-<td><strong>Keycloak</strong></td>
-<td>100+ replicas</td>
-<td>Session replication via Infinispan</td>
-</tr>
-<tr>
-<td><strong>Database</strong></td>
-<td>10+ replicas</td>
-<td>PostgreSQL replication</td>
-</tr>
-<tr>
-<td><strong>Teams/Namespaces</strong></td>
-<td>1000+</td>
-<td>Token-based delegation</td>
-</tr>
-<tr>
-<td><strong>Realms per instance</strong></td>
-<td>1000+</td>
-<td>Limited by Keycloak, not operator</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Real-world tested:</strong> Supports 50+ teams, 200+ realms, 100K+ users in production.</p>
-<p><strong>Rate limiting</strong> prevents API overload:
-- Global: 50 req/s (default)
-- Per-namespace: 5 req/s (default)
-- Configurable via environment variables</p>
-<p>See: <a href="../concepts/architecture/">Architecture</a></p>
-<hr />
+<h3 id="will-this-scale-beyond-basic-high-availability">Will this scale beyond basic high availability?<a class="headerlink" href="#will-this-scale-beyond-basic-high-availability" title="Permanent link">&para;</a></h3>
+<p>Yes, but capacity depends on the Keycloak workload, database tier, cluster resources, and traffic shape. This repository does not currently publish a benchmark-backed scale ceiling, so the docs should not pretend otherwise.</p>
+<p>What is supported:</p>
+<ul>
+<li>operator HA through multiple operator replicas with leader election</li>
+<li>managed Keycloak horizontal scaling by increasing <code>keycloak.replicas</code></li>
+<li>automatic JGroups DNS_PING discovery for managed Keycloak replicas</li>
+<li>CNPG or other PostgreSQL topologies sized for the actual write and connection load</li>
+</ul>
+<p>Important distinction:</p>
+<ul>
+<li>operator replicas improve availability</li>
+<li>separate operator deployments are the capacity-scaling model for the control plane</li>
+<li>Keycloak replicas scale the managed application itself</li>
+</ul>
+<p>See <a href="../how-to/ha-deployment/">High Availability Deployment</a>.</p>
 <h3 id="how-many-requests-can-the-operator-handle">How many requests can the operator handle?<a class="headerlink" href="#how-many-requests-can-the-operator-handle" title="Permanent link">&para;</a></h3>
-<p><strong>Default Configuration:</strong>
-- 50 requests/second globally
-- 5 requests/second per namespace
-- Burst capacity: 100 (global), 10 (per namespace)</p>
-<p><strong>Can be increased:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[0].value=100&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[1].name=KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[1].value=10&#39;</span>
-</span></code></pre></div></p>
-<p><strong>Metrics available:</strong>
-<div class="language-promql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">keycloak_operator_api_rate_limit_wait_seconds</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nv">keycloak_operator_api_rate_limit_acquired_total</span>
-</span></code></pre></div></p>
-<hr />
+<p>The operator ships with rate limiting enabled by default.</p>
+<p>Default chart values:</p>
+<ul>
+<li><code>operator.rateLimiting.global.tps = 50</code></li>
+<li><code>operator.rateLimiting.global.burst = 100</code></li>
+<li><code>operator.rateLimiting.namespace.tps = 5</code></li>
+<li><code>operator.rateLimiting.namespace.burst = 10</code></li>
+</ul>
+<p>Adjust those through the operator chart values, not by copying stale environment-variable snippets from old docs.</p>
+<p>See <a href="../guides/observability/">Observability</a>.</p>
 <h2 id="access-administration">Access &amp; Administration<a class="headerlink" href="#access-administration" title="Permanent link">&para;</a></h2>
-<h3 id="why-cant-i-access-the-keycloak-admin-console">Why can't I access the Keycloak admin console?<a class="headerlink" href="#why-cant-i-access-the-keycloak-admin-console" title="Permanent link">&para;</a></h3>
-<p><strong>By design.</strong> This operator enforces least privilege through the following principles:</p>
-<ol>
-<li><strong>GitOps-Only Configuration</strong>: All configuration is done through CRDs (<code>KeycloakRealm</code>, <code>KeycloakClient</code>), never through manual UI changes</li>
-<li><strong>No Admin Access Needed</strong>: The operator manages Keycloak on your behalf - you never need to log into Keycloak directly</li>
-<li><strong>Reduced Attack Surface</strong>: No admin credentials exposed = no credential theft, no unauthorized access, no manual mistakes</li>
-<li><strong>Prevents Configuration Drift</strong>: Drift detection would revert manual changes anyway, so UI access serves no purpose</li>
-<li><strong>Audit Trail</strong>: All changes tracked through Git and Kubernetes API, not Keycloak's internal audit log</li>
-</ol>
-<p><strong>The admin console is not exposed because you should never need it.</strong></p>
-<hr />
-<h3 id="how-do-i-verify-my-keycloak-configuration-without-the-admin-console">How do I verify my Keycloak configuration without the admin console?<a class="headerlink" href="#how-do-i-verify-my-keycloak-configuration-without-the-admin-console" title="Permanent link">&para;</a></h3>
-<p><strong>Use Kubernetes-native tools</strong> to inspect and verify your configuration:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check realm configuration and status</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># View full realm spec and status</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Check client configuration</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># Check operator reconciliation logs</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>keycloakrealm/&lt;name&gt;
+<h3 id="can-i-access-the-keycloak-admin-console">Can I access the Keycloak admin console?<a class="headerlink" href="#can-i-access-the-keycloak-admin-console" title="Permanent link">&para;</a></h3>
+<p>You can, but it is discouraged as an operating model.</p>
+<p>This operator is designed around declarative configuration through Helm values and CRs. Manual admin-console edits are not the source of truth and may be reverted by reconciliation or drift correction.</p>
+<p>Use the admin API or admin console for debugging only when CR status and logs are not enough.</p>
+<h3 id="how-do-i-verify-configuration-without-relying-on-the-admin-console">How do I verify configuration without relying on the admin console?<a class="headerlink" href="#how-do-i-verify-configuration-without-relying-on-the-admin-console" title="Permanent link">&para;</a></h3>
+<p>Use Kubernetes-native inspection first:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
 </span></code></pre></div>
-<p><strong>For advanced debugging</strong> (operator developers only), query Keycloak's management API directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Port-forward to management API (port 9000, NOT UI on port 8080)</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/&lt;keycloak-service&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="m">9000</span>:9000
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Get admin token from operator-managed secret</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nv">ADMIN_USER</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;keycloak-name&gt;-admin-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.username}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nv">ADMIN_PASS</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;keycloak-name&gt;-admin-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.password}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Authenticate to get access token</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9000/realms/master/protocol/openid-connect/token<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/x-www-form-urlencoded&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;username=</span><span class="nv">$ADMIN_USER</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;password=</span><span class="nv">$ADMIN_PASS</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;grant_type=password&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;client_id=admin-cli&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.access_token&#39;</span><span class="k">)</span>
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="c1"># Query Keycloak API</span>
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:9000/admin/realms/&lt;realm-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
-</span></code></pre></div>
-<p><strong>Note:</strong> Even for debugging, prefer CRD status fields over direct API access. The API should only be used when diagnosing operator bugs, never for configuration.</p>
-<hr />
+<p>If you have to query Keycloak directly for debugging, remember that the management-port behavior depends on version:</p>
+<ul>
+<li><code>24.x</code> uses <code>8080</code></li>
+<li><code>25.x+</code> uses <code>9000</code> for the management interface</li>
+</ul>
+<p>See <a href="../operations/troubleshooting/">Troubleshooting</a>.</p>
 <h2 id="compatibility-requirements">Compatibility &amp; Requirements<a class="headerlink" href="#compatibility-requirements" title="Permanent link">&para;</a></h2>
 <h3 id="what-keycloak-versions-are-supported">What Keycloak versions are supported?<a class="headerlink" href="#what-keycloak-versions-are-supported" title="Permanent link">&para;</a></h3>
+<p>Supported versions start at Keycloak <code>24.x</code>.</p>
+<p>Use <a href="../reference/keycloak-version-support/">Keycloak Version Support</a> as the single source of truth for:</p>
 <ul>
-<li><strong>Minimum:</strong> Keycloak 25.0.0 (management port 9000 requirement)</li>
-<li><strong>Recommended:</strong> Keycloak 26.0.0+</li>
-<li><strong>Maximum:</strong> Latest Keycloak release</li>
+<li>validated versions</li>
+<li>canonical version behavior</li>
+<li><code>24.x</code> versus <code>25.x+</code> management-port handling</li>
+<li>version-gated features such as tracing and Organizations</li>
 </ul>
-<p><strong>Why 25.0.0+?</strong> Keycloak 25.0.0 introduced the management port (9000) for health checks, separate from user traffic (8080).</p>
-<p><strong>Using older versions?</strong> Upgrade to 26.0.0:
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;26.0.0&quot;</span>
-</span></code></pre></div></p>
-<hr />
 <h3 id="what-database-backends-are-supported">What database backends are supported?<a class="headerlink" href="#what-database-backends-are-supported" title="Permanent link">&para;</a></h3>
-<p><strong>Primary:</strong> CloudNativePG (CNPG) - Kubernetes-native PostgreSQL
-- ✅ Automatic backups
-- ✅ High availability
-- ✅ Point-in-time recovery</p>
-<p><strong>Manual:</strong> External PostgreSQL
-- ⚠️ You manage backups/HA
-- ⚠️ Requires connection string</p>
-<p><strong>Not supported:</strong> MySQL, MariaDB, H2 (Keycloak deprecated these)</p>
-<p>See: <a href="../how-to/database-setup/">Database Setup Guide</a></p>
-<hr />
+<p>Primary path:</p>
+<ul>
+<li>CloudNativePG for Kubernetes-native PostgreSQL operations</li>
+</ul>
+<p>Supported but externally operated path:</p>
+<ul>
+<li>external PostgreSQL</li>
+<li>generic managed PostgreSQL through the managed tier settings</li>
+</ul>
+<p>This operator does not support MySQL, MariaDB, or H2 as target production backends.</p>
+<p>See <a href="../how-to/database-setup/">Database Setup</a>.</p>
 <h3 id="can-i-migrate-from-the-official-keycloak-operator">Can I migrate from the official Keycloak operator?<a class="headerlink" href="#can-i-migrate-from-the-official-keycloak-operator" title="Permanent link">&para;</a></h3>
-<p><strong>Yes, but not automated.</strong> Manual migration required:</p>
+<p>Yes, but the migration path is export-and-transform, not a magic in-place CRD conversion.</p>
+<p>Use:</p>
 <ol>
-<li>Export realms from existing Keycloak</li>
-<li>Deploy this operator alongside (different namespace)</li>
-<li>Create new Keycloak with this operator</li>
-<li>Create KeycloakRealm/KeycloakClient CRDs</li>
-<li>Switch application traffic</li>
-<li>Decommission old operator</li>
+<li><a href="../how-to/export-realms/">Exporting Realms &amp; Users</a></li>
+<li><a href="../how-to/migration-toolkit/">Migration Toolkit</a></li>
+<li><a href="../operations/migration/">Migration &amp; Upgrade Guide</a></li>
 </ol>
-<p><strong>Comparison table:</strong> See <a href="../operations/migration/#comparison-with-official-keycloak-operator">Migration Guide</a></p>
-<hr />
 <h2 id="deployment-operations">Deployment &amp; Operations<a class="headerlink" href="#deployment-operations" title="Permanent link">&para;</a></h2>
-<h3 id="when-should-i-use-this-operator-vs-the-official-one">When should I use this operator vs the official one?<a class="headerlink" href="#when-should-i-use-this-operator-vs-the-official-one" title="Permanent link">&para;</a></h3>
-<p><strong>Choose this operator if:</strong>
-- ✅ Multi-tenant environment (10+ teams)
-- ✅ GitOps-first workflow
-- ✅ Strong namespace isolation needed
-- ✅ CloudNativePG database management</p>
-<p><strong>Choose official operator if:</strong>
-- ✅ Single-tenant environment
-- ✅ Need Keycloak's built-in security
-- ✅ Organization policy requires official operators
-- ✅ Integration with Red Hat/RHSSO</p>
-<p>See: <a href="../operations/migration/#comparison-with-official-keycloak-operator">Migration Guide</a></p>
-<hr />
-<h3 id="can-i-use-this-operator-with-argocd-flux">Can I use this operator with ArgoCD / Flux?<a class="headerlink" href="#can-i-use-this-operator-with-argocd-flux" title="Permanent link">&para;</a></h3>
-<p><strong>Yes, fully supported.</strong> The operator is GitOps-native.</p>
-<p><strong>ArgoCD Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">argoproj.io/v1alpha1</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Application</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-realm</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nt">source</span><span class="p">:</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">repoURL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://github.com/company/keycloak-config</span>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realms/team-alpha</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">destination</span><span class="p">:</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-alpha</span>
-</span></code></pre></div></p>
-<p><strong>Best practices:</strong>
-- Use SealedSecrets or external-secrets for sensitive data
-- Separate repos per team
-- Health checks via <code>status.phase</code></p>
-<p>See charts/README.md in the repository root for GitOps examples.</p>
-<hr />
+<h3 id="when-should-i-use-this-operator-instead-of-the-official-keycloak-operator">When should I use this operator instead of the official Keycloak operator?<a class="headerlink" href="#when-should-i-use-this-operator-instead-of-the-official-keycloak-operator" title="Permanent link">&para;</a></h3>
+<p>Use this operator when you want:</p>
+<ul>
+<li>Helm-first and GitOps-first workflows</li>
+<li>namespace-grant-based client ownership</li>
+<li>explicit cross-namespace tenancy boundaries</li>
+<li>Kubernetes-native secret and RBAC patterns</li>
+</ul>
+<p>The official operator may still be the better fit when an organization requires upstream alignment over this project’s API and tenancy model.</p>
+<p>See <a href="../operations/migration/#comparison-with-official-keycloak-operator">Migration &amp; Upgrade Guide</a>.</p>
+<h3 id="can-i-use-this-operator-with-argo-cd-or-flux">Can I use this operator with Argo CD or Flux?<a class="headerlink" href="#can-i-use-this-operator-with-argo-cd-or-flux" title="Permanent link">&para;</a></h3>
+<p>Yes. Helm and GitOps are the default operating model.</p>
+<p>Start with the Helm-first deployment guidance in <a href="../how-to/helm-vs-cr-deployments/">Helm vs Direct CR Deployments</a>, then see the GitOps examples in <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/charts/README.md#using-with-gitops">charts/README.md on GitHub</a>.</p>
+<h3 id="why-is-there-no-user-cr">Why is there no <code>User</code> CR?<a class="headerlink" href="#why-is-there-no-user-cr" title="Permanent link">&para;</a></h3>
+<p>Because users are stateful data, not desired-state configuration.</p>
+<p>Realms and clients fit the declarative model well. Users, sessions, credentials, and other live identity records do not. They are migrated and imported through dedicated workflows instead of being continuously reconciled as CRs.</p>
+<p>See <a href="../how-to/migration-toolkit/">Migration Toolkit</a> and <a href="../how-to/export-realms/">Exporting Realms &amp; Users</a>.</p>
+<h3 id="why-only-keycloakrealm-and-keycloakclient-and-not-many-smaller-crds">Why only <code>KeycloakRealm</code> and <code>KeycloakClient</code>, and not many smaller CRDs?<a class="headerlink" href="#why-only-keycloakrealm-and-keycloakclient-and-not-many-smaller-crds" title="Permanent link">&para;</a></h3>
+<p>Because the supported API surface is intentionally centered on the two ownership boundaries that matter most in practice:</p>
+<ul>
+<li>realm-scoped configuration belongs in <code>KeycloakRealm</code></li>
+<li>client-scoped configuration belongs in <code>KeycloakClient</code></li>
+</ul>
+<p>That keeps ownership clear, avoids CRD sprawl, and matches how platform teams and application teams usually divide responsibility.</p>
 <h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
 <h3 id="are-secrets-encrypted">Are secrets encrypted?<a class="headerlink" href="#are-secrets-encrypted" title="Permanent link">&para;</a></h3>
-<p><strong>At rest:</strong> Depends on cluster configuration
-- Enable Kubernetes encryption at rest
-- Use external secret managers (Vault, AWS Secrets Manager)</p>
-<p><strong>In transit:</strong> TLS between operator and Keycloak</p>
-<p><strong>Best practices:</strong>
-- Use SealedSecrets or SOPS for GitOps
-- Enable K8s encryption at rest</p>
-<hr />
-<h3 id="how-do-i-revoke-access-to-a-compromised-namespace">How do I revoke access to a compromised namespace?<a class="headerlink" href="#how-do-i-revoke-access-to-a-compromised-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Immediate revocation:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Remove namespace from realm&#39;s authorization grants</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span>--type<span class="o">=</span>json<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;[</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s1">  {</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s1">    &quot;op&quot;: &quot;remove&quot;,</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s1">    &quot;path&quot;: &quot;/spec/clientAuthorizationGrants/-&quot;,</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s1">    &quot;value&quot;: &quot;compromised-namespace&quot;</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="s1">  }</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s1">]&#39;</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Or edit directly</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>kubectl<span class="w"> </span>edit<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="c1"># Remove the namespace from clientAuthorizationGrants list</span>
-</span></code></pre></div></p>
-<p><strong>Clean up existing clients:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># List clients from compromised namespace</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>-n<span class="w"> </span>compromised-namespace
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Delete specific client</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;client-name&gt;<span class="w"> </span>-n<span class="w"> </span>compromised-namespace
-</span></code></pre></div></p>
-<p><strong>Prevention:</strong>
-- Use Git history to audit authorization changes
-- Implement approval workflow for grant additions
-- Monitor client creation events</p>
-<p>See: <a href="../concepts/security/#namespace-authorization">Security Model</a></p>
-<hr />
-<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="my-realm-is-stuck-in-pending">My realm is stuck in Pending<a class="headerlink" href="#my-realm-is-stuck-in-pending" title="Permanent link">&para;</a></h3>
-<p><strong>Check:</strong>
-1. Authorization token exists and is correct
-2. Keycloak instance is Ready
-3. Operator can reach Keycloak API
-4. No rate limiting errors</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Check realm status</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Check token</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;token-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>&lt;realm-name&gt;
-</span></code></pre></div>
-<p>See: <a href="../operations/troubleshooting/#symptom-realm-stuck-in-pendingprovisioning">Troubleshooting Guide</a></p>
-<hr />
-<h3 id="my-realm-authorization-not-working">My realm authorization not working<a class="headerlink" href="#my-realm-authorization-not-working" title="Permanent link">&para;</a></h3>
-<p><strong>Check:</strong>
-1. Namespace is listed in <code>clientAuthorizationGrants</code>
-2. Keycloak instance is Ready
-3. Operator can reach Keycloak API
-4. No rate limiting errors</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Check realm authorization grants</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Check realm status</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>&lt;realm-name&gt;
-</span></code></pre></div>
-<p>See: <a href="../operations/troubleshooting/#symptom-realm-stuck-in-pendingprovisioning">Troubleshooting Guide</a></p>
-<hr />
-<h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<p><strong>Documentation:</strong>
-- <a href="../quickstart/">Quick Start Guide</a>
-- <a href="../how-to/end-to-end-setup/">End-to-End Setup</a>
-- <a href="../operations/troubleshooting/">Troubleshooting</a></p>
-<p><strong>Community:</strong>
-- <a href="https://github.com/vriesdemichael/keycloak-operator/issues">GitHub Issues</a>
-- <a href="https://github.com/vriesdemichael/keycloak-operator/discussions">GitHub Discussions</a></p>
-<p><strong>Before asking:</strong>
-1. Check this FAQ
-2. Review troubleshooting guide
-3. Gather operator logs
-4. Check resource status</p>
+<p>The operator relies on the Kubernetes and secret-management systems around it.</p>
+<ul>
+<li>encryption at rest depends on your cluster configuration</li>
+<li>GitOps-safe workflows should use tools such as External Secrets Operator, Sealed Secrets, or SOPS-backed pipelines</li>
+<li>secret read access is intentionally constrained and, for some features, requires the operator-read label contract</li>
+</ul>
+<p>See <a href="../operations/secret-management/">Secret Management</a> and <a href="../rbac-implementation/">RBAC Implementation</a>.</p>
+<h3 id="how-do-i-revoke-access-from-a-compromised-namespace">How do I revoke access from a compromised namespace?<a class="headerlink" href="#how-do-i-revoke-access-from-a-compromised-namespace" title="Permanent link">&para;</a></h3>
+<p>Remove the namespace from the realm’s <code>clientAuthorizationGrants</code>, reconcile the realm, delete the <code>KeycloakClient</code> objects in that namespace, and rotate any affected client credentials.</p>
+<p>If the namespace was consuming generated client secrets, also verify that the workload access path and any mirrored secrets are cleaned up.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../concepts/security/">Security Model</a></li>
+<li><a href="../how-to/ha-deployment/">High Availability Deployment</a></li>
+<li><a href="../how-to/migration-toolkit/">Migration Toolkit</a></li>
+<li><a href="../how-to/export-realms/">Exporting Realms &amp; Users</a></li>
+</ul>
 
 
 

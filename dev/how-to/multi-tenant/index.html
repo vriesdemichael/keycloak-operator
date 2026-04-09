@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -5327,6 +5355,7 @@
 <p>Configure the operator for multi-tenant environments where multiple teams manage their own realms and clients independently.</p>
 <h2 id="team-responsibilities-onboarding">Team Responsibilities &amp; Onboarding<a class="headerlink" href="#team-responsibilities-onboarding" title="Permanent link">&para;</a></h2>
 <p>When introducing the Keycloak Operator to your organization, clear role definitions are essential for a smooth "Realm-as-Tenant" adoption.</p>
+<p><a id="roles--responsibilities-matrix"></a></p>
 <h3 id="roles-responsibilities-matrix">Roles &amp; Responsibilities Matrix<a class="headerlink" href="#roles-responsibilities-matrix" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -5422,17 +5451,18 @@ graph LR
 </ul>
 <hr />
 <h2 id="platform-team-setup">Platform Team Setup<a class="headerlink" href="#platform-team-setup" title="Permanent link">&para;</a></h2>
+<p>Helm is the primary path for multi-tenant installs. The raw RBAC examples later in this guide are for clusters that intentionally manage the surrounding permissions outside the charts.</p>
 <h3 id="1-deploy-shared-keycloak">1. Deploy Shared Keycloak<a class="headerlink" href="#1-deploy-shared-keycloak" title="Permanent link">&para;</a></h3>
 <p>Install the operator with Keycloak instance using Helm:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--namespace<span class="w"> </span>platform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.managed<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.replicas<span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.database.cnpg.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.host<span class="o">=</span>keycloak.company.com<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.paths<span class="o">[</span><span class="m">0</span><span class="o">]</span>.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.paths<span class="o">[</span><span class="m">0</span><span class="o">]</span>.pathType<span class="o">=</span>Prefix
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.host<span class="o">=</span>keycloak.company.com<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.tlsEnabled<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <h3 id="2-create-namespaces-for-teams">2. Create Namespaces for Teams<a class="headerlink" href="#2-create-namespaces-for-teams" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Create namespaces</span>
@@ -5479,15 +5509,18 @@ graph LR
 </span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">  </span>--namespace<span class="o">=</span>team-gamma
 </span></code></pre></div>
 <h3 id="4-grant-operator-namespace-access">4. Grant Operator Namespace Access<a class="headerlink" href="#4-grant-operator-namespace-access" title="Permanent link">&para;</a></h3>
+<p>If you use the <code>keycloak-realm</code> and <code>keycloak-client</code> charts with their default <code>rbac.create=true</code> setting, they create the namespace RoleBindings for you. The manual commands below are only for the advanced/manual path.</p>
+<p>The namespace-access <code>ClusterRole</code> is created by the operator Helm chart. Its actual name depends on the Helm release and namespace, so for the example below the chart produces <code>keycloak-operator-platform-namespace-access</code>.</p>
 <p>The operator needs to read secrets in each team namespace:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Create RoleBinding for each team namespace</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">for</span><span class="w"> </span>TEAM<span class="w"> </span><span class="k">in</span><span class="w"> </span>team-alpha<span class="w"> </span>team-beta<span class="w"> </span>team-gamma<span class="p">;</span><span class="w"> </span><span class="k">do</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--clusterrole<span class="o">=</span>keycloak-operator-namespace-access<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span>--clusterrole<span class="o">=</span>keycloak-operator-platform-namespace-access<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span>--serviceaccount<span class="o">=</span>platform:keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span>--namespace<span class="o">=</span><span class="nv">$TEAM</span>
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">done</span>
 </span></code></pre></div>
+<p>Secrets the operator reads from tenant namespaces must also carry the label <code>vriesdemichael.github.io/keycloak-allow-operator-read=true</code>.</p>
 <hr />
 <h2 id="application-team-usage">Application Team Usage<a class="headerlink" href="#application-team-usage" title="Permanent link">&para;</a></h2>
 <h3 id="create-a-realm">Create a Realm<a class="headerlink" href="#create-a-realm" title="Permanent link">&para;</a></h3>
@@ -5597,73 +5630,83 @@ graph LR
 </span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>        └── api-gateway.yaml
 </span></code></pre></div>
 <h3 id="updating-authorization-grants">Updating Authorization Grants<a class="headerlink" href="#updating-authorization-grants" title="Permanent link">&para;</a></h3>
+<p>In GitOps workflows, update the realm chart values in Git and let ArgoCD or Flux apply the change instead of patching live objects by hand.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># team-alpha/realms/alpha-production.values.yaml</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nt">realmName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">alpha-production</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nt">operatorRef</span><span class="p">:</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-alpha</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-alpha-dev</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">new-namespace</span>
+</span></code></pre></div>
 <p>To grant a new namespace access:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Update realm via helm upgrade</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>alpha-production<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--namespace<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--reuse-values<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>team-alpha-dev<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>new-namespace
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Update realm via helm upgrade</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>alpha-production<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--namespace<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--reuse-values<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>team-alpha-dev<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>new-namespace
 </span></code></pre></div>
 <p>Changes apply immediately - new namespace can create clients.</p>
 <hr />
 <h2 id="common-patterns">Common Patterns<a class="headerlink" href="#common-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="developmentstagingproduction-separation">Development/Staging/Production Separation<a class="headerlink" href="#developmentstagingproduction-separation" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Production realm - strict grants</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>helm<span class="w"> </span>install<span class="w"> </span>prod-realm<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--namespace<span class="w"> </span>team-prod<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>prod-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-prod
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="c1"># Staging realm - more permissive</span>
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>helm<span class="w"> </span>install<span class="w"> </span>staging-realm<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">  </span>--namespace<span class="w"> </span>team-staging<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>staging-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-staging<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>team-dev<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>qa-team
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Production realm - strict grants</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>helm<span class="w"> </span>install<span class="w"> </span>prod-realm<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--namespace<span class="w"> </span>team-prod<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>prod-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-prod
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># Staging realm - more permissive</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>helm<span class="w"> </span>install<span class="w"> </span>staging-realm<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span>--namespace<span class="w"> </span>team-staging<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>staging-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>team-staging<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>team-dev<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>qa-team
 </span></code></pre></div>
 <h3 id="partner-integration">Partner Integration<a class="headerlink" href="#partner-integration" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>helm<span class="w"> </span>install<span class="w"> </span>partner-api<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--namespace<span class="w"> </span>platform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>partner-api<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>partner-a<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>partner-b<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>internal-gateway<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span>--set<span class="w"> </span>security.registrationAllowed<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span>--set<span class="w"> </span>security.bruteForceProtected<span class="o">=</span><span class="nb">true</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>helm<span class="w"> </span>install<span class="w"> </span>partner-api<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>--namespace<span class="w"> </span>platform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>partner-api<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>platform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">0</span><span class="o">]=</span>partner-a<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">1</span><span class="o">]=</span>partner-b<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>--set<span class="w"> </span>clientAuthorizationGrants<span class="o">[</span><span class="m">2</span><span class="o">]=</span>internal-gateway<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">  </span>--set<span class="w"> </span>security.registrationAllowed<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">  </span>--set<span class="w"> </span>security.bruteForceProtected<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="permission-denied-creating-realm">Permission Denied Creating Realm<a class="headerlink" href="#permission-denied-creating-realm" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Check RBAC permissions</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>keycloakrealms.vriesdemichael.github.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>--namespace<span class="o">=</span>team-alpha
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1"># Check RoleBindings</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.items[] | select(.subjects[]?.kind==&quot;ServiceAccount&quot;)&#39;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Check RBAC permissions</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>keycloakrealms.vriesdemichael.github.io<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>--namespace<span class="o">=</span>team-alpha
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># Check RoleBindings</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.items[] | select(.subjects[]?.kind==&quot;ServiceAccount&quot;)&#39;</span>
 </span></code></pre></div>
 <p><strong>Solution:</strong> Create RoleBinding granting realm creation permission.</p>
 <h3 id="client-creation-fails-not-authorized">Client Creation Fails - Not Authorized<a class="headerlink" href="#client-creation-fails-not-authorized" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Check realm&#39;s grants</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants[*]}&#39;</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>platform<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;authorization\|grant&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Check realm&#39;s grants</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants[*]}&#39;</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># Check operator logs</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>platform<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;authorization\|grant&quot;</span>
 </span></code></pre></div>
 <p><strong>Solution:</strong> Add client's namespace to realm's <code>clientAuthorizationGrants</code>.</p>
 <h3 id="operator-cant-read-secrets">Operator Can't Read Secrets<a class="headerlink" href="#operator-cant-read-secrets" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Check operator has access to namespace</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:platform:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span>--namespace<span class="o">=</span>team-alpha
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Check operator has access to namespace</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:platform:keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span>--namespace<span class="o">=</span>team-alpha
 </span></code></pre></div>
 <p><strong>Solution:</strong> Create RoleBinding for operator in the namespace.</p>
 <hr />

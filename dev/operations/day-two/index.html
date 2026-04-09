@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1216,10 +1244,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#philosophy" class="md-nav__link">
+  <a href="#operational-principles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Philosophy
+        Operational Principles
       
     </span>
   </a>
@@ -1227,33 +1255,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#admin-credentials-management" class="md-nav__link">
+  <a href="#reconciliation-pause" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Admin Credentials Management
+        Reconciliation Pause
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Admin Credentials Management">
+    <nav class="md-nav" aria-label="Reconciliation Pause">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#pause-side-effects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-using-an-external-secret" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Using an External Secret
+        Pause Side Effects
       
     </span>
   </a>
@@ -1266,10 +1283,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#maintenance-mode-coming-soon" class="md-nav__link">
+  <a href="#maintenance-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Maintenance Mode (Coming Soon)
+        Maintenance Mode
       
     </span>
   </a>
@@ -1277,10 +1294,110 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backups-and-restore" class="md-nav__link">
+  <a href="#admin-credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backups and Restore
+        Admin Credentials
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Admin Credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generated-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-secret-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Secret Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-tier-awareness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Tier Awareness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Tier Awareness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CNPG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-operational-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Operational Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4571,10 +4688,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#philosophy" class="md-nav__link">
+  <a href="#operational-principles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Philosophy
+        Operational Principles
       
     </span>
   </a>
@@ -4582,33 +4699,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#admin-credentials-management" class="md-nav__link">
+  <a href="#reconciliation-pause" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Admin Credentials Management
+        Reconciliation Pause
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Admin Credentials Management">
+    <nav class="md-nav" aria-label="Reconciliation Pause">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#pause-side-effects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it Works
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#example-using-an-external-secret" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example: Using an External Secret
+        Pause Side Effects
       
     </span>
   </a>
@@ -4621,10 +4727,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#maintenance-mode-coming-soon" class="md-nav__link">
+  <a href="#maintenance-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Maintenance Mode (Coming Soon)
+        Maintenance Mode
       
     </span>
   </a>
@@ -4632,10 +4738,110 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backups-and-restore" class="md-nav__link">
+  <a href="#admin-credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backups and Restore
+        Admin Credentials
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Admin Credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#generated-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generated Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-secret-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Secret Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-tier-awareness" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Database Tier Awareness
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Tier Awareness">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CNPG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managed Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Database
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-operational-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Operational Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4668,59 +4874,148 @@
 
 
 <h1 id="day-two-operations">Day Two Operations<a class="headerlink" href="#day-two-operations" title="Permanent link">&para;</a></h1>
-<p>Day two operations refer to the ongoing management, maintenance, and incident response for a system after its initial deployment. For Keycloak, these operations require a stable, predictable, and mature configuration strategy to prevent automation from fighting against human interventions during critical incidents or routine maintenance.</p>
-<h2 id="philosophy">Philosophy<a class="headerlink" href="#philosophy" title="Permanent link">&para;</a></h2>
-<p>The Keycloak Operator is built with a GitOps-first mentality, prioritizing predictable system states. To support mature day two operations, the operator:
-- <strong>Decouples intent from generated state:</strong> Explicitly tracks the source of configuration (e.g., auto-generated vs. manually provided secrets).
-- <strong>Supports manual overrides safely:</strong> Provides mechanisms for humans to take control without the operator immediately reverting those changes and causing an outage.
-- <strong>Annotates generated resources:</strong> Adds metadata to generated resources to make their origin and lifecycle policies transparent to human operators.</p>
-<h2 id="admin-credentials-management">Admin Credentials Management<a class="headerlink" href="#admin-credentials-management" title="Permanent link">&para;</a></h2>
-<p>One of the most critical aspects of day two operations is managing Keycloak's admin credentials. In a production environment, secrets are often managed by external systems like HashiCorp Vault, AWS Secrets Manager, or External Secrets Operator.</p>
-<p>To integrate cleanly with these systems without disrupting the operator's automation, you can provide an explicit <code>existingSecret</code>.</p>
-<h3 id="how-it-works">How it Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Proxy Secret Architecture:</strong> The operator creates and maintains a proxy secret named <code>&lt;name&gt;-admin-credentials</code> (e.g., <code>my-keycloak-admin-credentials</code>) in the same namespace as the Keycloak instance. The Keycloak pods <em>always</em> mount this proxy secret.</li>
-<li><strong>Auto-Generated Mode:</strong> By default, if you do not specify an existing secret, the operator generates a secure 16-character password and populates the proxy secret. It adds annotations indicating it was generated and is eligible for automatic rotation (if enabled).</li>
-<li><strong>Manual / External Mode:</strong> When you provide <code>spec.admin.existingSecret</code> in your Keycloak CR, the operator will:<ul>
-<li>Validate that the referenced secret exists and contains both <code>username</code> and <code>password</code> keys.</li>
-<li>Synchronize the contents of the referenced secret into the proxy secret.</li>
-<li>Annotate the proxy secret to explicitly state that its <code>credential-source</code> is an external secret, and that <code>rotation-enabled</code> is false.</li>
-<li><strong>Crucially:</strong> It will <em>never</em> attempt to overwrite, modify, or rotate the secret you provided.</li>
+<p>Day-two operations cover the routine and incident-driven work that happens after initial deployment: maintenance windows, controlled pauses, secret sourcing, upgrades, and operational recovery.</p>
+<p>The operator is GitOps-first. The goal is not to remove operator control during operations, but to give you explicit levers so human actions and reconciliation do not fight each other.</p>
+<h2 id="operational-principles">Operational Principles<a class="headerlink" href="#operational-principles" title="Permanent link">&para;</a></h2>
+<ul>
+<li>prefer declarative changes through Helm values or Git-managed manifests</li>
+<li>use pause controls for intentional maintenance windows instead of hoping reconciliations stay quiet</li>
+<li>use external secret systems such as External Secrets Operator or Sealed Secrets when you need GitOps-friendly secret provisioning</li>
+<li>treat raw <code>kubectl patch</code> work as a temporary emergency path, not the normal workflow</li>
 </ul>
-</li>
+<h2 id="reconciliation-pause">Reconciliation Pause<a class="headerlink" href="#reconciliation-pause" title="Permanent link">&para;</a></h2>
+<p>The operator supports per-resource-type reconciliation pause.</p>
+<p>When paused:</p>
+<ul>
+<li>create and update reconciliation is skipped</li>
+<li>resource status moves to <code>Paused</code></li>
+<li>the <code>Ready</code> condition becomes <code>False</code> with reason <code>ReconciliationPaused</code></li>
+<li>delete handlers still run</li>
+</ul>
+<p>Configure pause through the operator chart:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">operator</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">reconciliation</span><span class="p">:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">pause</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">keycloak</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">realms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">clients</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Maintenance</span><span class="nv"> </span><span class="s">window:</span><span class="nv"> </span><span class="s">Keycloak</span><span class="nv"> </span><span class="s">upgrade</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">progress&quot;</span>
+</span></code></pre></div>
+<p>Equivalent environment variables:</p>
+<ul>
+<li><code>RECONCILE_PAUSE_KEYCLOAK</code></li>
+<li><code>RECONCILE_PAUSE_REALMS</code></li>
+<li><code>RECONCILE_PAUSE_CLIENTS</code></li>
+<li><code>RECONCILE_PAUSE_MESSAGE</code></li>
+</ul>
+<h3 id="pause-side-effects">Pause Side Effects<a class="headerlink" href="#pause-side-effects" title="Permanent link">&para;</a></h3>
+<ul>
+<li>client secret rotation daemons pause when client reconciliation is paused</li>
+<li>drift detection continues to run independently</li>
+<li>delete operations are still allowed</li>
+</ul>
+<p>Use pause when you need to avoid configuration churn during:</p>
+<ul>
+<li>Keycloak upgrades</li>
+<li>controlled database work</li>
+<li>bulk platform changes</li>
+<li>incident response where you need stable operator behavior</li>
+</ul>
+<h2 id="maintenance-mode">Maintenance Mode<a class="headerlink" href="#maintenance-mode" title="Permanent link">&para;</a></h2>
+<p>Maintenance mode is a separate feature from reconciliation pause.</p>
+<p>It lives under <code>keycloak.maintenanceMode</code> in the operator chart and is meant for blue-green upgrade traffic control.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">maintenanceMode</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">full-block</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">excludePaths</span><span class="p">:</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/live</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/ready</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/started</span>
+</span></code></pre></div>
+<p>Modes:</p>
+<ul>
+<li><code>full-block</code>: returns maintenance responses for normal traffic</li>
+<li><code>read-only</code>: blocks the configured maintenance paths regardless of HTTP method while leaving normal authentication and token endpoints available</li>
+</ul>
+<p>By default, <code>read-only</code> mode targets the admin console, account console, self-registration, and broker-linking routes. That means existing sessions, login flows, and token exchange endpoints stay available unless you explicitly extend the blocked path list.</p>
+<p>Use maintenance mode when you need traffic shaping at the ingress layer. Use reconciliation pause when you need operator quieting. They solve different problems.</p>
+<h2 id="admin-credentials">Admin Credentials<a class="headerlink" href="#admin-credentials" title="Permanent link">&para;</a></h2>
+<p>Admin credentials use a proxy-secret pattern.</p>
+<p>The operator always maintains:</p>
+<ul>
+<li><code>&lt;keycloak-name&gt;-admin-credentials</code></li>
+</ul>
+<p>Keycloak pods consume that proxy secret, regardless of whether credentials are generated or sourced from an existing secret.</p>
+<p>There are two different configuration layers here:</p>
+<ul>
+<li><code>keycloak.admin.existingSecret</code> is the managed-Keycloak input. It tells the operator where to source the admin username and password for the managed <code>Keycloak</code> CR.</li>
+<li><code>keycloak.adminSecret</code> plus <code>keycloak.adminPasswordKey</code> are the operator's own connection settings. In managed mode they normally point at the generated proxy secret; in external mode they must point at the external Keycloak admin password secret.</li>
+</ul>
+<h3 id="generated-mode">Generated Mode<a class="headerlink" href="#generated-mode" title="Permanent link">&para;</a></h3>
+<p>If you do not provide an explicit secret, the operator generates credentials and annotates the proxy secret with:</p>
+<ul>
+<li><code>vriesdemichael.github.io/credential-source: generated</code></li>
+<li><code>vriesdemichael.github.io/rotation-enabled: "true"</code></li>
+</ul>
+<h3 id="external-secret-mode">External Secret Mode<a class="headerlink" href="#external-secret-mode" title="Permanent link">&para;</a></h3>
+<p>The operator chart exposes the managed-Keycloak source secret through <code>keycloak.admin.existingSecret</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">admin</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">existingSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-custom-admin-secret</span>
+</span></code></pre></div>
+<p>Requirements for the referenced secret:</p>
+<ul>
+<li>same namespace as the <code>Keycloak</code></li>
+<li>contains <code>username</code> and <code>password</code> keys</li>
+</ul>
+<p>In this mode the operator:</p>
+<ul>
+<li>validates the referenced secret</li>
+<li>copies its contents into <code>&lt;name&gt;-admin-credentials</code></li>
+<li>annotates the proxy secret with:</li>
+<li><code>vriesdemichael.github.io/credential-source: external:&lt;secret-name&gt;</code></li>
+<li><code>vriesdemichael.github.io/rotation-enabled: "false"</code></li>
+<li>never rotates or overwrites the source secret itself</li>
+</ul>
+<h2 id="database-tier-awareness">Database Tier Awareness<a class="headerlink" href="#database-tier-awareness" title="Permanent link">&para;</a></h2>
+<p>Day-two behavior depends on the database tier behind the Keycloak instance.</p>
+<h3 id="cnpg">CNPG<a class="headerlink" href="#cnpg" title="Permanent link">&para;</a></h3>
+<ul>
+<li>operator can resolve the database connection from the CNPG cluster reference</li>
+<li>CNPG-native backup workflows integrate cleanly with operator-driven operations</li>
+<li>best fit for fully managed GitOps environments</li>
+</ul>
+<h3 id="managed-database">Managed Database<a class="headerlink" href="#managed-database" title="Permanent link">&para;</a></h3>
+<ul>
+<li>operator uses explicit connection details from the spec</li>
+<li>storage lifecycle is outside operator control</li>
+<li>upgrade and restore planning must account for the external database service</li>
+</ul>
+<h3 id="external-database">External Database<a class="headerlink" href="#external-database" title="Permanent link">&para;</a></h3>
+<ul>
+<li>fully operator-external lifecycle</li>
+<li>operator can validate connectivity, but backup and restore remain your responsibility</li>
+<li>treat upgrade, restore, and failover procedures as platform-runbook concerns</li>
+<li>pair this with a documented backup and restore process before attempting Keycloak upgrades or manual recovery</li>
+</ul>
+<h2 id="recommended-operational-workflow">Recommended Operational Workflow<a class="headerlink" href="#recommended-operational-workflow" title="Permanent link">&para;</a></h2>
+<p>For planned maintenance:</p>
+<ol>
+<li>enable reconciliation pause for the affected resource types</li>
+<li>enable maintenance mode if you must gate user traffic during the operation</li>
+<li>execute the infrastructure or Keycloak change</li>
+<li>verify status, metrics, and endpoints</li>
+<li>disable maintenance mode and pause controls</li>
 </ol>
-<p>This proxy architecture ensures that even if you rotate the external secret, the proxy secret will be updated gracefully during the next reconciliation loop, without requiring direct changes to the Keycloak deployment environment variables or potentially causing temporary mismatches in credential retrieval.</p>
-<h3 id="example-using-an-external-secret">Example: Using an External Secret<a class="headerlink" href="#example-using-an-external-secret" title="Permanent link">&para;</a></h3>
-<p>First, create a secret containing the credentials. This is often done by a system like External Secrets Operator.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-custom-admin-secret</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">stringData</span><span class="p">:</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;super-secure-password-from-vault&quot;</span>
-</span></code></pre></div>
-<p>Then, configure the Keycloak custom resource to use this secret:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example-keycloak</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="c1"># Other configurations...</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">admin</span><span class="p">:</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">existingSecret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-custom-admin-secret&quot;</span>
-</span></code></pre></div>
-<p>When you inspect the resulting proxy secret (<code>example-keycloak-admin-credentials</code>), you will notice annotations that clarify its origin:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">vriesdemichael.github.io/credential-source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;external:my-custom-admin-secret&quot;</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">vriesdemichael.github.io/rotation-enabled</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
-</span></code></pre></div>
-<h2 id="maintenance-mode-coming-soon">Maintenance Mode (Coming Soon)<a class="headerlink" href="#maintenance-mode-coming-soon" title="Permanent link">&para;</a></h2>
-<p>Future releases of the operator will include explicit support for Maintenance Mode, allowing you to gracefully pause specific reconciliations or upgrades while performing day two operations such as database migrations or manual scale-downs.</p>
-<h2 id="backups-and-restore">Backups and Restore<a class="headerlink" href="#backups-and-restore" title="Permanent link">&para;</a></h2>
-<p>Please see the <a href="../backup-restore/">Backup &amp; Restore</a> guide for detailed instructions on backing up and restoring your Keycloak instance.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../backup-restore/">Backup &amp; Restore</a></li>
+<li><a href="../secret-management/">Secret Management</a></li>
+<li><a href="../migration/">Migration</a></li>
+<li><a href="../escape-hatch/">Escape Hatch</a></li>
+</ul>
 
 
 

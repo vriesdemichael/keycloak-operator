@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1489,7 +1517,12 @@
   
 </li>
         
-          <li class="md-nav__item">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#database-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1502,10 +1535,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-fields" class="md-nav__link">
+  <a href="#cnpg-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Fields
+        CNPG Tier
       
     </span>
   </a>
@@ -1513,10 +1546,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#connection-pool" class="md-nav__link">
+  <a href="#managed-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Connection Pool
+        Managed Tier
       
     </span>
   </a>
@@ -1524,10 +1557,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ssltls" class="md-nav__link">
+  <a href="#external-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SSL/TLS
+        External Tier
       
     </span>
   </a>
@@ -1535,10 +1568,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#migration" class="md-nav__link">
+  <a href="#legacy-flat-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration
+        Legacy Flat Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-database-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Database Fields
       
     </span>
   </a>
@@ -1549,12 +1593,24 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#tls-configuration" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#networking-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TLS Configuration
+        Networking And Runtime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Networking And Runtime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#service-ingress-and-tls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service, ingress, and TLS
       
     </span>
   </a>
@@ -1562,10 +1618,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#service-configuration" class="md-nav__link">
+  <a href="#runtime-tuning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Service Configuration
+        Runtime tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational Controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operational Controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#realm-capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Realm capacity
       
     </span>
   </a>
@@ -1573,10 +1657,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ingress-configuration" class="md-nav__link">
+  <a href="#upgrade-orchestration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ingress Configuration
+        Upgrade orchestration
       
     </span>
   </a>
@@ -1584,10 +1668,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resource-requirements" class="md-nav__link">
+  <a href="#maintenance-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Requirements
+        Maintenance mode
       
     </span>
   </a>
@@ -1595,10 +1679,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
+  <a href="#cache-isolation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Variables
+        Cache isolation
       
     </span>
   </a>
@@ -1606,43 +1690,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jvm-configuration" class="md-nav__link">
+  <a href="#tracing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JVM Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-account" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Account
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#health-probes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Health Probes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Context
+        Tracing
       
     </span>
   </a>
@@ -1663,25 +1714,14 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complete-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complete Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Complete Examples">
+    <nav class="md-nav" aria-label="Status Fields">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#production-setup-with-ha" class="md-nav__link">
+  <a href="#common-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production Setup with HA
+        Common phases
       
     </span>
   </a>
@@ -1689,10 +1729,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#development-setup" class="md-nav__link">
+  <a href="#important-status-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Setup
+        Important status fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blue-green-upgrade-with-cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blue-green upgrade with CNPG
       
     </span>
   </a>
@@ -1700,10 +1768,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#with-cloudnativepg" class="md-nav__link">
+  <a href="#managed-postgresql-with-capacity-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        With CloudNativePG
+        Managed PostgreSQL with capacity control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-image-with-explicit-version-and-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom image with explicit version and tracing
       
     </span>
   </a>
@@ -4825,7 +4904,12 @@
   
 </li>
         
-          <li class="md-nav__item">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#database-configuration" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4838,10 +4922,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#basic-fields" class="md-nav__link">
+  <a href="#cnpg-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Basic Fields
+        CNPG Tier
       
     </span>
   </a>
@@ -4849,10 +4933,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#connection-pool" class="md-nav__link">
+  <a href="#managed-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Connection Pool
+        Managed Tier
       
     </span>
   </a>
@@ -4860,10 +4944,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ssltls" class="md-nav__link">
+  <a href="#external-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        SSL/TLS
+        External Tier
       
     </span>
   </a>
@@ -4871,10 +4955,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#migration" class="md-nav__link">
+  <a href="#legacy-flat-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration
+        Legacy Flat Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-database-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared Database Fields
       
     </span>
   </a>
@@ -4885,12 +4980,24 @@
     </nav>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#tls-configuration" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#networking-and-runtime" class="md-nav__link">
     <span class="md-ellipsis">
       
-        TLS Configuration
+        Networking And Runtime
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Networking And Runtime">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#service-ingress-and-tls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service, ingress, and TLS
       
     </span>
   </a>
@@ -4898,10 +5005,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#service-configuration" class="md-nav__link">
+  <a href="#runtime-tuning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Service Configuration
+        Runtime tuning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational Controls
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operational Controls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#realm-capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Realm capacity
       
     </span>
   </a>
@@ -4909,10 +5044,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ingress-configuration" class="md-nav__link">
+  <a href="#upgrade-orchestration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ingress Configuration
+        Upgrade orchestration
       
     </span>
   </a>
@@ -4920,10 +5055,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#resource-requirements" class="md-nav__link">
+  <a href="#maintenance-mode" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Resource Requirements
+        Maintenance mode
       
     </span>
   </a>
@@ -4931,10 +5066,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
+  <a href="#cache-isolation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Variables
+        Cache isolation
       
     </span>
   </a>
@@ -4942,43 +5077,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jvm-configuration" class="md-nav__link">
+  <a href="#tracing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JVM Configuration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#service-account" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Service Account
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#health-probes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Health Probes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Context
+        Tracing
       
     </span>
   </a>
@@ -4999,25 +5101,14 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complete-examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complete Examples
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Complete Examples">
+    <nav class="md-nav" aria-label="Status Fields">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#production-setup-with-ha" class="md-nav__link">
+  <a href="#common-phases" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production Setup with HA
+        Common phases
       
     </span>
   </a>
@@ -5025,10 +5116,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#development-setup" class="md-nav__link">
+  <a href="#important-status-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Development Setup
+        Important status fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#blue-green-upgrade-with-cnpg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blue-green upgrade with CNPG
       
     </span>
   </a>
@@ -5036,10 +5155,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#with-cloudnativepg" class="md-nav__link">
+  <a href="#managed-postgresql-with-capacity-control" class="md-nav__link">
     <span class="md-ellipsis">
       
-        With CloudNativePG
+        Managed PostgreSQL with capacity control
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-image-with-explicit-version-and-tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom image with explicit version and tracing
       
     </span>
   </a>
@@ -5088,30 +5218,32 @@
 
 
 <h1 id="keycloak-crd-reference">Keycloak CRD Reference<a class="headerlink" href="#keycloak-crd-reference" title="Permanent link">&para;</a></h1>
-<p>Complete reference for the <code>Keycloak</code> Custom Resource Definition.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The <code>Keycloak</code> CRD defines a Keycloak instance - an identity and access management server. This resource allows you to declaratively manage Keycloak deployments with database connections, TLS configuration, ingress settings, and more.</p>
+<p>Reference for the <code>Keycloak</code> custom resource.</p>
+<p>This CR defines the Keycloak instance managed by one operator installation. In normal deployments you create it through the operator Helm chart, but the CR remains the source of truth for the runtime contract.</p>
 <p><strong>API Version:</strong> <code>vriesdemichael.github.io/v1</code>
 <strong>Kind:</strong> <code>Keycloak</code>
-<strong>Plural:</strong> <code>keycloaks</code>
-<strong>Singular:</strong> <code>keycloak</code>
-<strong>Short Names:</strong> <code>kc</code></p>
+<strong>Short Name:</strong> <code>kc</code></p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Important design constraints:</p>
+<ul>
+<li>one operator instance manages one Keycloak instance in its own namespace</li>
+<li>the operator supports Keycloak <code>24.0.0+</code></li>
+<li>the canonical internal model is generated from Keycloak <code>26.5.2</code></li>
+<li><code>keycloakVersion</code> exists so custom images without a useful semver tag can still be reconciled safely</li>
+</ul>
+<p>For compatibility details, see <a href="../keycloak-version-support/">Keycloak Version Support</a>.</p>
 <h2 id="minimal-example">Minimal Example<a class="headerlink" href="#minimal-example" title="Permanent link">&para;</a></h2>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-postgresql</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">cnpg</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
 </span></code></pre></div>
 <h2 id="spec-fields">Spec Fields<a class="headerlink" href="#spec-fields" title="Permanent link">&para;</a></h2>
 <h3 id="core-configuration">Core Configuration<a class="headerlink" href="#core-configuration" title="Permanent link">&para;</a></h3>
@@ -5120,901 +5252,695 @@
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>image</code></td>
 <td>string</td>
-<td>No</td>
-<td>Uses operator default</td>
-<td>Container image for Keycloak (e.g., <code>quay.io/keycloak/keycloak:26.4.1</code>)</td>
+<td>Keycloak image to run. Default code constant is <code>quay.io/keycloak/keycloak:26.5.2</code>.</td>
+</tr>
+<tr>
+<td><code>keycloakVersion</code></td>
+<td>string</td>
+<td>Optional explicit version override for custom images whose tag is not parseable.</td>
 </tr>
 <tr>
 <td><code>replicas</code></td>
 <td>integer</td>
-<td>No</td>
-<td><code>1</code></td>
-<td>Number of Keycloak replicas (minimum: 1)</td>
+<td>Minimum <code>1</code>. Multi-replica setups require the usual HA prerequisites.</td>
+</tr>
+<tr>
+<td><code>optimized</code></td>
+<td>boolean</td>
+<td>Use <code>--optimized</code> only for pre-built images. The model default is <code>false</code>.</td>
+</tr>
+<tr>
+<td><code>operatorRef.namespace</code></td>
+<td>string</td>
+<td>Operator namespace. Defaults to <code>keycloak-system</code> when not overridden.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example:</strong>
+<p>Example:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.4.1</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span></code></pre></div></p>
-<h3 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h3>
-<p>The database configuration is <strong>required</strong>. The operator supports PostgreSQL, MySQL, MariaDB, Oracle, and Microsoft SQL Server.</p>
-<h4 id="basic-fields">Basic Fields<a class="headerlink" href="#basic-fields" title="Permanent link">&para;</a></h4>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/example/keycloak-custom:stable</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">keycloakVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">26.5.2</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">optimized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">operatorRef</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span></code></pre></div>
+<h2 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h2>
+<p>The current model is tiered. Prefer one of the sub-objects below instead of the older flat <code>host</code> and <code>database</code> shape.</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tier 1</td>
+<td><code>database.cnpg</code></td>
+<td>CloudNativePG-managed PostgreSQL. Connection details are derived from the CNPG cluster.</td>
+</tr>
+<tr>
+<td>Tier 2</td>
+<td><code>database.managed</code></td>
+<td>Generic PostgreSQL that the operator can connect to directly.</td>
+</tr>
+<tr>
+<td>Tier 3</td>
+<td><code>database.external</code></td>
+<td>Externally managed database. The operator can connect but cannot perform managed backups.</td>
+</tr>
+</tbody>
+</table>
+<p>Base field:</p>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>database.type</code></td>
 <td>string</td>
-<td>Yes</td>
-<td><code>postgresql</code></td>
-<td>Database type. Options: <code>postgresql</code>, <code>mysql</code>, <code>mariadb</code>, <code>oracle</code>, <code>mssql</code></td>
-</tr>
-<tr>
-<td><code>database.host</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>-</td>
-<td>Database hostname or IP address</td>
-</tr>
-<tr>
-<td><code>database.port</code></td>
-<td>integer</td>
-<td>No</td>
-<td>Auto-detected</td>
-<td>Database port (1-65535). Auto-detected based on database type if not specified</td>
-</tr>
-<tr>
-<td><code>database.database</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>-</td>
-<td>Database name</td>
-</tr>
-<tr>
-<td><code>database.username</code></td>
-<td>string</td>
-<td>No*</td>
-<td>-</td>
-<td>Database username (*required if not using <code>credentialsSecret</code>)</td>
-</tr>
-<tr>
-<td><code>database.passwordSecret</code></td>
-<td>object</td>
-<td>No*</td>
-<td>-</td>
-<td>Secret reference for database password (*required if using <code>username</code>)</td>
-</tr>
-<tr>
-<td><code>database.passwordSecret.name</code></td>
-<td>string</td>
-<td>Yes</td>
-<td>-</td>
-<td>Name of the secret containing the password</td>
-</tr>
-<tr>
-<td><code>database.passwordSecret.key</code></td>
-<td>string</td>
-<td>No</td>
-<td><code>password</code></td>
-<td>Key in the secret</td>
-</tr>
-<tr>
-<td><code>database.credentialsSecret</code></td>
-<td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Alternative: Kubernetes secret name with complete database credentials</td>
-</tr>
-<tr>
-<td><code>database.connectionParams</code></td>
-<td>map[string]string</td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Additional database connection parameters</td>
+<td><code>postgresql</code>, <code>mysql</code>, <code>mariadb</code>, <code>oracle</code>, or <code>mssql</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example - PostgreSQL with username/password:</strong>
+<h3 id="cnpg-tier">CNPG Tier<a class="headerlink" href="#cnpg-tier" title="Permanent link">&para;</a></h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-postgresql.default.svc.cluster.local</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
-</span></code></pre></div></p>
-<p><strong>Example - CloudNativePG:</strong>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">cnpg</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database</span>
+</span></code></pre></div>
+<p>Behavior:</p>
+<ul>
+<li>the operator resolves the effective host as <code>&lt;clusterName&gt;-rw</code></li>
+<li>the effective credentials secret becomes <code>&lt;clusterName&gt;-app</code></li>
+<li>this is the strongest fit for automated backup and blue-green upgrade support</li>
+</ul>
+<h3 id="managed-tier">Managed Tier<a class="headerlink" href="#managed-tier" title="Permanent link">&para;</a></h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-postgres-rw</span><span class="w">  </span><span class="c1"># CNPG read-write service</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-postgres-app</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
-</span></code></pre></div></p>
-<p><strong>Example - Using credentialsSecret:</strong>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">managed</span><span class="p">:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-rw.database.svc.cluster.local</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">passwordSecret</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">        </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="nt">pvcName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-data</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">      </span><span class="nt">volumeSnapshotClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">csi-snapclass</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">      </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify-full</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">      </span><span class="nt">connectionPool</span><span class="p">:</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">        </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">        </span><span class="nt">minConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</span></code></pre></div>
+<p>Use this when the operator can reach the database directly but does not own the database lifecycle.</p>
+<h3 id="external-tier">External Tier<a class="headerlink" href="#external-tier" title="Permanent link">&para;</a></h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-postgresql</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nt">credentialsSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db-credentials</span><span class="w">  </span><span class="c1"># Secret with keys: username, password</span>
-</span></code></pre></div></p>
-<h4 id="connection-pool">Connection Pool<a class="headerlink" href="#connection-pool" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>database.connectionPool.maxConnections</code></td>
-<td>integer</td>
-<td>No</td>
-<td><code>20</code></td>
-<td>Maximum number of database connections</td>
-</tr>
-<tr>
-<td><code>database.connectionPool.minConnections</code></td>
-<td>integer</td>
-<td>No</td>
-<td><code>5</code></td>
-<td>Minimum number of database connections</td>
-</tr>
-<tr>
-<td><code>database.connectionPool.connectionTimeout</code></td>
-<td>string</td>
-<td>No</td>
-<td><code>30s</code></td>
-<td>Connection timeout duration</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nt">external</span><span class="p">:</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres.example.com</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">credentialsSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">      </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify-full</span>
+</span></code></pre></div>
+<p>Use this when the database is managed outside the cluster or outside the operator's control plane.</p>
+<h3 id="legacy-flat-fields">Legacy Flat Fields<a class="headerlink" href="#legacy-flat-fields" title="Permanent link">&para;</a></h3>
+<p>The older flat-field form still works for backward compatibility:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="c1"># ... other fields ...</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">connectionPool</span><span class="p">:</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">      </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">minConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">      </span><span class="nt">connectionTimeout</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;60s&quot;</span>
-</span></code></pre></div></p>
-<h4 id="ssltls">SSL/TLS<a class="headerlink" href="#ssltls" title="Permanent link">&para;</a></h4>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres.example.com</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db-password</span>
+</span></code></pre></div>
+<p>The operator normalizes that legacy form to the same effective contract as the external tier. Prefer the explicit tiered shape for new manifests.</p>
+<h3 id="shared-database-fields">Shared Database Fields<a class="headerlink" href="#shared-database-fields" title="Permanent link">&para;</a></h3>
+<p>These appear either on the top-level legacy form or within <code>managed</code> and <code>external</code>:</p>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>database.sslMode</code></td>
+<td><code>host</code></td>
 <td>string</td>
-<td>No</td>
-<td><code>require</code></td>
-<td>SSL mode for database connections. Options: <code>disable</code>, <code>allow</code>, <code>prefer</code>, <code>require</code>, <code>verify-ca</code>, <code>verify-full</code></td>
+<td>required for <code>managed</code> and <code>external</code></td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td>integer</td>
+<td>defaults by database type</td>
+</tr>
+<tr>
+<td><code>database</code></td>
+<td>string</td>
+<td>logical database name</td>
+</tr>
+<tr>
+<td><code>username</code></td>
+<td>string</td>
+<td>optional when using <code>credentialsSecret</code></td>
+</tr>
+<tr>
+<td><code>passwordSecret.name</code> / <code>key</code></td>
+<td>object</td>
+<td>direct password secret reference</td>
+</tr>
+<tr>
+<td><code>credentialsSecret</code></td>
+<td>string</td>
+<td>secret containing connection credentials</td>
+</tr>
+<tr>
+<td><code>connectionParams</code></td>
+<td>map</td>
+<td>additional JDBC parameters</td>
+</tr>
+<tr>
+<td><code>connectionPool.maxConnections</code></td>
+<td>integer</td>
+<td>default <code>20</code></td>
+</tr>
+<tr>
+<td><code>connectionPool.minConnections</code></td>
+<td>integer</td>
+<td>default <code>5</code></td>
+</tr>
+<tr>
+<td><code>connectionPool.connectionTimeout</code></td>
+<td>string</td>
+<td>default <code>30s</code></td>
+</tr>
+<tr>
+<td><code>sslMode</code></td>
+<td>string</td>
+<td><code>disable</code>, <code>allow</code>, <code>prefer</code>, <code>require</code>, <code>verify-ca</code>, <code>verify-full</code></td>
+</tr>
+<tr>
+<td><code>migrationStrategy</code></td>
+<td>string</td>
+<td><code>auto</code>, <code>manual</code>, <code>skip</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="c1"># ... other fields ...</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify-full</span><span class="w">  </span><span class="c1"># Strict SSL with certificate verification</span>
-</span></code></pre></div></p>
-<h4 id="migration">Migration<a class="headerlink" href="#migration" title="Permanent link">&para;</a></h4>
+<h2 id="networking-and-runtime">Networking And Runtime<a class="headerlink" href="#networking-and-runtime" title="Permanent link">&para;</a></h2>
+<h3 id="service-ingress-and-tls">Service, ingress, and TLS<a class="headerlink" href="#service-ingress-and-tls" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>database.migrationStrategy</code></td>
-<td>string</td>
-<td>No</td>
-<td><code>auto</code></td>
-<td>Database migration strategy. Options: <code>auto</code> (automatic), <code>manual</code> (skip migrations), <code>skip</code></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="c1"># ... other fields ...</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nt">migrationStrategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auto</span><span class="w">  </span><span class="c1"># Automatically run schema migrations</span>
-</span></code></pre></div></p>
-<h3 id="tls-configuration">TLS Configuration<a class="headerlink" href="#tls-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure TLS/SSL termination for Keycloak.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>tls.enabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Enable TLS/SSL</td>
-</tr>
-<tr>
-<td><code>tls.secretName</code></td>
-<td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Secret containing TLS certificate (keys: <code>tls.crt</code>, <code>tls.key</code>)</td>
-</tr>
-<tr>
-<td><code>tls.hostname</code></td>
-<td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Hostname for TLS certificate (Server Name Indication)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">tls</span><span class="p">:</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-tls</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
-</span></code></pre></div></p>
-<h3 id="service-configuration">Service Configuration<a class="headerlink" href="#service-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure the Kubernetes service for Keycloak.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>service.type</code></td>
 <td>string</td>
-<td>No</td>
-<td><code>ClusterIP</code></td>
-<td>Service type. Options: <code>ClusterIP</code>, <code>NodePort</code>, <code>LoadBalancer</code></td>
+<td><code>ClusterIP</code>, <code>NodePort</code>, <code>LoadBalancer</code>, <code>ExternalName</code></td>
 </tr>
 <tr>
 <td><code>service.httpPort</code></td>
 <td>integer</td>
-<td>No</td>
-<td><code>8080</code></td>
-<td>HTTP port (1-65535)</td>
+<td>default <code>8080</code></td>
 </tr>
 <tr>
 <td><code>service.httpsPort</code></td>
 <td>integer</td>
-<td>No</td>
-<td><code>8443</code></td>
-<td>HTTPS port (1-65535)</td>
+<td>default <code>8443</code></td>
 </tr>
 <tr>
 <td><code>service.annotations</code></td>
-<td>map[string]string</td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Service annotations (e.g., for cloud load balancers)</td>
+<td>map</td>
+<td>provider-specific tuning</td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nt">httpPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="nt">httpsPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8443</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">      </span><span class="nt">service.beta.kubernetes.io/aws-load-balancer-type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;nlb&quot;</span>
-</span></code></pre></div></p>
-<h3 id="ingress-configuration">Ingress Configuration<a class="headerlink" href="#ingress-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure ingress for external access to Keycloak.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>ingress.enabled</code></td>
 <td>boolean</td>
-<td>No</td>
-<td><code>false</code></td>
-<td>Enable ingress</td>
-</tr>
-<tr>
-<td><code>ingress.host</code></td>
-<td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Ingress hostname (e.g., <code>keycloak.example.com</code>)</td>
-</tr>
-<tr>
-<td><code>ingress.path</code></td>
-<td>string</td>
-<td>No</td>
-<td><code>/</code></td>
-<td>Ingress path</td>
-</tr>
-<tr>
-<td><code>ingress.tlsEnabled</code></td>
-<td>boolean</td>
-<td>No</td>
-<td><code>true</code></td>
-<td>Enable TLS for ingress</td>
-</tr>
-<tr>
-<td><code>ingress.tlsSecretName</code></td>
-<td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Secret name for ingress TLS certificate</td>
+<td>create ingress</td>
 </tr>
 <tr>
 <td><code>ingress.className</code></td>
 <td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Ingress class name (e.g., <code>nginx</code>, <code>traefik</code>)</td>
+<td>ingress class</td>
 </tr>
 <tr>
-<td><code>ingress.annotations</code></td>
-<td>map[string]string</td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Ingress annotations</td>
+<td><code>ingress.host</code></td>
+<td>string</td>
+<td>external hostname</td>
+</tr>
+<tr>
+<td><code>ingress.path</code></td>
+<td>string</td>
+<td>default <code>/</code></td>
+</tr>
+<tr>
+<td><code>ingress.tlsEnabled</code></td>
+<td>boolean</td>
+<td>default <code>true</code></td>
+</tr>
+<tr>
+<td><code>ingress.tlsSecretName</code></td>
+<td>string</td>
+<td>ingress TLS secret</td>
+</tr>
+<tr>
+<td><code>tls.enabled</code></td>
+<td>boolean</td>
+<td>enable Keycloak-side TLS</td>
+</tr>
+<tr>
+<td><code>tls.secretName</code></td>
+<td>string</td>
+<td><code>tls.crt</code> / <code>tls.key</code> secret</td>
+</tr>
+<tr>
+<td><code>tls.hostname</code></td>
+<td>string</td>
+<td>SNI hostname</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nt">tlsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">    </span><span class="nt">tlsSecretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-ingress-tls</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">      </span><span class="nt">cert-manager.io/cluster-issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">letsencrypt-prod</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/proxy-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;128k&quot;</span>
-</span></code></pre></div></p>
-<h3 id="resource-requirements">Resource Requirements<a class="headerlink" href="#resource-requirements" title="Permanent link">&para;</a></h3>
-<p>Configure CPU and memory limits for Keycloak pods.</p>
+<h3 id="runtime-tuning">Runtime tuning<a class="headerlink" href="#runtime-tuning" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
+<th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>resources.requests</code></td>
-<td>map[string]string</td>
-<td>No</td>
-<td>-</td>
-<td>Resource requests (e.g., <code>cpu: "500m"</code>, <code>memory: "1Gi"</code>)</td>
+<td><code>resources.requests</code> / <code>limits</code></td>
+<td>map</td>
+<td>pod CPU and memory sizing</td>
 </tr>
-<tr>
-<td><code>resources.limits</code></td>
-<td>map[string]string</td>
-<td>No</td>
-<td>-</td>
-<td>Resource limits</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000m&quot;</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2Gi&quot;</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2000m&quot;</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4Gi&quot;</span>
-</span></code></pre></div></p>
-<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>Inject custom environment variables into Keycloak containers.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>env</code></td>
-<td><code>[]EnvVar</code></td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>Kubernetes-style environment variable entries</td>
+<td>list</td>
+<td>Kubernetes-style env entries; supports <code>valueFrom</code></td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_LOG_LEVEL</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;INFO&quot;</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_FEATURES</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">      </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;token-exchange,admin-fine-grained-authz&quot;</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KC_PROXY_HEADERS</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">      </span><span class="nt">valueFrom</span><span class="p">:</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">        </span><span class="nt">secretKeyRef</span><span class="p">:</span>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-runtime-env</span>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="w">          </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy-headers</span>
-</span></code></pre></div></p>
-<p><strong>Common Keycloak environment variables:</strong>
-- <code>KC_LOG_LEVEL</code> - Logging level (<code>INFO</code>, <code>DEBUG</code>, <code>WARN</code>, <code>ERROR</code>)
-- <code>KC_FEATURES</code> - Enable preview features
-- <code>KC_PROXY</code> - Proxy mode (<code>edge</code>, <code>reencrypt</code>, <code>passthrough</code>)
-- <code>KC_HTTP_RELATIVE_PATH</code> - Context path for Keycloak</p>
-<h3 id="jvm-configuration">JVM Configuration<a class="headerlink" href="#jvm-configuration" title="Permanent link">&para;</a></h3>
-<p>Configure JVM options for performance tuning.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>jvmOptions</code></td>
-<td>[]string</td>
-<td>No</td>
-<td><code>[]</code></td>
-<td>JVM options (e.g., heap size, GC settings)</td>
+<td>list</td>
+<td>additional JVM flags</td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">jvmOptions</span><span class="p">:</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-Xms2048m&quot;</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-Xmx4096m&quot;</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-XX:+UseG1GC&quot;</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-XX:MaxGCPauseMillis=200&quot;</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-XX:+DisableExplicitGC&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Common JVM options:</strong>
-- <code>-Xms&lt;size&gt;</code> - Initial heap size
-- <code>-Xmx&lt;size&gt;</code> - Maximum heap size
-- <code>-XX:+UseG1GC</code> - Use G1 garbage collector (recommended)
-- <code>-XX:MaxGCPauseMillis=&lt;ms&gt;</code> - Target GC pause time
-- <code>-Djava.net.preferIPv4Stack=true</code> - Prefer IPv4</p>
-<h3 id="service-account">Service Account<a class="headerlink" href="#service-account" title="Permanent link">&para;</a></h3>
-<p>Assign a Kubernetes service account for workload identity.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>serviceAccount</code></td>
 <td>string</td>
-<td>No</td>
-<td>-</td>
-<td>Service account name for Keycloak pods (for GCP Workload Identity, AWS IRSA, etc.)</td>
+<td>custom workload identity service account</td>
 </tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">serviceAccount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-workload-identity</span>
-</span></code></pre></div></p>
-<h3 id="health-probes">Health Probes<a class="headerlink" href="#health-probes" title="Permanent link">&para;</a></h3>
-<p>Override default health probe configurations.</p>
-<table>
-<thead>
 <tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>startupProbe</code></td>
+<td><code>startupProbe</code> / <code>livenessProbe</code> / <code>readinessProbe</code></td>
 <td>object</td>
-<td>No</td>
-<td>Operator defaults</td>
-<td>Kubernetes startup probe configuration</td>
+<td>Kubernetes probe overrides</td>
 </tr>
-<tr>
-<td><code>livenessProbe</code></td>
-<td>object</td>
-<td>No</td>
-<td>Operator defaults</td>
-<td>Kubernetes liveness probe configuration</td>
-</tr>
-<tr>
-<td><code>readinessProbe</code></td>
-<td>object</td>
-<td>No</td>
-<td>Operator defaults</td>
-<td>Kubernetes readiness probe configuration</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">startupProbe</span><span class="p">:</span>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">httpGet</span><span class="p">:</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/started</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9000</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">    </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="nt">livenessProbe</span><span class="p">:</span>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">    </span><span class="nt">httpGet</span><span class="p">:</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/live</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9000</span>
-</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">    </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
-</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">  </span><span class="nt">readinessProbe</span><span class="p">:</span>
-</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">    </span><span class="nt">httpGet</span><span class="p">:</span>
-</span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health/ready</span>
-</span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">9000</span>
-</span><span id="__span-15-18"><a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">    </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
-</span></code></pre></div></p>
-<h3 id="security-context">Security Context<a class="headerlink" href="#security-context" title="Permanent link">&para;</a></h3>
-<p>Configure pod and container security contexts.</p>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Required</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td><code>podSecurityContext</code></td>
 <td>object</td>
-<td>No</td>
-<td>-</td>
-<td>Pod-level security context (fsGroup, runAsUser, etc.)</td>
+<td>pod-level security controls</td>
 </tr>
 <tr>
 <td><code>securityContext</code></td>
 <td>object</td>
-<td>No</td>
-<td>-</td>
-<td>Container-level security context (capabilities, privileged, etc.)</td>
+<td>container-level security controls</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">podSecurityContext</span><span class="p">:</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">    </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">    </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">    </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="nt">securityContext</span><span class="p">:</span>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">    </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">    </span><span class="nt">capabilities</span><span class="p">:</span>
-</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">      </span><span class="nt">drop</span><span class="p">:</span>
-</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALL</span>
-</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">    </span><span class="nt">readOnlyRootFilesystem</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-</span></code></pre></div></p>
-<h2 id="status-fields">Status Fields<a class="headerlink" href="#status-fields" title="Permanent link">&para;</a></h2>
-<p>The operator populates the <code>status</code> subresource with the current state of the Keycloak instance.</p>
+<h2 id="operational-controls">Operational Controls<a class="headerlink" href="#operational-controls" title="Permanent link">&para;</a></h2>
+<p>These fields are newer than the older docs and are where most drift had accumulated.</p>
+<h3 id="realm-capacity">Realm capacity<a class="headerlink" href="#realm-capacity" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
-<th>Description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>realmCapacity.maxRealms</code></td>
+<td>integer</td>
+<td>optional cap on managed realm count</td>
+</tr>
+<tr>
+<td><code>realmCapacity.allowNewRealms</code></td>
+<td>boolean</td>
+<td>stop accepting new realms without freezing existing ones</td>
+</tr>
+<tr>
+<td><code>realmCapacity.capacityMessage</code></td>
+<td>string</td>
+<td>operator-visible status message</td>
+</tr>
+</tbody>
+</table>
+<h3 id="upgrade-orchestration">Upgrade orchestration<a class="headerlink" href="#upgrade-orchestration" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>upgradePolicy.backupTimeout</code></td>
+<td>integer</td>
+<td>backup timeout in seconds</td>
+</tr>
+<tr>
+<td><code>upgradePolicy.strategy</code></td>
+<td>string</td>
+<td><code>Recreate</code> or <code>BlueGreen</code></td>
+</tr>
+<tr>
+<td><code>upgradePolicy.autoTeardown</code></td>
+<td>boolean</td>
+<td>remove old deployment automatically after cutover</td>
+</tr>
+</tbody>
+</table>
+<p><code>BlueGreen</code> requires a CNPG or managed database tier.</p>
+<h3 id="maintenance-mode">Maintenance mode<a class="headerlink" href="#maintenance-mode" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>maintenanceMode.enabled</code></td>
+<td>boolean</td>
+<td>enable ingress traffic controls during upgrade</td>
+</tr>
+<tr>
+<td><code>maintenanceMode.mode</code></td>
+<td>string</td>
+<td><code>read-only</code> or <code>full-block</code></td>
+</tr>
+<tr>
+<td><code>maintenanceMode.excludePaths</code></td>
+<td>list</td>
+<td>health and allow-list paths</td>
+</tr>
+<tr>
+<td><code>maintenanceMode.blockedPaths</code></td>
+<td>list</td>
+<td>regex-capable blocked paths in <code>read-only</code> mode</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cache-isolation">Cache isolation<a class="headerlink" href="#cache-isolation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cacheIsolation.clusterName</code></td>
+<td>string</td>
+<td>explicit cache cluster label</td>
+</tr>
+<tr>
+<td><code>cacheIsolation.autoSuffix</code></td>
+<td>boolean</td>
+<td>append version to cluster name</td>
+</tr>
+<tr>
+<td><code>cacheIsolation.autoRevision</code></td>
+<td>boolean</td>
+<td>derive stable revision-based cluster name</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tracing">Tracing<a class="headerlink" href="#tracing" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tracing.enabled</code></td>
+<td>boolean</td>
+<td>enable OTEL support</td>
+</tr>
+<tr>
+<td><code>tracing.endpoint</code></td>
+<td>string</td>
+<td>OTLP gRPC collector endpoint</td>
+</tr>
+<tr>
+<td><code>tracing.serviceName</code></td>
+<td>string</td>
+<td>trace service name</td>
+</tr>
+<tr>
+<td><code>tracing.sampleRate</code></td>
+<td>float</td>
+<td><code>0.0</code> to <code>1.0</code></td>
+</tr>
+</tbody>
+</table>
+<p>Built-in tracing support requires Keycloak <code>26.0.0+</code>.</p>
+<h2 id="status-fields">Status Fields<a class="headerlink" href="#status-fields" title="Permanent link">&para;</a></h2>
+<p>The operator writes status under <code>status</code>.</p>
+<h3 id="common-phases">Common phases<a class="headerlink" href="#common-phases" title="Permanent link">&para;</a></h3>
+<p>You will typically see phases such as:</p>
+<ul>
+<li><code>Pending</code></li>
+<li><code>Provisioning</code></li>
+<li><code>Reconciling</code></li>
+<li><code>Ready</code></li>
+<li><code>Updating</code></li>
+<li><code>Degraded</code></li>
+<li><code>Failed</code></li>
+<li><code>Paused</code></li>
+<li><code>BackingUp</code></li>
+</ul>
+<h3 id="important-status-fields">Important status fields<a class="headerlink" href="#important-status-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>phase</code></td>
 <td>string</td>
-<td>Current phase: <code>Pending</code>, <code>Provisioning</code>, <code>Ready</code>, <code>Failed</code>, <code>Updating</code>, <code>Degraded</code></td>
+<td>current lifecycle phase</td>
 </tr>
 <tr>
-<td><code>message</code></td>
+<td><code>message</code> / <code>reason</code></td>
 <td>string</td>
-<td>Human-readable status message</td>
-</tr>
-<tr>
-<td><code>reason</code></td>
-<td>string</td>
-<td>Reason for current phase</td>
+<td>human-readable summary and machine-leaning reason</td>
 </tr>
 <tr>
 <td><code>observedGeneration</code></td>
 <td>integer</td>
-<td>Generation of spec that was last processed</td>
+<td>last applied spec generation</td>
 </tr>
 <tr>
-<td><code>adminUsername</code></td>
-<td>string</td>
-<td>Keycloak admin username</td>
-</tr>
-<tr>
-<td><code>adminSecret</code></td>
-<td>string</td>
-<td>Name of secret containing admin password</td>
-</tr>
-<tr>
-<td><code>internalUrl</code></td>
-<td>string</td>
-<td>Internal cluster URL</td>
-</tr>
-<tr>
-<td><code>externalUrl</code></td>
-<td>string</td>
-<td>External URL (if ingress enabled)</td>
-</tr>
-<tr>
-<td><code>endpoints.admin</code></td>
-<td>string</td>
-<td>Admin console endpoint</td>
-</tr>
-<tr>
-<td><code>endpoints.public</code></td>
-<td>string</td>
-<td>Public endpoint for OIDC/SAML</td>
-</tr>
-<tr>
-<td><code>endpoints.management</code></td>
-<td>string</td>
-<td>Management endpoint (health, metrics)</td>
-</tr>
-<tr>
-<td><code>deployment</code></td>
-<td>string</td>
-<td>Name of the Keycloak deployment</td>
-</tr>
-<tr>
-<td><code>service</code></td>
-<td>string</td>
-<td>Name of the Keycloak service</td>
-</tr>
-<tr>
-<td><code>readyReplicas</code></td>
+<td><code>replicas</code>, <code>readyReplicas</code>, <code>availableReplicas</code></td>
 <td>integer</td>
-<td>Number of ready replicas</td>
+<td>pod readiness and availability</td>
 </tr>
 <tr>
-<td><code>lastHealthCheck</code></td>
-<td>string (datetime)</td>
-<td>Last health check timestamp</td>
-</tr>
-<tr>
-<td><code>databaseStatus</code></td>
+<td><code>deployment</code>, <code>service</code>, <code>ingress</code></td>
 <td>string</td>
-<td>Database connection status: <code>Connected</code>, <code>Connecting</code>, <code>Failed</code>, <code>Unknown</code></td>
+<td>managed resource names</td>
+</tr>
+<tr>
+<td><code>persistentVolumeClaims</code></td>
+<td>list</td>
+<td>PVCs owned or tracked by the instance</td>
+</tr>
+<tr>
+<td><code>authorizationSecretName</code></td>
+<td>string</td>
+<td>realm-authorization secret for delegated namespace flows</td>
+</tr>
+<tr>
+<td><code>endpoints.public</code>, <code>admin</code>, <code>internal</code>, <code>management</code></td>
+<td>string</td>
+<td>resolved URLs</td>
+</tr>
+<tr>
+<td><code>realmCount</code></td>
+<td>integer</td>
+<td>currently managed realm count</td>
+</tr>
+<tr>
+<td><code>acceptingNewRealms</code></td>
+<td>boolean</td>
+<td>whether new realm creation is allowed</td>
+</tr>
+<tr>
+<td><code>capacityStatus</code></td>
+<td>string</td>
+<td>capacity message surfaced by the operator</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>string</td>
+<td>running Keycloak version</td>
+</tr>
+<tr>
+<td><code>capabilities</code></td>
+<td>list</td>
+<td>detected runtime capabilities</td>
+</tr>
+<tr>
+<td><code>lastHealthCheck</code>, <code>healthStatus</code></td>
+<td>string</td>
+<td>health observations</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>object</td>
+<td>operational counters</td>
+</tr>
+<tr>
+<td><code>blueGreen</code></td>
+<td>object</td>
+<td>in-progress blue-green state machine details</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Example status:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Keycloak</span><span class="nv"> </span><span class="s">instance</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">healthy</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">ready&quot;</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="nt">observedGeneration</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span><span class="nt">adminUsername</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span><span class="nt">adminSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-admin-password</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span><span class="nt">internalUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak:8080</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="w">  </span><span class="nt">externalUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">    </span><span class="nt">admin</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/admin</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="w">    </span><span class="nt">public</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com</span>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="w">    </span><span class="nt">management</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://my-keycloak:9000</span>
-</span><span id="__span-17-13"><a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="w">  </span><span class="nt">deployment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak</span>
-</span><span id="__span-17-14"><a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak</span>
-</span><span id="__span-17-15"><a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="w">  </span><span class="nt">readyReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span><span id="__span-17-16"><a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="w">  </span><span class="nt">databaseStatus</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Connected</span>
-</span></code></pre></div></p>
-<h2 id="complete-examples">Complete Examples<a class="headerlink" href="#complete-examples" title="Permanent link">&para;</a></h2>
-<h3 id="production-setup-with-ha">Production Setup with HA<a class="headerlink" href="#production-setup-with-ha" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-prod</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.4.1</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-ha-rw.database.svc.cluster.local</span>
-</span><span id="__span-18-14"><a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
-</span><span id="__span-18-15"><a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-18-16"><a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-18-17"><a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-18-18"><a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
-</span><span id="__span-18-19"><a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
-</span><span id="__span-18-20"><a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a><span class="w">    </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify-full</span>
-</span><span id="__span-18-21"><a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a><span class="w">    </span><span class="nt">connectionPool</span><span class="p">:</span>
-</span><span id="__span-18-22"><a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a><span class="w">      </span><span class="nt">maxConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
-</span><span id="__span-18-23"><a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a><span class="w">      </span><span class="nt">minConnections</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
-</span><span id="__span-18-24"><a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a><span class="w">      </span><span class="nt">connectionTimeout</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;30s&quot;</span>
-</span><span id="__span-18-25"><a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>
-</span><span id="__span-18-26"><a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-</span><span id="__span-18-27"><a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
-</span><span id="__span-18-28"><a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a><span class="w">    </span><span class="nt">httpPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
-</span><span id="__span-18-29"><a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a><span class="w">    </span><span class="nt">httpsPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8443</span>
-</span><span id="__span-18-30"><a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>
-</span><span id="__span-18-31"><a id="__codelineno-18-31" name="__codelineno-18-31" href="#__codelineno-18-31"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
-</span><span id="__span-18-32"><a id="__codelineno-18-32" name="__codelineno-18-32" href="#__codelineno-18-32"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-18-33"><a id="__codelineno-18-33" name="__codelineno-18-33" href="#__codelineno-18-33"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth.example.com</span>
-</span><span id="__span-18-34"><a id="__codelineno-18-34" name="__codelineno-18-34" href="#__codelineno-18-34"></a><span class="w">    </span><span class="nt">tlsEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-18-35"><a id="__codelineno-18-35" name="__codelineno-18-35" href="#__codelineno-18-35"></a><span class="w">    </span><span class="nt">tlsSecretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-tls</span>
-</span><span id="__span-18-36"><a id="__codelineno-18-36" name="__codelineno-18-36" href="#__codelineno-18-36"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
-</span><span id="__span-18-37"><a id="__codelineno-18-37" name="__codelineno-18-37" href="#__codelineno-18-37"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-18-38"><a id="__codelineno-18-38" name="__codelineno-18-38" href="#__codelineno-18-38"></a><span class="w">      </span><span class="nt">cert-manager.io/cluster-issuer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">letsencrypt-prod</span>
-</span><span id="__span-18-39"><a id="__codelineno-18-39" name="__codelineno-18-39" href="#__codelineno-18-39"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/proxy-buffer-size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;128k&quot;</span>
-</span><span id="__span-18-40"><a id="__codelineno-18-40" name="__codelineno-18-40" href="#__codelineno-18-40"></a><span class="w">      </span><span class="nt">nginx.ingress.kubernetes.io/affinity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cookie&quot;</span>
-</span><span id="__span-18-41"><a id="__codelineno-18-41" name="__codelineno-18-41" href="#__codelineno-18-41"></a>
-</span><span id="__span-18-42"><a id="__codelineno-18-42" name="__codelineno-18-42" href="#__codelineno-18-42"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-18-43"><a id="__codelineno-18-43" name="__codelineno-18-43" href="#__codelineno-18-43"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
-</span><span id="__span-18-44"><a id="__codelineno-18-44" name="__codelineno-18-44" href="#__codelineno-18-44"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2000m&quot;</span>
-</span><span id="__span-18-45"><a id="__codelineno-18-45" name="__codelineno-18-45" href="#__codelineno-18-45"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4Gi&quot;</span>
-</span><span id="__span-18-46"><a id="__codelineno-18-46" name="__codelineno-18-46" href="#__codelineno-18-46"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
-</span><span id="__span-18-47"><a id="__codelineno-18-47" name="__codelineno-18-47" href="#__codelineno-18-47"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;4000m&quot;</span>
-</span><span id="__span-18-48"><a id="__codelineno-18-48" name="__codelineno-18-48" href="#__codelineno-18-48"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8Gi&quot;</span>
-</span><span id="__span-18-49"><a id="__codelineno-18-49" name="__codelineno-18-49" href="#__codelineno-18-49"></a>
-</span><span id="__span-18-50"><a id="__codelineno-18-50" name="__codelineno-18-50" href="#__codelineno-18-50"></a><span class="w">  </span><span class="nt">jvmOptions</span><span class="p">:</span>
-</span><span id="__span-18-51"><a id="__codelineno-18-51" name="__codelineno-18-51" href="#__codelineno-18-51"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-Xms4g&quot;</span>
-</span><span id="__span-18-52"><a id="__codelineno-18-52" name="__codelineno-18-52" href="#__codelineno-18-52"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-Xmx6g&quot;</span>
-</span><span id="__span-18-53"><a id="__codelineno-18-53" name="__codelineno-18-53" href="#__codelineno-18-53"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-XX:+UseG1GC&quot;</span>
-</span><span id="__span-18-54"><a id="__codelineno-18-54" name="__codelineno-18-54" href="#__codelineno-18-54"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;-XX:MaxGCPauseMillis=200&quot;</span>
-</span><span id="__span-18-55"><a id="__codelineno-18-55" name="__codelineno-18-55" href="#__codelineno-18-55"></a>
-</span><span id="__span-18-56"><a id="__codelineno-18-56" name="__codelineno-18-56" href="#__codelineno-18-56"></a><span class="w">  </span><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-18-57"><a id="__codelineno-18-57" name="__codelineno-18-57" href="#__codelineno-18-57"></a><span class="w">    </span><span class="nt">KC_LOG_LEVEL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;INFO&quot;</span>
-</span><span id="__span-18-58"><a id="__codelineno-18-58" name="__codelineno-18-58" href="#__codelineno-18-58"></a><span class="w">    </span><span class="nt">KC_PROXY</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;edge&quot;</span>
-</span><span id="__span-18-59"><a id="__codelineno-18-59" name="__codelineno-18-59" href="#__codelineno-18-59"></a><span class="w">    </span><span class="nt">KC_FEATURES</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;token-exchange,admin-fine-grained-authz&quot;</span>
+<p><code>status.blueGreen.state</code> can move through states such as <code>BackingUp</code>, <code>ProvisioningGreen</code>, <code>WaitingForGreen</code>, <code>CuttingOver</code>, <code>TearingDownBlue</code>, <code>Completed</code>, and <code>Failed</code>.</p>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="blue-green-upgrade-with-cnpg">Blue-green upgrade with CNPG<a class="headerlink" href="#blue-green-upgrade-with-cnpg" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.5.2</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="nt">optimized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">    </span><span class="nt">cnpg</span><span class="p">:</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">      </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth.example.com</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">    </span><span class="nt">tlsSecretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth-example-com-tls</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">  </span><span class="nt">upgradePolicy</span><span class="p">:</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BlueGreen</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="nt">backupTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">900</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">    </span><span class="nt">autoTeardown</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">  </span><span class="nt">maintenanceMode</span><span class="p">:</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="w">    </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read-only</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="w">  </span><span class="nt">cacheIsolation</span><span class="p">:</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="w">    </span><span class="nt">autoRevision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span></code></pre></div>
-<h3 id="development-setup">Development Setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-dev</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-dev</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
-</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
-</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>
-</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="w">  </span><span class="nt">service</span><span class="p">:</span>
-</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NodePort</span>
-</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>
-</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="w">  </span><span class="nt">env</span><span class="p">:</span>
-</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="w">    </span><span class="nt">KC_LOG_LEVEL</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DEBUG&quot;</span>
+<h3 id="managed-postgresql-with-capacity-control">Managed PostgreSQL with capacity control<a class="headerlink" href="#managed-postgresql-with-capacity-control" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-platform</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nt">managed</span><span class="p">:</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-rw.database.svc.cluster.local</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">      </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">      </span><span class="nt">passwordSecret</span><span class="p">:</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-password</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">      </span><span class="nt">pvcName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-data</span>
+</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span><span class="nt">realmCapacity</span><span class="p">:</span>
+</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">    </span><span class="nt">maxRealms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">    </span><span class="nt">allowNewRealms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">    </span><span class="nt">capacityMessage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Shared realm platform nearing limit</span>
+</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000m</span>
+</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2Gi</span>
+</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="w">    </span><span class="nt">limits</span><span class="p">:</span>
+</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="w">      </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000m</span>
+</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="w">      </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4Gi</span>
 </span></code></pre></div>
-<h3 id="with-cloudnativepg">With CloudNativePG<a class="headerlink" href="#with-cloudnativepg" title="Permanent link">&para;</a></h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak:26.4.1</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
-</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
-</span><span id="__span-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-postgres-rw</span><span class="w">  </span><span class="c1"># CloudNativePG read-write service</span>
-</span><span id="__span-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="w">    </span><span class="nt">passwordSecret</span><span class="p">:</span>
-</span><span id="__span-20-17"><a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-postgres-app</span><span class="w">  </span><span class="c1"># CNPG generates this secret</span>
-</span><span id="__span-20-18"><a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
-</span><span id="__span-20-19"><a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a><span class="w">    </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">require</span>
-</span><span id="__span-20-20"><a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>
-</span><span id="__span-20-21"><a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a><span class="w">  </span><span class="nt">ingress</span><span class="p">:</span>
-</span><span id="__span-20-22"><a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-20-23"><a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a><span class="w">    </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak.example.com</span>
-</span><span id="__span-20-24"><a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a><span class="w">    </span><span class="nt">className</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<h3 id="custom-image-with-explicit-version-and-tracing">Custom image with explicit version and tracing<a class="headerlink" href="#custom-image-with-explicit-version-and-tracing" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">observability-demo</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/example/keycloak-custom:stable</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span><span class="nt">keycloakVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">26.5.2</span>
+</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">  </span><span class="nt">tracing</span><span class="p">:</span>
+</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://otel-collector.observability.svc.cluster.local:4317</span>
+</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span><span class="nt">serviceName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-production</span>
+</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">    </span><span class="nt">sampleRate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.25</span>
+</span><span id="__span-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="w">  </span><span class="nt">database</span><span class="p">:</span>
+</span><span id="__span-8-16"><a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
+</span><span id="__span-8-17"><a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="w">    </span><span class="nt">external</span><span class="p">:</span>
+</span><span id="__span-8-18"><a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a><span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres.example.com</span>
+</span><span id="__span-8-19"><a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-8-20"><a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="w">      </span><span class="nt">credentialsSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
+</span><span id="__span-8-21"><a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="w">      </span><span class="nt">sslMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">verify-full</span>
 </span></code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<p><strong>Related CRD References:</strong></p>
 <ul>
-<li><a href="../keycloak-realm-crd/">KeycloakRealm CRD Reference</a> - Configure realms on Keycloak instances</li>
-<li><a href="../keycloak-client-crd/">KeycloakClient CRD Reference</a> - Configure OAuth2/OIDC clients</li>
-</ul>
-<p><strong>Deployment Guides:</strong></p>
-<ul>
-<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup</a> - Deploy Keycloak instance with operator</li>
-<li><a href="../../how-to/database-setup/">Database Setup</a> - Configure PostgreSQL for production</li>
-<li><a href="../../how-to/ha-deployment/">High Availability Deployment</a> - Multi-replica Keycloak setup</li>
-<li><a href="../../quickstart/">Quick Start Guide</a> - Basic Keycloak instance deployment</li>
-</ul>
-<p><strong>Architecture &amp; Operations:</strong></p>
-<ul>
-<li><a href="../../concepts/architecture/">Architecture</a> - Operator design and reconciliation flow</li>
-<li><a href="../../operations/troubleshooting/#keycloak-instance-issues">Troubleshooting: Keycloak Instance Issues</a> - Common deployment problems</li>
-<li><a href="../../guides/observability/">Observability</a> - Monitoring Keycloak instances</li>
+<li><a href="../keycloak-realm-crd/">KeycloakRealm CRD Reference</a></li>
+<li><a href="../keycloak-version-support/">Keycloak Version Support</a></li>
+<li><a href="../../how-to/ha-deployment/">High Availability Deployment</a></li>
+<li><a href="../../decisions/generated-markdown/062-one-keycloak-per-operator/">ADR 062: One Keycloak Per Operator</a></li>
+<li><a href="../../decisions/generated-markdown/088-blue-green-keycloak-upgrade-strategy/">ADR 088: Blue-Green Keycloak Upgrade Strategy</a></li>
+<li><a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/">ADR 091: Legacy Flat DB Config Normalized To External Tier</a></li>
+<li><a href="../../decisions/generated-markdown/092-blue-green-upgrade-state-machine/">ADR 092: Blue-Green Upgrade State Machine</a></li>
 </ul>
 
 

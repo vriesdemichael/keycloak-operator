@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -786,10 +814,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#access-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Access Model
       
     </span>
   </a>
@@ -808,22 +836,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rbac-components" class="md-nav__link">
+  <a href="#rbac-objects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RBAC Components
+        RBAC Objects
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="RBAC Components">
+    <nav class="md-nav" aria-label="RBAC Objects">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-clusterrole-keycloak-operator-core" class="md-nav__link">
+  <a href="#keycloak-operator-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. ClusterRole: keycloak-operator-core
+        keycloak-operator-core
       
     </span>
   </a>
@@ -831,10 +859,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-role-keycloak-operator-manager" class="md-nav__link">
+  <a href="#keycloak-operator-manager" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Role: keycloak-operator-manager
+        keycloak-operator-manager
       
     </span>
   </a>
@@ -842,10 +870,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-clusterrole-keycloak-operator-namespace-access-template" class="md-nav__link">
+  <a href="#keycloak-operator-namespace-access" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. ClusterRole: keycloak-operator-namespace-access (Template)
+        keycloak-operator-namespace-access
       
     </span>
   </a>
@@ -866,14 +894,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Secret Label Requirement">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helm-managed-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm-Managed Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm-Managed Workflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-this-matters" class="md-nav__link">
+  <a href="#operator-chart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why This Matters
+        Operator chart
       
     </span>
   </a>
@@ -881,10 +920,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#realm-chart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example
+        Realm chart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client chart
       
     </span>
   </a>
@@ -897,138 +947,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operator-deployment-helm-chart" class="md-nav__link">
+  <a href="#what-changes-when-rbaccreatefalse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operator Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operator Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#realm-deployment-helm-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Realm Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Realm Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deploy-realm-to-team-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deploy Realm to Team Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Access
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#client-deployment-helm-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deploy-client-to-team-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deploy Client to Team Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#manual-rolebinding-creation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual RoleBinding Creation
+        What Changes When rbac.create=false
       
     </span>
   </a>
@@ -1036,22 +958,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-handling" class="md-nav__link">
+  <a href="#common-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Handling
+        Common Failures
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Error Handling">
+    <nav class="md-nav" aria-label="Common Failures">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#missing-rolebinding" class="md-nav__link">
+  <a href="#missing-namespace-binding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Missing RoleBinding
+        Missing namespace binding
       
     </span>
   </a>
@@ -1059,10 +981,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#missing-secret-label" class="md-nav__link">
+  <a href="#missing-allow-label" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Missing Secret Label
+        Missing allow label
       
     </span>
   </a>
@@ -1073,7 +995,7 @@
   <a href="#secret-not-found" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secret Not Found
+        Secret not found
       
     </span>
   </a>
@@ -1082,17 +1004,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#revoking-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Revoking Access
-      
-    </span>
-  </a>
   
 </li>
       
@@ -1101,56 +1012,6 @@
     <span class="md-ellipsis">
       
         Auditing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Auditing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#find-namespaces-with-operator-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find Namespaces with Operator Access
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#find-labeled-secrets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find Labeled Secrets
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-operator-permissions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Operator Permissions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing
       
     </span>
   </a>
@@ -1166,52 +1027,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#operator-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operator Logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-rbac-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check RBAC Resources
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-secret-label" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Secret Label
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        References
+        See Also
       
     </span>
   </a>
@@ -4932,10 +4754,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
+  <a href="#access-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Overview
+        Access Model
       
     </span>
   </a>
@@ -4954,22 +4776,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rbac-components" class="md-nav__link">
+  <a href="#rbac-objects" class="md-nav__link">
     <span class="md-ellipsis">
       
-        RBAC Components
+        RBAC Objects
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="RBAC Components">
+    <nav class="md-nav" aria-label="RBAC Objects">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-clusterrole-keycloak-operator-core" class="md-nav__link">
+  <a href="#keycloak-operator-core" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. ClusterRole: keycloak-operator-core
+        keycloak-operator-core
       
     </span>
   </a>
@@ -4977,10 +4799,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-role-keycloak-operator-manager" class="md-nav__link">
+  <a href="#keycloak-operator-manager" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Role: keycloak-operator-manager
+        keycloak-operator-manager
       
     </span>
   </a>
@@ -4988,10 +4810,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-clusterrole-keycloak-operator-namespace-access-template" class="md-nav__link">
+  <a href="#keycloak-operator-namespace-access" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. ClusterRole: keycloak-operator-namespace-access (Template)
+        keycloak-operator-namespace-access
       
     </span>
   </a>
@@ -5012,14 +4834,25 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Secret Label Requirement">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helm-managed-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm-Managed Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm-Managed Workflow">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-this-matters" class="md-nav__link">
+  <a href="#operator-chart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why This Matters
+        Operator chart
       
     </span>
   </a>
@@ -5027,10 +4860,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
+  <a href="#realm-chart" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example
+        Realm chart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client chart
       
     </span>
   </a>
@@ -5043,138 +4887,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#operator-deployment-helm-chart" class="md-nav__link">
+  <a href="#what-changes-when-rbaccreatefalse" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Operator Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Operator Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#install-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#realm-deployment-helm-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Realm Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Realm Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deploy-realm-to-team-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deploy Realm to Team Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Access
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#client-deployment-helm-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Deployment (Helm Chart)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client Deployment (Helm Chart)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#deploy-client-to-team-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Deploy Client to Team Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#what-gets-created_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Gets Created
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#manual-rolebinding-creation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual RoleBinding Creation
+        What Changes When rbac.create=false
       
     </span>
   </a>
@@ -5182,22 +4898,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-handling" class="md-nav__link">
+  <a href="#common-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error Handling
+        Common Failures
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Error Handling">
+    <nav class="md-nav" aria-label="Common Failures">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#missing-rolebinding" class="md-nav__link">
+  <a href="#missing-namespace-binding" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Missing RoleBinding
+        Missing namespace binding
       
     </span>
   </a>
@@ -5205,10 +4921,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#missing-secret-label" class="md-nav__link">
+  <a href="#missing-allow-label" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Missing Secret Label
+        Missing allow label
       
     </span>
   </a>
@@ -5219,7 +4935,7 @@
   <a href="#secret-not-found" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Secret Not Found
+        Secret not found
       
     </span>
   </a>
@@ -5228,17 +4944,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#revoking-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Revoking Access
-      
-    </span>
-  </a>
   
 </li>
       
@@ -5247,56 +4952,6 @@
     <span class="md-ellipsis">
       
         Auditing
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Auditing">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#find-namespaces-with-operator-access" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find Namespaces with Operator Access
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#find-labeled-secrets" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Find Labeled Secrets
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-operator-permissions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check Operator Permissions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing
       
     </span>
   </a>
@@ -5312,52 +4967,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#operator-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operator Logs
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#check-rbac-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Check RBAC Resources
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-secret-label" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Secret Label
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        References
+        See Also
       
     </span>
   </a>
@@ -5390,255 +5006,226 @@
 
 
 <h1 id="namespaced-rbac-implementation">Namespaced RBAC Implementation<a class="headerlink" href="#namespaced-rbac-implementation" title="Permanent link">&para;</a></h1>
-<p>This document describes the namespace-scoped RBAC implementation for the Keycloak operator, which provides explicit opt-in access control for secrets and resources.</p>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>The operator now implements a <strong>least-privilege RBAC model</strong> where:</p>
+<p>This operator uses a Helm-first, least-privilege RBAC model for multi-namespace realm and client management.</p>
+<p>The short version:</p>
+<ul>
+<li>The operator watches Keycloak, KeycloakRealm, and KeycloakClient resources cluster-wide.</li>
+<li>Full workload management happens only in the operator namespace, where the managed Keycloak instance runs.</li>
+<li>Other namespaces must opt in before the operator can reconcile secrets or workload-adjacent resources there.</li>
+<li>Secret access is enforced twice: Kubernetes RBAC must allow the read, and the secret must carry an explicit allow label.</li>
+</ul>
+<p>For the practical namespace onboarding flow, see <a href="../how-to/multi-tenant/">Multi-Tenant Setup</a>.</p>
+<h2 id="access-model">Access Model<a class="headerlink" href="#access-model" title="Permanent link">&para;</a></h2>
+<p>The implementation combines Kubernetes authorization with operator-side validation:</p>
 <ol>
-<li><strong>Minimal cluster-wide permissions</strong>: The operator has minimal read-only ClusterRole permissions</li>
-<li><strong>Namespace-scoped management</strong>: Full resource management only in the operator's own namespace</li>
-<li><strong>Explicit opt-in</strong>: Teams must create a RoleBinding to grant operator access to their namespace</li>
-<li><strong>Secret label requirement</strong>: Secrets must be explicitly labeled for operator access</li>
+<li>A team installs a realm or client chart into its namespace.</li>
+<li>If <code>rbac.create=true</code>, that chart creates a <code>RoleBinding</code> to the operator's shared namespace-access <code>ClusterRole</code>.</li>
+<li>When the operator needs a secret from that namespace, it first runs a <code>SubjectAccessReview</code> to confirm the service account can read secrets there.</li>
+<li>After RBAC passes, the operator validates that the specific secret is labeled for operator access.</li>
+<li>Only then does it read the secret.</li>
 </ol>
+<p>That last step matters. The label requirement is not just recommended by convention. It is enforced in the operator code.</p>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌──────────────────────────────────────────────────────────────┐
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│  Operator Namespace (e.g., keycloak-system)                  │
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│                                                              │
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  ├── Operator Deployment                                     │
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  │   └── Watches: All CRDs cluster-wide (list/watch only)    │
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  │                                                           │
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  ├── Keycloak Instance (StatefulSet/Deployment)              │
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  │   └── Runs in same namespace as operator                  │
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  │                                                           │
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  └── Full RBAC (Role) - Can manage all resources here        │
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>└──────────────────────────────────────────────────────────────┘
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                        ↓ watches CRDs
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>┌──────────────────────────────────────────────────────────────┐
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  Team Namespace (e.g., team-a)                               │
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│                                                              │
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  ├── KeycloakRealm / KeycloakClient CRDs                     │
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  ├── Secrets (with required label)                           │
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  └── RoleBinding (opt-in for operator access)                │
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>└──────────────────────────────────────────────────────────────┘
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cluster
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├─ operator namespace (for example keycloak-system)
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  ├─ keycloak-operator ServiceAccount
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  ├─ keycloak-operator-core ClusterRoleBinding
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  ├─ keycloak-operator-manager RoleBinding
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  ├─ Keycloak CR and managed workloads
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  └─ full CRUD on operator-owned resources in this namespace
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├─ delegated team namespace A
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  ├─ KeycloakRealm / KeycloakClient resources
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│  ├─ labeled Secrets the operator is allowed to read
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│  └─ RoleBinding -&gt; shared namespace-access ClusterRole
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└─ delegated team namespace B
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>   └─ same opt-in pattern
 </span></code></pre></div>
-<h2 id="rbac-components">RBAC Components<a class="headerlink" href="#rbac-components" title="Permanent link">&para;</a></h2>
-<h3 id="1-clusterrole-keycloak-operator-core">1. ClusterRole: <code>keycloak-operator-core</code><a class="headerlink" href="#1-clusterrole-keycloak-operator-core" title="Permanent link">&para;</a></h3>
-<p><strong>Purpose</strong>: Minimal cluster-wide permissions for CRD watching and status updates.</p>
-<p><strong>Key Permissions</strong>:
-- List/watch CRDs across all namespaces (read-only)
-- Update CRD status and finalizers
-- Namespace discovery for validation
-- Leader election (cluster-wide leases)
-- Events creation
-- SubjectAccessReview for permission checks</p>
-<p><strong>Does NOT include</strong>:
-- Full CRUD on CRDs (only list/watch)
-- Secret access
-- ConfigMap access
-- Workload management (Deployments, StatefulSets, etc.)</p>
-<h3 id="2-role-keycloak-operator-manager">2. Role: <code>keycloak-operator-manager</code><a class="headerlink" href="#2-role-keycloak-operator-manager" title="Permanent link">&para;</a></h3>
-<p><strong>Purpose</strong>: Full resource management in the operator's own namespace.</p>
-<p><strong>Scope</strong>: Operator namespace only</p>
-<p><strong>Key Permissions</strong>:
-- Full CRUD on CRDs in operator namespace
-- Full CRUD on Kubernetes resources (Deployments, StatefulSets, Services, etc.)
-- Full CRUD on Secrets and ConfigMaps in operator namespace
-- Database management (CNPG clusters)
-- Ingress and certificate management</p>
-<h3 id="3-clusterrole-keycloak-operator-namespace-access-template">3. ClusterRole: <code>keycloak-operator-namespace-access</code> (Template)<a class="headerlink" href="#3-clusterrole-keycloak-operator-namespace-access-template" title="Permanent link">&para;</a></h3>
-<p><strong>Purpose</strong>: Template role for teams to grant operator access to their namespace.</p>
-<p><strong>Key Permissions</strong>:
-- Read CRDs (KeycloakRealm, KeycloakClient)
-- Read Secrets (with label validation enforced in code)
-- Create Events for status reporting</p>
-<p><strong>Usage</strong>: Teams create a RoleBinding in their namespace referencing this ClusterRole.</p>
+<p>This design follows <a href="../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/">ADR 017: Kubernetes RBAC Over Keycloak Security</a>, <a href="../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/">ADR 032: Minimal RBAC With Namespaced Service Accounts</a>, <a href="../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/">ADR 054: Namespace Watch Scope Requires Cluster RBAC</a>, and <a href="../decisions/generated-markdown/062-one-keycloak-per-operator/">ADR 062: One Keycloak Per Operator</a>.</p>
+<h2 id="rbac-objects">RBAC Objects<a class="headerlink" href="#rbac-objects" title="Permanent link">&para;</a></h2>
+<h3 id="keycloak-operator-core"><code>keycloak-operator-core</code><a class="headerlink" href="#keycloak-operator-core" title="Permanent link">&para;</a></h3>
+<p>Installed by the operator chart as a <code>ClusterRole</code> plus <code>ClusterRoleBinding</code>.</p>
+<p>Purpose:</p>
+<ul>
+<li>watch Keycloak CRDs across namespaces</li>
+<li>update status and finalizers</li>
+<li>create events</li>
+<li>perform <code>SubjectAccessReview</code> checks</li>
+<li>support Kopf peering, leases, and webhook registration</li>
+</ul>
+<p>It is intentionally not the broad "do everything everywhere" role.</p>
+<h3 id="keycloak-operator-manager"><code>keycloak-operator-manager</code><a class="headerlink" href="#keycloak-operator-manager" title="Permanent link">&para;</a></h3>
+<p>Installed by the operator chart as a namespace-scoped <code>Role</code> plus <code>RoleBinding</code> in the operator namespace.</p>
+<p>Purpose:</p>
+<ul>
+<li>manage the Keycloak deployment or stateful resources in the operator namespace</li>
+<li>manage services, ingresses, config maps, secrets, CNPG resources, snapshots, and related support objects owned there</li>
+</ul>
+<p>This is where the operator has full control, because this is where the managed Keycloak instance lives.</p>
+<h3 id="keycloak-operator-namespace-access"><code>keycloak-operator-namespace-access</code><a class="headerlink" href="#keycloak-operator-namespace-access" title="Permanent link">&para;</a></h3>
+<p>Installed by the operator chart as a reusable <code>ClusterRole</code> template.</p>
+<p>Purpose:</p>
+<ul>
+<li>delegated access for team namespaces</li>
+<li>permits read and update paths the operator needs for realms, clients, secrets, events, and cleanup in those namespaces</li>
+</ul>
+<p>Realm and client charts do not create this <code>ClusterRole</code>. They create a namespaced <code>RoleBinding</code> that points at it.</p>
 <h2 id="secret-label-requirement">Secret Label Requirement<a class="headerlink" href="#secret-label-requirement" title="Permanent link">&para;</a></h2>
-<p>All secrets used by the operator <strong>MUST</strong> have the following label:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">vriesdemichael.github.io/allow-operator-read</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<p>Secrets that the operator reads outside its own namespace must include this label:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">vriesdemichael.github.io/keycloak-allow-operator-read</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
 </span></code></pre></div>
-<h3 id="why-this-matters">Why This Matters<a class="headerlink" href="#why-this-matters" title="Permanent link">&para;</a></h3>
-<p>This provides an <strong>explicit opt-in mechanism</strong> where:
-1. Users must intentionally label secrets before the operator can read them
-2. Prevents accidental exposure of unrelated secrets
-3. Makes access control auditable and transparent
-4. Follows the principle of least surprise</p>
-<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Create a secret</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">password</span><span class="o">=</span><span class="s1">&#39;mypassword&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Label it for operator access</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>vriesdemichael.github.io/allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+<p>Why the extra label check exists even after RBAC:</p>
+<ul>
+<li>it makes secret access explicit instead of accidental</li>
+<li>it prevents a permissive namespace RoleBinding from implicitly exposing every secret</li>
+<li>it gives teams a simple audit handle for operator-readable secrets</li>
+</ul>
+<p>Example:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">password</span><span class="o">=</span><span class="s1">&#39;super-secret&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>vriesdemichael.github.io/keycloak-allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h2 id="operator-deployment-helm-chart">Operator Deployment (Helm Chart)<a class="headerlink" href="#operator-deployment-helm-chart" title="Permanent link">&para;</a></h2>
-<h3 id="install-operator">Install Operator<a class="headerlink" href="#install-operator" title="Permanent link">&para;</a></h3>
+<h2 id="helm-managed-workflow">Helm-Managed Workflow<a class="headerlink" href="#helm-managed-workflow" title="Permanent link">&para;</a></h2>
+<p>Helm is the normal path.</p>
+<h3 id="operator-chart">Operator chart<a class="headerlink" href="#operator-chart" title="Permanent link">&para;</a></h3>
+<p>Installing the operator chart with RBAC enabled creates:</p>
+<ul>
+<li>the operator service account</li>
+<li><code>keycloak-operator-core</code></li>
+<li><code>keycloak-operator-manager</code></li>
+<li><code>keycloak-operator-namespace-access</code></li>
+<li>the matching bindings</li>
+</ul>
+<p>Example:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.database.cnpg.enabled<span class="o">=</span><span class="nb">true</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
-<h3 id="what-gets-created">What Gets Created<a class="headerlink" href="#what-gets-created" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Namespace</strong>: <code>keycloak-system</code> (if <code>namespace.create=true</code>)</li>
-<li><strong>ServiceAccount</strong>: <code>keycloak-operator</code></li>
-<li><strong>ClusterRole</strong>: <code>keycloak-operator-core</code> (minimal permissions)</li>
-<li><strong>ClusterRole</strong>: <code>keycloak-operator-namespace-access</code> (template for teams)</li>
-<li><strong>Role</strong>: <code>keycloak-operator-manager</code> (in operator namespace)</li>
-<li><strong>ClusterRoleBinding</strong>: Links ServiceAccount to core ClusterRole</li>
-<li><strong>RoleBinding</strong>: Links ServiceAccount to manager Role</li>
-<li><strong>Operator Deployment</strong>: Watches CRDs cluster-wide</li>
-<li><strong>Keycloak Instance</strong>: Runs in operator namespace</li>
-</ol>
-<h2 id="realm-deployment-helm-chart">Realm Deployment (Helm Chart)<a class="headerlink" href="#realm-deployment-helm-chart" title="Permanent link">&para;</a></h2>
-<h3 id="deploy-realm-to-team-namespace">Deploy Realm to Team Namespace<a class="headerlink" href="#deploy-realm-to-team-namespace" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Create namespace</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>my-team
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Create and label secrets</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">password</span><span class="o">=</span><span class="s1">&#39;mypassword&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>-n<span class="w"> </span>my-team
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">  </span>vriesdemichael.github.io/allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">  </span>-n<span class="w"> </span>my-team
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Deploy realm (creates RoleBinding automatically)</span>
-</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span>charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">realmName</span><span class="o">=</span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">  </span>--set<span class="w"> </span>smtpServer.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">  </span>--set<span class="w"> </span>smtpServer.host<span class="o">=</span>smtp.example.com<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">  </span>--set<span class="w"> </span>smtpServer.from<span class="o">=</span>noreply@my-team.com<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">  </span>--set<span class="w"> </span>smtpServer.passwordSecret.name<span class="o">=</span>smtp-password
+<h3 id="realm-chart">Realm chart<a class="headerlink" href="#realm-chart" title="Permanent link">&para;</a></h3>
+<p>With <code>rbac.create=true</code>, the realm chart creates a namespace-local <code>RoleBinding</code> that targets the operator's shared namespace-access <code>ClusterRole</code>.</p>
+<p>Relevant values on the realm chart:</p>
+<ul>
+<li><code>operatorRef.namespace</code>: namespace where the operator runs</li>
+<li><code>rbac.operatorServiceAccountName</code>: optional operator service account override</li>
+<li><code>rbac.operatorClusterRoleName</code>: optional shared ClusterRole override</li>
+</ul>
+<p>If <code>rbac.operatorServiceAccountName</code> is left empty, the chart derives the subject name as <code>keycloak-operator-&lt;operatorRef.namespace&gt;</code>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-realm<span class="w"> </span>charts/keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--set<span class="w"> </span>operatorRef.namespace<span class="o">=</span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorServiceAccountName<span class="o">=</span>keycloak-operator-keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span>
 </span></code></pre></div>
-<h3 id="what-gets-created_1">What Gets Created<a class="headerlink" href="#what-gets-created_1" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>KeycloakRealm CR</strong>: Defines the realm configuration</li>
-<li><strong>RoleBinding</strong>: <code>my-realm-operator-access</code> (grants operator access)</li>
-<li>The operator reconciles the realm in the Keycloak instance</li>
-</ol>
-<h3 id="verify-access">Verify Access<a class="headerlink" href="#verify-access" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Check RoleBinding</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>my-realm-operator-access<span class="w"> </span>-n<span class="w"> </span>my-team
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Check realm status</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>my-realm<span class="w"> </span>-n<span class="w"> </span>my-team
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># View realm details</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>my-realm<span class="w"> </span>-n<span class="w"> </span>my-team
+<p>Use the explicit service-account override whenever the operator release uses a non-default service account name. That is part of the normal Helm-managed path, not just the manual-RoleBinding fallback.</p>
+<h3 id="client-chart">Client chart<a class="headerlink" href="#client-chart" title="Permanent link">&para;</a></h3>
+<p>With <code>rbac.create=true</code>, the client chart does the same for client reconciliation.</p>
+<p>Relevant values on the client chart:</p>
+<ul>
+<li><code>rbac.operatorNamespace</code>: namespace where the operator runs</li>
+<li><code>rbac.operatorServiceAccountName</code>: optional operator service account override</li>
+<li><code>rbac.operatorClusterRoleName</code>: optional shared ClusterRole override</li>
+</ul>
+<p>If <code>rbac.operatorServiceAccountName</code> is left empty, the chart derives the subject name as <code>keycloak-operator-&lt;rbac.operatorNamespace&gt;</code>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>charts/keycloak-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>my-team<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorNamespace<span class="o">=</span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorServiceAccountName<span class="o">=</span>keycloak-operator-keycloak-system
 </span></code></pre></div>
-<h2 id="client-deployment-helm-chart">Client Deployment (Helm Chart)<a class="headerlink" href="#client-deployment-helm-chart" title="Permanent link">&para;</a></h2>
-<h3 id="deploy-client-to-team-namespace">Deploy Client to Team Namespace<a class="headerlink" href="#deploy-client-to-team-namespace" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Deploy client (creates RoleBinding automatically)</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>charts/keycloak-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorNamespace<span class="o">=</span>keycloak-system
+<p>This matters whenever the operator is not in the chart defaults or when the operator service account name was overridden at install time.</p>
+<h2 id="what-changes-when-rbaccreatefalse">What Changes When <code>rbac.create=false</code><a class="headerlink" href="#what-changes-when-rbaccreatefalse" title="Permanent link">&para;</a></h2>
+<p>This is the advanced or policy-driven path.</p>
+<p>When <code>rbac.create=false</code> on the realm or client chart:</p>
+<ul>
+<li>the chart still creates the CR</li>
+<li>the chart does not create the namespace <code>RoleBinding</code></li>
+<li>reconciliation fails until platform admins or namespace owners create an equivalent <code>RoleBinding</code></li>
+</ul>
+<p>Manual binding example:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-access<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-operator-namespace-access<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h3 id="what-gets-created_2">What Gets Created<a class="headerlink" href="#what-gets-created_2" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>KeycloakClient CR</strong>: Defines the client configuration</li>
-<li><strong>RoleBinding</strong>: <code>my-client-operator-access</code> (grants operator access)</li>
-<li>The operator reconciles the client in the specified realm</li>
-</ol>
-<h2 id="manual-rolebinding-creation">Manual RoleBinding Creation<a class="headerlink" href="#manual-rolebinding-creation" title="Permanent link">&para;</a></h2>
-<p>If you prefer to create RoleBindings manually (or <code>rbac.create=false</code>):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-operator-namespace-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+<p>If your operator service account name differs from <code>keycloak-operator</code>, bind the actual service account name created by your operator chart release. The Helm values above let you keep that aligned even when <code>rbac.create=true</code>.</p>
+<h2 id="common-failures">Common Failures<a class="headerlink" href="#common-failures" title="Permanent link">&para;</a></h2>
+<h3 id="missing-namespace-binding">Missing namespace binding<a class="headerlink" href="#missing-namespace-binding" title="Permanent link">&para;</a></h3>
+<p>Typical message:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Operator does not have access to namespace &#39;my-team&#39;
 </span></code></pre></div>
-<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
-<h3 id="missing-rolebinding">Missing RoleBinding<a class="headerlink" href="#missing-rolebinding" title="Permanent link">&para;</a></h3>
-<p><strong>Error</strong>: <code>Operator does not have access to namespace 'my-team'</code></p>
-<p><strong>Solution</strong>: Create the RoleBinding:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-operator-namespace-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+<p>Meaning:</p>
+<ul>
+<li>the <code>SubjectAccessReview</code> failed</li>
+<li>the operator service account is not bound in that namespace</li>
+</ul>
+<p>Fix:</p>
+<ul>
+<li>enable <code>rbac.create</code> on the realm or client chart, or</li>
+<li>create the <code>RoleBinding</code> manually</li>
+</ul>
+<h3 id="missing-allow-label">Missing allow label<a class="headerlink" href="#missing-allow-label" title="Permanent link">&para;</a></h3>
+<p>Typical message:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Secret &#39;smtp-password&#39; in namespace &#39;my-team&#39; is missing required label &#39;vriesdemichael.github.io/keycloak-allow-operator-read=true&#39;
 </span></code></pre></div>
-<h3 id="missing-secret-label">Missing Secret Label<a class="headerlink" href="#missing-secret-label" title="Permanent link">&para;</a></h3>
-<p><strong>Error</strong>: <code>Secret 'smtp-password' in namespace 'my-team' is missing required label 'vriesdemichael.github.io/allow-operator-read=true'</code></p>
-<p><strong>Solution</strong>: Label the secret:</p>
+<p>Meaning:</p>
+<ul>
+<li>Kubernetes RBAC allowed the read attempt</li>
+<li>the operator refused to consume that secret because it was not explicitly opted in</li>
+</ul>
+<p>Fix:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>vriesdemichael.github.io/allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>vriesdemichael.github.io/keycloak-allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h3 id="secret-not-found">Secret Not Found<a class="headerlink" href="#secret-not-found" title="Permanent link">&para;</a></h3>
-<p><strong>Error</strong>: <code>Secret 'smtp-password' not found in namespace 'my-team'</code></p>
-<p><strong>Solution</strong>: Create the secret:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">password</span><span class="o">=</span><span class="s1">&#39;mypassword&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-n<span class="w"> </span>my-team
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>kubectl<span class="w"> </span>label<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">  </span>vriesdemichael.github.io/allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+<h3 id="secret-not-found">Secret not found<a class="headerlink" href="#secret-not-found" title="Permanent link">&para;</a></h3>
+<p>Typical message:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Secret &#39;smtp-password&#39; not found in namespace &#39;my-team&#39;
 </span></code></pre></div>
-<h2 id="revoking-access">Revoking Access<a class="headerlink" href="#revoking-access" title="Permanent link">&para;</a></h2>
-<p>To revoke operator access to a namespace:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-access<span class="w"> </span>-n<span class="w"> </span>my-team
-</span></code></pre></div>
-<p><strong>Note</strong>: Existing resources will continue to work, but the operator will not be able to reconcile changes.</p>
+<p>Fix the reference or create the secret in the same namespace as the CR that uses it.</p>
 <h2 id="auditing">Auditing<a class="headerlink" href="#auditing" title="Permanent link">&para;</a></h2>
-<h3 id="find-namespaces-with-operator-access">Find Namespaces with Operator Access<a class="headerlink" href="#find-namespaces-with-operator-access" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-A<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.items[] | select(.subjects[]?.name == &quot;keycloak-operator&quot;) | &quot;\(.metadata.namespace)/\(.metadata.name)&quot;&#39;</span>
+<p>Find delegated namespaces:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebindings<span class="w"> </span>-A<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.items[] | select(.roleRef.kind == &quot;ClusterRole&quot;) | select(.roleRef.name | endswith(&quot;-namespace-access&quot;)) | &quot;\(.metadata.namespace)/\(.metadata.name)&quot;&#39;</span>
 </span></code></pre></div>
-<h3 id="find-labeled-secrets">Find Labeled Secrets<a class="headerlink" href="#find-labeled-secrets" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-A<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>-l<span class="w"> </span>vriesdemichael.github.io/allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>-o<span class="w"> </span>custom-columns<span class="o">=</span>NAMESPACE:.metadata.namespace,NAME:.metadata.name
+<p>Find secrets explicitly shared with the operator:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-A<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>-l<span class="w"> </span>vriesdemichael.github.io/keycloak-allow-operator-read<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>-o<span class="w"> </span>custom-columns<span class="o">=</span>NAMESPACE:.metadata.namespace,NAME:.metadata.name
 </span></code></pre></div>
-<h3 id="check-operator-permissions">Check Operator Permissions<a class="headerlink" href="#check-operator-permissions" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Check if operator can read secrets in a namespace</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
+<p>Check whether the operator service account can read secrets in one namespace:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<p>Run the integration tests:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>task<span class="w"> </span>test:integration
-</span></code></pre></div>
-<p>This validates:
-- Operator deployment with minimal RBAC
-- Realm creation in different namespace
-- Client creation in different namespace
-- Secret label validation
-- RoleBinding creation
-- Reconciliation with proper permissions</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="operator-logs">Operator Logs<a class="headerlink" href="#operator-logs" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span><span class="w"> </span>-f
+<p>Inspect operator logs:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">200</span><span class="w"> </span>-f
 </span></code></pre></div>
-<h3 id="check-rbac-resources">Check RBAC Resources<a class="headerlink" href="#check-rbac-resources" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Check ClusterRoles</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>clusterrole<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>keycloak-operator
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Check Role in operator namespace</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>role<span class="w"> </span>-n<span class="w"> </span>keycloak-system
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Check RoleBindings in a namespace</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>-n<span class="w"> </span>my-team
+<p>Inspect the RBAC objects created by the operator chart:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>clusterrole<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>keycloak-operator
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>role<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h3 id="verify-secret-label">Verify Secret Label<a class="headerlink" href="#verify-secret-label" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span>-n<span class="w"> </span>my-team<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.metadata.labels}&#39;</span>
+<p>Inspect one labeled secret:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>smtp-password<span class="w"> </span>-n<span class="w"> </span>my-team<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.metadata.labels}&#39;</span>
 </span></code></pre></div>
-<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Operator Chart: <code>charts/keycloak-operator/</code></li>
-<li>Realm Chart: <code>charts/keycloak-realm/</code></li>
-<li>Client Chart: <code>charts/keycloak-client/</code></li>
-<li>Integration Tests: <code>tests/integration/</code></li>
+<li><a href="../how-to/multi-tenant/">Multi-Tenant Setup</a></li>
+<li><a href="../reference/keycloak-realm-crd/">KeycloakRealm CRD Reference</a></li>
+<li><a href="../reference/keycloak-client-crd/">KeycloakClient CRD Reference</a></li>
+<li><a href="../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/">ADR 017: Kubernetes RBAC Over Keycloak Security</a></li>
+<li><a href="../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/">ADR 032: Minimal RBAC With Namespaced Service Accounts</a></li>
+<li><a href="../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/">ADR 054: Namespace Watch Scope Requires Cluster RBAC</a></li>
+<li><a href="../decisions/generated-markdown/062-one-keycloak-per-operator/">ADR 062: One Keycloak Per Operator</a></li>
 </ul>
 
 

@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1328,10 +1356,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
+  <a href="#upgrade-the-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Table of Contents
+        Upgrade The Operator
       
     </span>
   </a>
@@ -1339,22 +1367,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-the-operator" class="md-nav__link">
+  <a href="#upgrade-managed-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Upgrading the Operator
+        Upgrade Managed Keycloak
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Upgrading the Operator">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-rules-that-matter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Rules That Matter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade Strategies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pre-upgrade-checklist" class="md-nav__link">
+  <a href="#recreate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pre-Upgrade Checklist
+        Recreate
       
     </span>
   </a>
@@ -1362,76 +1412,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-1-backup-current-state" class="md-nav__link">
+  <a href="#bluegreen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Backup Current State
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-check-current-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2: Check Current Version
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-review-release-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Review Release Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-upgrade-operator-helm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Upgrade Operator (Helm)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-verify-upgrade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: Verify Upgrade
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-6-test-reconciliation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 6: Test Reconciliation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-procedure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback Procedure
+        BlueGreen
       
     </span>
   </a>
@@ -1444,95 +1428,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-keycloak-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrading Keycloak Version
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Upgrading Keycloak Version">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#supported-keycloak-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Keycloak Versions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#automated-pre-upgrade-backups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Automated Pre-Upgrade Backups
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-upgrade-checklist_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Upgrade Checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#upgrade-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrade Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rolling-update-procedure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rolling Update Procedure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-upgrade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Upgrade
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-to-previous-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback to Previous Version
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#cache-isolation-during-upgrades" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1541,60 +1436,38 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Cache Isolation During Upgrades">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#recommended-autorevision-true-for-semver-images" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-and-flow-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Recommended: autoRevision: true for semver images
+        Session And Flow Impact
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#alternative-clustername-for-non-semver-or-custom-names" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#migrating-from-other-keycloak-solutions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alternative: clusterName for non-semver or custom names
+        Migrating From Other Keycloak Solutions
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#what-is-isolated-and-what-survives-an-upgrade" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#operator-upgrade-verification-and-rollback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is isolated — and what survives an upgrade
+        Operator Upgrade Verification And Rollback
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#priority-of-cacheisolation-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Priority of cacheIsolation options
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1602,251 +1475,18 @@
   <a href="#comparison-with-official-keycloak-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comparison with Official Keycloak Operator
+        Comparison With Official Keycloak Operator
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Comparison with Official Keycloak Operator">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-this-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use This Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-official-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use Official Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#feature-comparison" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Feature Comparison
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Feature Comparison">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#realm-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Realm Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#client-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration-from-official-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration from Official Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#backup-rollback" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backup &amp; Rollback
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Backup &amp; Rollback">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-upgrade-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Upgrade Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#database-backup-cloudnativepg" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Database Backup (CloudNativePG)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#restore-from-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restore from Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#emergency-procedures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Emergency Procedures
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Best Practices">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#upgrade-strategy_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrade Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#maintenance-windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Maintenance Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        See Also
       
     </span>
   </a>
@@ -5025,10 +4665,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
+  <a href="#upgrade-the-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Table of Contents
+        Upgrade The Operator
       
     </span>
   </a>
@@ -5036,22 +4676,44 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-the-operator" class="md-nav__link">
+  <a href="#upgrade-managed-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Upgrading the Operator
+        Upgrade Managed Keycloak
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Upgrading the Operator">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-rules-that-matter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Rules That Matter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrade-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrade Strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Upgrade Strategies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#pre-upgrade-checklist" class="md-nav__link">
+  <a href="#recreate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pre-Upgrade Checklist
+        Recreate
       
     </span>
   </a>
@@ -5059,76 +4721,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-1-backup-current-state" class="md-nav__link">
+  <a href="#bluegreen" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 1: Backup Current State
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-check-current-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2: Check Current Version
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-review-release-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Review Release Notes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-upgrade-operator-helm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Upgrade Operator (Helm)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-verify-upgrade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: Verify Upgrade
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-6-test-reconciliation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 6: Test Reconciliation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-procedure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback Procedure
+        BlueGreen
       
     </span>
   </a>
@@ -5141,95 +4737,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#upgrading-keycloak-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrading Keycloak Version
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Upgrading Keycloak Version">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#supported-keycloak-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Supported Keycloak Versions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#automated-pre-upgrade-backups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Automated Pre-Upgrade Backups
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pre-upgrade-checklist_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Upgrade Checklist
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#upgrade-strategy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrade Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rolling-update-procedure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rolling Update Procedure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#verify-upgrade" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify Upgrade
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-to-previous-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback to Previous Version
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#cache-isolation-during-upgrades" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5238,60 +4745,38 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Cache Isolation During Upgrades">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#recommended-autorevision-true-for-semver-images" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-and-flow-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Recommended: autoRevision: true for semver images
+        Session And Flow Impact
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#alternative-clustername-for-non-semver-or-custom-names" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#migrating-from-other-keycloak-solutions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Alternative: clusterName for non-semver or custom names
+        Migrating From Other Keycloak Solutions
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#what-is-isolated-and-what-survives-an-upgrade" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#operator-upgrade-verification-and-rollback" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is isolated — and what survives an upgrade
+        Operator Upgrade Verification And Rollback
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#priority-of-cacheisolation-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Priority of cacheIsolation options
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5299,251 +4784,18 @@
   <a href="#comparison-with-official-keycloak-operator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Comparison with Official Keycloak Operator
+        Comparison With Official Keycloak Operator
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Comparison with Official Keycloak Operator">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-this-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use This Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#when-to-use-official-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use Official Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#feature-comparison" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Feature Comparison
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Feature Comparison">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#realm-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Realm Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#client-management" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Management
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#security-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Model
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#operations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Operations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#migration-from-official-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Migration from Official Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#backup-rollback" class="md-nav__link">
+  <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Backup &amp; Rollback
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Backup &amp; Rollback">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pre-upgrade-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pre-Upgrade Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#database-backup-cloudnativepg" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Database Backup (CloudNativePG)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#restore-from-backup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restore from Backup
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rollback-operator" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback Operator
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#emergency-procedures" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Emergency Procedures
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Best Practices
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Best Practices">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#upgrade-strategy_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Upgrade Strategy
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#maintenance-windows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Maintenance Windows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
+        See Also
       
     </span>
   </a>
@@ -5576,640 +4828,158 @@
 
 
 <h1 id="migration-upgrade-guide">Migration &amp; Upgrade Guide<a class="headerlink" href="#migration-upgrade-guide" title="Permanent link">&para;</a></h1>
-<p>This guide covers upgrading the Keycloak operator and comparing this operator with the official Keycloak operator.</p>
-<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
-<ol>
-<li><a href="#upgrading-the-operator">Upgrading the Operator</a></li>
-<li><a href="#upgrading-keycloak-version">Upgrading Keycloak Version</a></li>
-<li><a href="#comparison-with-official-keycloak-operator">Comparison with Official Keycloak Operator</a></li>
-<li><a href="#backup-rollback">Backup &amp; Rollback</a></li>
-</ol>
-<hr />
-<h2 id="upgrading-the-operator">Upgrading the Operator<a class="headerlink" href="#upgrading-the-operator" title="Permanent link">&para;</a></h2>
-<h3 id="pre-upgrade-checklist">Pre-Upgrade Checklist<a class="headerlink" href="#pre-upgrade-checklist" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Backup current state</strong> - Export all Keycloak resources</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Review release notes</strong> - Check for breaking changes</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Test in non-production</strong> - Upgrade staging environment first</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Check database backups</strong> - Ensure recent backup exists</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Document current versions</strong> - Record operator and Keycloak versions</li>
-</ul>
-<h3 id="step-1-backup-current-state">Step 1: Backup Current State<a class="headerlink" href="#step-1-backup-current-state" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Backup all Keycloak resources</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>&gt;<span class="w"> </span>keycloak-resources-backup-<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.yaml
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Backup operator configuration</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span>&gt;<span class="w"> </span>operator-values-backup-<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.yaml
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Backup CRDs</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A1000<span class="w"> </span><span class="s2">&quot;vriesdemichael.github.io&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span>&gt;<span class="w"> </span>crds-backup-<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.yaml
+<p>This guide covers operator upgrades, managed Keycloak upgrades, and migration guidance for users coming from other Keycloak deployment models.</p>
+<p>For supported Keycloak versions, use <a href="../../reference/keycloak-version-support/">Keycloak Version Support</a> as the single source of truth.</p>
+<h2 id="upgrade-the-operator">Upgrade The Operator<a class="headerlink" href="#upgrade-the-operator" title="Permanent link">&para;</a></h2>
+<p>Helm is the primary upgrade path.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--values<span class="w"> </span>operator-values.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--version<span class="w"> </span>&lt;chart-version&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span>--wait
 </span></code></pre></div>
-<h3 id="step-2-check-current-version">Step 2: Check Current Version<a class="headerlink" href="#step-2-check-current-version" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Get current operator version</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>helm<span class="w"> </span>list<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Get operator image version</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.template.spec.containers[0].image}&#39;</span>
-</span></code></pre></div>
-<h3 id="step-3-review-release-notes">Step 3: Review Release Notes<a class="headerlink" href="#step-3-review-release-notes" title="Permanent link">&para;</a></h3>
-<p>Check the <a href="https://github.com/vriesdemichael/keycloak-operator/releases">Releases Page</a> for:
-- Breaking changes
-- New features
-- Bug fixes
-- Migration requirements</p>
-<h3 id="step-4-upgrade-operator-helm">Step 4: Upgrade Operator (Helm)<a class="headerlink" href="#step-4-upgrade-operator-helm" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check available versions (OCI)</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>helm<span class="w"> </span>show<span class="w"> </span>chart<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Upgrade operator</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>--values<span class="w"> </span>operator-values-backup-<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>--version<span class="w"> </span>&lt;version&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span>--wait
-</span></code></pre></div>
-<p><strong>Important</strong>: The <code>--wait</code> flag ensures the upgrade completes before returning.</p>
-<h3 id="step-5-verify-upgrade">Step 5: Verify Upgrade<a class="headerlink" href="#step-5-verify-upgrade" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Check operator pods are running new version</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Check operator logs for startup</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">50</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Verify CRDs updated</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>keycloaks.vriesdemichael.github.io<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span>version
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Check all resources still healthy</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
-</span></code></pre></div>
-<p>All resources should remain in <code>Ready</code> phase.</p>
-<h3 id="step-6-test-reconciliation">Step 6: Test Reconciliation<a class="headerlink" href="#step-6-test-reconciliation" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Trigger reconciliation on a test realm</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>annotate<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;test-realm&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;test-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nv">reconcile</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="w"> </span>--overwrite
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Watch logs</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>-f
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Verify realm still Ready</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;test-realm&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;test-namespace&gt;
-</span></code></pre></div>
-<h3 id="rollback-procedure">Rollback Procedure<a class="headerlink" href="#rollback-procedure" title="Permanent link">&para;</a></h3>
-<p>If upgrade fails:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Rollback Helm release</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>helm<span class="w"> </span>rollback<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Verify operator rolled back</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Check resources still healthy</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
-</span></code></pre></div>
-<p><strong>Important</strong>: CRD changes cannot be automatically rolled back. You may need to manually restore CRDs from backup:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>crds-backup-&lt;date&gt;.yaml
-</span></code></pre></div>
-<hr />
-<h2 id="upgrading-keycloak-version">Upgrading Keycloak Version<a class="headerlink" href="#upgrading-keycloak-version" title="Permanent link">&para;</a></h2>
-<h3 id="supported-keycloak-versions">Supported Keycloak Versions<a class="headerlink" href="#supported-keycloak-versions" title="Permanent link">&para;</a></h3>
+<p>Before upgrading:</p>
 <ul>
-<li><strong>Minimum</strong>: Keycloak 25.0.0 (management port 9000 requirement)</li>
-<li><strong>Recommended</strong>: Keycloak 26.0.0+</li>
-<li><strong>Maximum</strong>: Latest Keycloak release</li>
+<li>export current CRs</li>
+<li>save the current Helm values</li>
+<li>review the release notes</li>
+<li>test the change outside production first</li>
 </ul>
-<h3 id="automated-pre-upgrade-backups">Automated Pre-Upgrade Backups<a class="headerlink" href="#automated-pre-upgrade-backups" title="Permanent link">&para;</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Automatic for CNPG and Managed tiers</p>
-<p>When upgrading Keycloak to a new <strong>major or minor</strong> version, the operator automatically creates a backup before applying the change. Patch-level upgrades (e.g., <code>26.0.1</code> → <code>26.0.2</code>) skip this step.</p>
-</div>
-<p>The backup behavior depends on your database tier:</p>
+<p>After upgrading:</p>
 <ul>
-<li><strong>CNPG</strong>: Creates a CNPG <code>Backup</code> CR and waits for completion before proceeding.</li>
-<li><strong>Managed</strong>: Creates a <code>VolumeSnapshot</code> of the database PVC.</li>
-<li><strong>External</strong>: Cannot back up automatically. The operator logs a warning and proceeds. Users with external databases must handle backups independently before upgrading. Flat-field (legacy) configs are treated identically (ADR-091).</li>
+<li>verify operator pods are healthy</li>
+<li>verify managed <code>Keycloak</code>, <code>KeycloakRealm</code>, and <code>KeycloakClient</code> resources return to healthy phases</li>
+<li>check operator logs for reconciliation or validation failures</li>
 </ul>
-<p>See <a href="../backup-restore/#automated-pre-upgrade-backups">Backup &amp; Restore: Automated Pre-Upgrade Backups</a> for full configuration details.</p>
-<h3 id="pre-upgrade-checklist_1">Pre-Upgrade Checklist<a class="headerlink" href="#pre-upgrade-checklist_1" title="Permanent link">&para;</a></h3>
-<ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Check Keycloak release notes</strong> - Review breaking changes</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Verify backup configuration</strong> - Ensure <code>upgradePolicy</code> settings match your requirements</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Test in non-production</strong> - Verify compatibility</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Schedule maintenance window</strong> - Plan for brief downtime (rolling update) or zero-downtime (blue-green, Phase 3)</li>
-</ul>
-<h3 id="upgrade-strategy">Upgrade Strategy<a class="headerlink" href="#upgrade-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Blue-Green Deployment (Future — Phase 3)</strong>:
-1. Deploy new Keycloak version alongside old version
-2. Migrate database schema via Liquibase job
-3. Switch traffic to new version
-4. Keep old version for quick rollback
-5. Remove old version after verification</p>
-<p><strong>Rolling Update (Current)</strong>:
-1. Update Keycloak resource with new image tag
-2. Operator triggers pre-upgrade backup (automatic for CNPG/Managed)
-3. Operator performs rolling update
-4. Brief downtime during pod restarts</p>
-<h3 id="rolling-update-procedure">Rolling Update Procedure<a class="headerlink" href="#rolling-update-procedure" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Check current Keycloak version</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.image.tag}&#39;</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Update to new version</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s1">spec:</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s1">  image:</span>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s1">    tag: &quot;26.0.0&quot;</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s1">&#39;</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="c1"># Watch rollout</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/&lt;keycloak-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="c1"># Verify all pods running new version</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{range .items[*]}{.metadata.name}{&quot;\t&quot;}{.spec.containers[0].image}{&quot;\n&quot;}{end}&#39;</span>
+<h2 id="upgrade-managed-keycloak">Upgrade Managed Keycloak<a class="headerlink" href="#upgrade-managed-keycloak" title="Permanent link">&para;</a></h2>
+<p>Prefer Helm-driven upgrades over ad hoc <code>kubectl patch</code> work.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;26.4.1&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">upgradePolicy</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BlueGreen</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">backupTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">600</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">autoTeardown</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span></code></pre></div>
-<h3 id="verify-upgrade">Verify Upgrade<a class="headerlink" href="#verify-upgrade" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Check Keycloak status</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># Should show PHASE=Ready</span>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Check all realms still working</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>--all-namespaces
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="c1"># Test OAuth2 flow</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># (Use test client to verify authentication)</span>
-</span><span id="__span-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
-</span><span id="__span-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1"># Check database schema version</span>
-</span><span id="__span-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">  </span>psql<span class="w"> </span>-h<span class="w"> </span>&lt;db-host&gt;<span class="w"> </span>-U<span class="w"> </span>keycloak<span class="w"> </span>-d<span class="w"> </span>keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">  </span>-c<span class="w"> </span><span class="s2">&quot;SELECT * FROM databasechangelog ORDER BY orderexecuted DESC LIMIT 5;&quot;</span>
-</span></code></pre></div>
-<h3 id="rollback-to-previous-version">Rollback to Previous Version<a class="headerlink" href="#rollback-to-previous-version" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Revert to previous image tag</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="s1">spec:</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="s1">  image:</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s1">    tag: &quot;25.0.6&quot;</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s1">&#39;</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Watch rollout</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/&lt;keycloak-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="c1"># Verify rollback</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak
-</span></code></pre></div>
-<p><strong>Note</strong>: Keycloak database migrations are forward-only. Rolling back may require database restore if schema was upgraded.</p>
-<hr />
-<h3 id="cache-isolation-during-upgrades">Cache Isolation During Upgrades<a class="headerlink" href="#cache-isolation-during-upgrades" title="Permanent link">&para;</a></h3>
-<p>When running multiple Keycloak pods, all members must form a single Infinispan/JGroups cluster to share distributed caches (user sessions, action tokens, login flows in progress). If pods from two <strong>different major versions</strong> try to cluster together during a rolling upgrade, they may encounter serialization incompatibilities in the JGroups protocol, causing subtle split-brain issues.</p>
-<p>The <code>cacheIsolation</code> feature solves this by restricting which pods can join the same JGroups cluster using a Kubernetes label selector on the headless discovery service.</p>
-<h4 id="recommended-autorevision-true-for-semver-images">Recommended: <code>autoRevision: true</code> for semver images<a class="headerlink" href="#recommended-autorevision-true-for-semver-images" title="Permanent link">&para;</a></h4>
-<p>If you tag your Keycloak image with a proper semver version (e.g., <code>quay.io/keycloak/keycloak:26.4.1</code>), enable automatic revision-based isolation:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># keycloak-values.yaml</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nt">keycloak</span><span class="p">:</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/keycloak/keycloak</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;26.4.1&quot;</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="nt">cacheIsolation</span><span class="p">:</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">    </span><span class="nt">autoRevision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span></code></pre></div>
-<p>The operator derives the cluster identity from the <strong>major version</strong> only (<code>v26</code>), so patch and minor upgrades (e.g., <code>26.4.1</code> → <code>26.5.0</code>) remain in the same cluster. A major upgrade (e.g., <code>26.x</code> → <code>27.x</code>) automatically creates a new isolated cluster.</p>
-<p><strong>Pod label set by the operator:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>vriesdemichael.github.io/cache-cluster: &lt;name&gt;-v26
-</span></code></pre></div>
-<p>The discovery service selector is updated to match the current major version on every reconcile loop, so stale selectors after upgrades are corrected automatically.</p>
-<h4 id="alternative-clustername-for-non-semver-or-custom-names">Alternative: <code>clusterName</code> for non-semver or custom names<a class="headerlink" href="#alternative-clustername-for-non-semver-or-custom-names" title="Permanent link">&para;</a></h4>
-<p>If you use non-semver tags (e.g., <code>:nightly</code>, <code>:latest</code>, or custom CI builds), use an explicit cluster name:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">keycloak</span><span class="p">:</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">cacheIsolation</span><span class="p">:</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">    </span><span class="nt">clusterName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-keycloak-prod</span>
-</span></code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title"><code>:latest</code> and <code>autoRevision</code></p>
-<p>If <code>autoRevision: true</code> is set but the image tag is non-semver (<code>:latest</code>, <code>:nightly</code>, SHA digest), the operator <strong>cannot determine a major version</strong>. It will log a warning and disable cache isolation for that instance. You must use <code>clusterName</code> or a semver-tagged image in this case.</p>
-</div>
-<h4 id="what-is-isolated-and-what-survives-an-upgrade">What is isolated — and what survives an upgrade<a class="headerlink" href="#what-is-isolated-and-what-survives-an-upgrade" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Data</th>
-<th>Survives upgrade?</th>
-<th>Why</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>User sessions</td>
-<td>✅ Yes</td>
-<td>Stored in the database</td>
-</tr>
-<tr>
-<td>Realm &amp; client config</td>
-<td>✅ Yes</td>
-<td>Stored in the database</td>
-</tr>
-<tr>
-<td>Offline tokens</td>
-<td>✅ Yes</td>
-<td>Stored in the database</td>
-</tr>
-<tr>
-<td>In-progress login flows (action tokens)</td>
-<td>⚠️ Lost during upgrade window</td>
-<td>Stored in Infinispan only</td>
-</tr>
-<tr>
-<td>Active SSO sessions (not yet flushed)</td>
-<td>⚠️ May be lost</td>
-<td>Flushed periodically to DB</td>
-</tr>
-</tbody>
-</table>
-<p>Users mid-flow during the rolling upgrade window (typically seconds to a few minutes) may need to restart the flow. This is the same behaviour as any rolling pod restart.</p>
-<h4 id="priority-of-cacheisolation-options">Priority of <code>cacheIsolation</code> options<a class="headerlink" href="#priority-of-cacheisolation-options" title="Permanent link">&para;</a></h4>
-<p>If multiple fields are set, the operator applies this resolution order (highest priority first):</p>
-<ol>
-<li><code>clusterName</code> — explicit static name, always wins</li>
-<li><code>autoRevision</code> — derives <code>&lt;name&gt;-v&lt;major&gt;</code> from image tag</li>
-<li><code>autoSuffix</code> — appends the full image tag as-is</li>
-<li>No isolation — pods join Keycloak's default cluster</li>
-</ol>
-<hr />
-<h2 id="comparison-with-official-keycloak-operator">Comparison with Official Keycloak Operator<a class="headerlink" href="#comparison-with-official-keycloak-operator" title="Permanent link">&para;</a></h2>
-<h3 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Aspect</th>
-<th>This Operator</th>
-<th>Official Keycloak Operator</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Primary Focus</strong></td>
-<td>GitOps-native, multi-tenant</td>
-<td>General Keycloak deployment</td>
-</tr>
-<tr>
-<td><strong>Language</strong></td>
-<td>Python (Kopf)</td>
-<td>Go (Operator SDK)</td>
-</tr>
-<tr>
-<td><strong>CRDs</strong></td>
-<td>Keycloak, KeycloakRealm, KeycloakClient</td>
-<td>Keycloak, KeycloakRealmImport</td>
-</tr>
-<tr>
-<td><strong>Authorization</strong></td>
-<td>Namespace grant lists + RBAC</td>
-<td>RBAC + direct access</td>
-</tr>
-<tr>
-<td><strong>Multi-tenancy</strong></td>
-<td>First-class support</td>
-<td>Limited</td>
-</tr>
-<tr>
-<td><strong>GitOps Compatibility</strong></td>
-<td>Excellent</td>
-<td>Good</td>
-</tr>
-<tr>
-<td><strong>Secret Management</strong></td>
-<td>Kubernetes-native</td>
-<td>Kubernetes + Keycloak</td>
-</tr>
-<tr>
-<td><strong>Database</strong></td>
-<td>CloudNativePG (CNPG) primary</td>
-<td>External PostgreSQL</td>
-</tr>
-</tbody>
-</table>
-<h3 id="when-to-use-this-operator">When to Use This Operator<a class="headerlink" href="#when-to-use-this-operator" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>Choose this operator if:</strong>
-- Multi-tenant environment (10+ teams)
-- GitOps-first workflow (ArgoCD, Flux)
-- Strong namespace isolation required
-- Declarative authorization via grant lists
-- CloudNativePG database management preferred</p>
-<h3 id="when-to-use-official-operator">When to Use Official Operator<a class="headerlink" href="#when-to-use-official-operator" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>Choose official operator if:</strong>
-- Single-tenant environment
-- Need Keycloak's built-in security model
-- Organization policy requires official/upstream operators
-- Integration with Red Hat/RHSSO required
-- Prefer Go-based operators
-- Need features not yet in this operator</p>
-<h3 id="feature-comparison">Feature Comparison<a class="headerlink" href="#feature-comparison" title="Permanent link">&para;</a></h3>
-<h4 id="realm-management">Realm Management<a class="headerlink" href="#realm-management" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>This Operator</th>
-<th>Official Operator</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Declarative realm config</td>
-<td>✅ KeycloakRealm CRD</td>
-<td>✅ KeycloakRealmImport</td>
-</tr>
-<tr>
-<td>Live realm updates</td>
-<td>✅ Automatic reconciliation</td>
-<td>⚠️ Import-based</td>
-</tr>
-<tr>
-<td>Drift detection</td>
-<td>✅ Built-in</td>
-<td>❌ Not supported</td>
-</tr>
-<tr>
-<td>Multi-namespace realms</td>
-<td>✅ Fully supported</td>
-<td>⚠️ Limited</td>
-</tr>
-<tr>
-<td>Realm deletion</td>
-<td>✅ Automatic</td>
-<td>⚠️ Manual</td>
-</tr>
-</tbody>
-</table>
-<h4 id="client-management">Client Management<a class="headerlink" href="#client-management" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>This Operator</th>
-<th>Official Operator</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Declarative client config</td>
-<td>✅ KeycloakClient CRD</td>
-<td>⚠️ Via RealmImport</td>
-</tr>
-<tr>
-<td>Client secret management</td>
-<td>✅ Automatic Kubernetes secret</td>
-<td>⚠️ Via RealmImport</td>
-</tr>
-<tr>
-<td>Protocol mappers</td>
-<td>✅ CRD support</td>
-<td>✅ Via RealmImport</td>
-</tr>
-<tr>
-<td>Service accounts</td>
-<td>✅ CRD support</td>
-<td>✅ Via RealmImport</td>
-</tr>
-<tr>
-<td>Cross-namespace clients</td>
-<td>✅ Fully supported</td>
-<td>❌ Not supported</td>
-</tr>
-</tbody>
-</table>
-<h4 id="security-model">Security Model<a class="headerlink" href="#security-model" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>This Operator</th>
-<th>Official Operator</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Authorization method</td>
-<td>Namespace Grant + RBAC</td>
-<td>Keycloak admin credentials</td>
-</tr>
-<tr>
-<td>Client secret rotation</td>
-<td>✅ Automatic</td>
-<td>❌ Manual</td>
-</tr>
-<tr>
-<td>Multi-tenant isolation</td>
-<td>✅ Namespace Grant Lists</td>
-<td>⚠️ RBAC-based</td>
-</tr>
-<tr>
-<td>Audit trail</td>
-<td>✅ K8s API + ConfigMap</td>
-<td>⚠️ Keycloak logs</td>
-</tr>
-<tr>
-<td>Secret distribution</td>
-<td>✅ GitOps-friendly</td>
-<td>⚠️ Manual</td>
-</tr>
-</tbody>
-</table>
-<h4 id="operations">Operations<a class="headerlink" href="#operations" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>This Operator</th>
-<th>Official Operator</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Database management</td>
-<td>✅ CNPG integration</td>
-<td>⚠️ External required</td>
-</tr>
-<tr>
-<td>Backup/restore</td>
-<td>✅ Via CNPG</td>
-<td>⚠️ Manual</td>
-</tr>
-<tr>
-<td>High availability</td>
-<td>✅ Multi-replica support</td>
-<td>✅ Multi-replica support</td>
-</tr>
-<tr>
-<td>Monitoring</td>
-<td>✅ Prometheus metrics</td>
-<td>✅ Prometheus metrics</td>
-</tr>
-<tr>
-<td>Rate limiting</td>
-<td>✅ Built-in API rate limiting</td>
-<td>❌ Not supported</td>
-</tr>
-</tbody>
-</table>
-<h3 id="migration-from-official-operator">Migration from Official Operator<a class="headerlink" href="#migration-from-official-operator" title="Permanent link">&para;</a></h3>
-<p><strong>Not Automated</strong> - Migration requires manual steps:</p>
-<ol>
-<li>
-<p><strong>Export data from existing Keycloak</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Export realms from existing Keycloak</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>/opt/keycloak/bin/kc.sh<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--dir<span class="w"> </span>/tmp/export
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Deploy this operator alongside</strong> (different namespace)</p>
-</li>
-<li>
-<p><strong>Create new Keycloak instance</strong> with this operator</p>
-</li>
-<li>
-<p><strong>Import realm exports</strong>:</p>
-</li>
-<li>Create KeycloakRealm CRDs based on exports</li>
-<li>
-<p>Create KeycloakClient CRDs for each client</p>
-</li>
-<li>
-<p><strong>Switch application traffic</strong> to new Keycloak</p>
-</li>
-<li>
-<p><strong>Decommission old operator</strong> after verification</p>
-</li>
-</ol>
-<p><strong>Note</strong>: Direct migration is complex. Recommend running both operators in parallel during transition.</p>
-<hr />
-<h2 id="backup-rollback">Backup &amp; Rollback<a class="headerlink" href="#backup-rollback" title="Permanent link">&para;</a></h2>
-<h3 id="pre-upgrade-backup">Pre-Upgrade Backup<a class="headerlink" href="#pre-upgrade-backup" title="Permanent link">&para;</a></h3>
-<p>Always backup before major changes:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Full backup script</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="c1">#!/bin/bash</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">&quot;keycloak-backup-</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d-%H%M%S<span class="k">)</span><span class="s2">&quot;</span>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>mkdir<span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">BACKUP_DIR</span><span class="si">}</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="c1"># Backup resources</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">BACKUP_DIR</span><span class="si">}</span>/resources.yaml
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1"># Backup operator config</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>helm<span class="w"> </span>get<span class="w"> </span>values<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="w">  </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">BACKUP_DIR</span><span class="si">}</span>/operator-values.yaml
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="c1"># Backup CRDs</span>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A1000<span class="w"> </span><span class="s2">&quot;vriesdemichael.github.io&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="w">  </span>&gt;<span class="w"> </span><span class="si">${</span><span class="nv">BACKUP_DIR</span><span class="si">}</span>/crds.yaml
-</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>
-</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="c1"># Backup database (if using CNPG)</span>
-</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>kubectl<span class="w"> </span>cnpg<span class="w"> </span>backup<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
-</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Backup complete: </span><span class="si">${</span><span class="nv">BACKUP_DIR</span><span class="si">}</span><span class="s2">&quot;</span>
-</span></code></pre></div>
-<h3 id="database-backup-cloudnativepg">Database Backup (CloudNativePG)<a class="headerlink" href="#database-backup-cloudnativepg" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Trigger manual backup</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>kubectl<span class="w"> </span>cnpg<span class="w"> </span>backup<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># List backups</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>backup<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># Verify backup succeeded</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>backup<span class="w"> </span>&lt;backup-name&gt;<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span></code></pre></div>
-<h3 id="restore-from-backup">Restore from Backup<a class="headerlink" href="#restore-from-backup" title="Permanent link">&para;</a></h3>
-<p><strong>Restore Kubernetes Resources</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Restore all resources</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>keycloak-backup-&lt;date&gt;/resources.yaml
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Verify resources restored</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
-</span></code></pre></div>
-<p><strong>Restore Database</strong> (see <a href="../how-to/backup-restore.md">Backup &amp; Restore Guide</a>):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Restore from specific backup</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>kubectl<span class="w"> </span>cnpg<span class="w"> </span>restore<span class="w"> </span>keycloak-db<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>--backup<span class="w"> </span>&lt;backup-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-db
-</span></code></pre></div>
-<h3 id="rollback-operator">Rollback Operator<a class="headerlink" href="#rollback-operator" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Rollback to previous Helm release</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>helm<span class="w"> </span>rollback<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1"># Or rollback to specific revision</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>helm<span class="w"> </span><span class="nb">history</span><span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>helm<span class="w"> </span>rollback<span class="w"> </span>keycloak-operator<span class="w"> </span>&lt;revision&gt;<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="c1"># Verify rollback</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span></code></pre></div>
-<h3 id="emergency-procedures">Emergency Procedures<a class="headerlink" href="#emergency-procedures" title="Permanent link">&para;</a></h3>
-<p><strong>Operator Completely Broken</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Uninstall operator (resources remain)</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>helm<span class="w"> </span>uninstall<span class="w"> </span>keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># Resources continue working (Keycloak still serves traffic)</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="c1"># Reinstall operator when ready:</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span>--values<span class="w"> </span>operator-values-backup.yaml
-</span></code></pre></div>
-<p><strong>Keycloak Database Corrupted</strong>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Restore from backup (requires downtime)</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>cluster<span class="w"> </span>keycloak-db<span class="w"> </span>-n<span class="w"> </span>keycloak-db
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>kubectl<span class="w"> </span>cnpg<span class="w"> </span>restore<span class="w"> </span>keycloak-db<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span>--backup<span class="w"> </span>&lt;backup-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-db
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Wait for database to come back</span>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>cluster/keycloak-db<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">  </span>-n<span class="w"> </span>keycloak-db<span class="w"> </span>--timeout<span class="o">=</span>10m
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="c1"># Restart Keycloak pods</span>
-</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>statefulset/&lt;keycloak-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span></code></pre></div>
-<hr />
-<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="upgrade-strategy_1">Upgrade Strategy<a class="headerlink" href="#upgrade-strategy_1" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Test First</strong> - Always test upgrades in non-production</li>
-<li><strong>Backup Always</strong> - Never upgrade without recent backup</li>
-<li><strong>Read Release Notes</strong> - Check for breaking changes</li>
-<li><strong>Rolling Updates</strong> - Use rolling updates for zero downtime</li>
-<li><strong>Verify Thoroughly</strong> - Test all critical flows after upgrade</li>
-<li><strong>Monitor</strong> - Watch metrics and logs during upgrade</li>
-<li><strong>Have Rollback Plan</strong> - Know how to rollback before starting</li>
-</ol>
-<h3 id="maintenance-windows">Maintenance Windows<a class="headerlink" href="#maintenance-windows" title="Permanent link">&para;</a></h3>
-<p>Schedule upgrades during low-traffic periods:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Check current traffic</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>keycloak_operator_reconciliation_total
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="c1"># Notify users of maintenance window</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="c1"># Perform upgrade</span>
-</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="c1"># Verify and re-enable traffic</span>
-</span></code></pre></div>
-<h3 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h3>
-<p>Document your upgrade:</p>
+<p>Then apply the change with your normal <code>helm upgrade</code> flow.</p>
+<h2 id="version-rules-that-matter">Version Rules That Matter<a class="headerlink" href="#version-rules-that-matter" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Pre-upgrade state (versions, configurations)</li>
-<li>Steps taken</li>
-<li>Issues encountered</li>
-<li>Resolution steps</li>
-<li>Post-upgrade verification</li>
-<li>Rollback procedure used (if any)</li>
+<li>Keycloak <code>24.x</code> is supported</li>
+<li>Keycloak <code>25.x+</code> introduces the separate management port <code>9000</code></li>
+<li>Keycloak <code>26.x+</code> is required for built-in tracing propagation</li>
 </ul>
-<hr />
-<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
+<p>The operator handles the <code>24.x</code> versus <code>25.x+</code> health-port difference automatically, so upgrade guidance should treat <code>9000</code> as version-conditional rather than universal.</p>
+<h2 id="upgrade-strategies">Upgrade Strategies<a class="headerlink" href="#upgrade-strategies" title="Permanent link">&para;</a></h2>
+<h3 id="recreate">Recreate<a class="headerlink" href="#recreate" title="Permanent link">&para;</a></h3>
+<p><code>Recreate</code> updates the existing deployment in place and is the simpler strategy.</p>
+<p>Users may see a brief interruption during pod replacement.</p>
+<h3 id="bluegreen">BlueGreen<a class="headerlink" href="#bluegreen" title="Permanent link">&para;</a></h3>
+<p><code>BlueGreen</code> is implemented and is the preferred strategy when you want the operator to cut traffic over only after the replacement deployment is ready.</p>
+<p>Operationally:</p>
+<ol>
+<li>the operator validates the version change</li>
+<li>pre-upgrade backup runs for supported tiers</li>
+<li>a green deployment is provisioned</li>
+<li>readiness is checked</li>
+<li>the Service selector is switched atomically</li>
+<li>blue teardown happens automatically when <code>autoTeardown=true</code></li>
+</ol>
+<p>Progress is tracked in <code>status.blueGreen</code>, not just in the top-level phase.</p>
+<h2 id="cache-isolation-during-upgrades">Cache Isolation During Upgrades<a class="headerlink" href="#cache-isolation-during-upgrades" title="Permanent link">&para;</a></h2>
+<p>When multiple Keycloak pods run during an upgrade, cache isolation prevents different major versions from joining the same JGroups cluster.</p>
+<p>Priority order:</p>
+<ol>
+<li><code>cacheIsolation.clusterName</code></li>
+<li><code>cacheIsolation.autoRevision</code></li>
+<li><code>cacheIsolation.autoSuffix</code></li>
+<li>no isolation override</li>
+</ol>
+<p>Recommended Helm configuration for semver-tagged images:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">keycloak</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;26.4.1&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">cacheIsolation</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">autoRevision</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span></code></pre></div>
+<p>Important nuance:</p>
 <ul>
-<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup Guide</a></li>
-<li><a href="../how-to/backup-restore.md">Backup &amp; Restore Guide</a></li>
-<li><a href="../../how-to/export-realms/">Realm Export Guide</a></li>
-<li><a href="../troubleshooting/">Troubleshooting Guide</a></li>
-<li><a href="../../concepts/security/">Security Model</a></li>
+<li><code>autoRevision</code> only works with semver image tags</li>
+<li>if you use <code>latest</code>, nightly tags, or non-semver custom tags, the operator logs a warning and cannot derive a major-version isolation name</li>
+<li>use <code>clusterName</code> for non-semver image tags</li>
+</ul>
+<h2 id="session-and-flow-impact">Session And Flow Impact<a class="headerlink" href="#session-and-flow-impact" title="Permanent link">&para;</a></h2>
+<p>Not all upgrade strategies behave the same way.</p>
+<ul>
+<li><code>Recreate</code> can interrupt active login flows and short-lived in-memory state</li>
+<li><code>BlueGreen</code> minimizes user-facing interruption because traffic only shifts after green is ready</li>
+<li>database-backed realm, client, and user state persists across both strategies</li>
+</ul>
+<h2 id="migrating-from-other-keycloak-solutions">Migrating From Other Keycloak Solutions<a class="headerlink" href="#migrating-from-other-keycloak-solutions" title="Permanent link">&para;</a></h2>
+<p>The migration toolkit is the primary path for bringing existing Keycloak exports into this operator’s Helm-first model.</p>
+<p>Use <a href="../../how-to/migration-toolkit/">Migration Toolkit</a> together with <a href="../../how-to/export-realms/">Exporting Realms &amp; Users</a> when you are migrating from:</p>
+<ul>
+<li>the official Keycloak operator</li>
+<li>standalone Keycloak exports</li>
+<li>older realm-operator-based workflows</li>
+</ul>
+<p>Typical flow:</p>
+<ol>
+<li>export realms from the source Keycloak</li>
+<li>transform them with <code>keycloak-migrate</code></li>
+<li>review the generated realm and client values files</li>
+<li>deploy those values with the Helm charts</li>
+<li>import users separately where required</li>
+</ol>
+<h2 id="operator-upgrade-verification-and-rollback">Operator Upgrade Verification And Rollback<a class="headerlink" href="#operator-upgrade-verification-and-rollback" title="Permanent link">&para;</a></h2>
+<p>Useful verification commands:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+</span></code></pre></div>
+<p>Rollback guidance:</p>
+<ul>
+<li>operator-only rollback uses Helm release history</li>
+<li>managed Keycloak version rollback is declarative, but database schema changes may still require restore procedures</li>
+<li>interrupted blue-green upgrades should be investigated through <code>status.blueGreen</code> before forcing deployment changes</li>
+</ul>
+<h2 id="comparison-with-official-keycloak-operator">Comparison With Official Keycloak Operator<a class="headerlink" href="#comparison-with-official-keycloak-operator" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Topic</th>
+<th>This operator</th>
+<th>Official operator</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tenant model</td>
+<td>multi-namespace, namespace-grant based</td>
+<td>more cluster-admin centered</td>
+</tr>
+<tr>
+<td>Realm/client desired state</td>
+<td>dedicated CRDs</td>
+<td>import-heavy realm workflow</td>
+</tr>
+<tr>
+<td>Client secret handling</td>
+<td>Kubernetes-native managed Secret flow</td>
+<td>less client-focused CR surface</td>
+</tr>
+<tr>
+<td>GitOps shape</td>
+<td>Helm-first charts plus CRDs</td>
+<td>good for Keycloak deployment, less focused on cross-namespace client provisioning</td>
+</tr>
+</tbody>
+</table>
+<p>The migration toolkit is the preferred bridge from export-based or import-heavy workflows into the operator’s Helm-first model.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../backup-restore/">Backup &amp; Restore</a></li>
+<li><a href="../escape-hatch/">Escape Hatch</a></li>
+<li><a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
+<li><a href="../../how-to/migration-toolkit/">Migration Toolkit</a></li>
 </ul>
 
 

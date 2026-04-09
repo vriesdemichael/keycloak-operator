@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -798,6 +826,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespace-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace Authorization
+      
+    </span>
+  </a>
   
 </li>
       
@@ -5015,6 +5054,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#namespace-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Namespace Authorization
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#authorization-model" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5413,6 +5463,7 @@
 
 <h1 id="security-model">Security Model<a class="headerlink" href="#security-model" title="Permanent link">&para;</a></h1>
 <p>This document explains the security and authorization model of the Keycloak operator.</p>
+<p>Helm charts are the main deployment path. The raw YAML examples on this page are intended to explain the authorization model and the advanced/manual workflow, not to replace the chart-based setup guides.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The Keycloak operator uses <strong>Kubernetes RBAC</strong> combined with <strong>declarative namespace grant lists</strong> for authorization.</p>
 <h2 id="design-philosophy">Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permanent link">&para;</a></h2>
@@ -5438,6 +5489,7 @@
 - ✅ <strong>Fully Declarative</strong>: All authorization in Git-committable manifests
 - ✅ <strong>Self-Service</strong>: Teams can grant access via PR workflow
 - ✅ <strong>Clear Audit Trail</strong>: Git history shows all authorization changes</p>
+<h2 id="namespace-authorization">Namespace Authorization<a class="headerlink" href="#namespace-authorization" title="Permanent link">&para;</a></h2>
 <h2 id="authorization-model">Authorization Model<a class="headerlink" href="#authorization-model" title="Permanent link">&para;</a></h2>
 <h3 id="level-1-realm-creation">Level 1: Realm Creation<a class="headerlink" href="#level-1-realm-creation" title="Permanent link">&para;</a></h3>
 <p><strong>Who controls it</strong>: Kubernetes RBAC</p>
@@ -5485,14 +5537,13 @@
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">realmName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">instanceRef</span><span class="p">:</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="c1"># Grant these namespaces permission to create clients</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span><span class="w">              </span><span class="c1"># Same namespace (common)</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-staging</span><span class="w">      </span><span class="c1"># Staging environment</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">partner-app</span><span class="w">         </span><span class="c1"># External team integration</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">operatorRef</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="c1"># Grant these namespaces permission to create clients</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span><span class="w">              </span><span class="c1"># Same namespace (common)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-staging</span><span class="w">      </span><span class="c1"># Staging environment</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">partner-app</span><span class="w">         </span><span class="c1"># External team integration</span>
 </span></code></pre></div>
 <p><strong>Authorization Check:</strong></p>
 <p>When a <code>KeycloakClient</code> resource is created:</p>
@@ -5500,7 +5551,7 @@
 <li>Operator reads the client's <code>realmRef</code> to find the realm</li>
 <li>Operator reads the realm's <code>spec.clientAuthorizationGrants</code></li>
 <li>Operator checks if client's namespace is in the grant list</li>
-<li>If <strong>not authorized</strong>: Client enters <code>Error</code> phase with clear message</li>
+<li>If <strong>not authorized</strong>: Client is rejected by the admission webhook when enabled, or enters <code>Failed</code> phase with a clear message during reconciliation</li>
 <li>If <strong>authorized</strong>: Client is created in Keycloak</li>
 </ol>
 <p><strong>Example: Client in authorized namespace</strong></p>
@@ -5519,7 +5570,7 @@
 </span></code></pre></div>
 <p><strong>Status when unauthorized:</strong></p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Error</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Failed</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;False&quot;</span>
@@ -5559,9 +5610,9 @@
 <h2 id="security-properties">Security Properties<a class="headerlink" href="#security-properties" title="Permanent link">&para;</a></h2>
 <h3 id="namespace-isolation">Namespace Isolation<a class="headerlink" href="#namespace-isolation" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>No cross-namespace secrets</strong>: Client credentials only in client's namespace</li>
-<li><strong>Realm secrets isolated</strong>: Each realm's secrets only in realm's namespace</li>
-<li><strong>Operator service account</strong>: Has cluster-wide read for authorization checks</li>
+<li><strong>Realm ownership stays explicit</strong>: A realm owner chooses which namespaces may create clients by maintaining <code>spec.clientAuthorizationGrants</code>.</li>
+<li><strong>Cross-namespace access is narrow</strong>: A client may reference a realm in another namespace only when that namespace is explicitly listed in the realm's grant list.</li>
+<li><strong>Secrets stay local to the workload namespace</strong>: Realm and client Secret references resolve in the same namespace as the <code>KeycloakRealm</code> or <code>KeycloakClient</code> using them.</li>
 </ul>
 <h3 id="least-privilege">Least Privilege<a class="headerlink" href="#least-privilege" title="Permanent link">&para;</a></h3>
 <ul>
@@ -5569,6 +5620,7 @@
 <li><strong>Client creators</strong>: Only need namespace in grant list</li>
 <li><strong>Operator</strong>: Runs with minimal RBAC (see ADR 032)</li>
 </ul>
+<p>These restrictions are operator-level settings. In chart-based deployments they are configured through <code>operator.security.*</code> values, which become environment variables on the operator pod and apply cluster-wide for that operator instance.</p>
 <h3 id="revocation">Revocation<a class="headerlink" href="#revocation" title="Permanent link">&para;</a></h3>
 <p><strong>Removing client access:</strong></p>
 <p>Update realm's <code>clientAuthorizationGrants</code> to remove namespace:</p>
@@ -5580,10 +5632,13 @@
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s1">&#39;</span>
 </span></code></pre></div>
 <p><strong>Effect:</strong>
-- ✅ Existing clients continue to work (by design)
-- ✅ New client creation from <code>team-b</code> namespace fails
-- ✅ Updates to existing clients from <code>team-b</code> fail</p>
-<p><strong>To fully revoke</strong>: Delete the client CR from <code>team-b</code> namespace</p>
+- ✅ Existing client credentials and runtime traffic continue to work until you remove the client itself
+- ✅ New client creation from <code>team-b</code> namespace fails immediately
+- ✅ Updates to existing clients from <code>team-b</code> fail because reconciliation is no longer authorized</p>
+<p><strong>To fully revoke intentionally:</strong>
+1. Remove the namespace from <code>clientAuthorizationGrants</code>.
+2. Delete the <code>KeycloakClient</code> objects in that namespace.
+3. Remove or rotate any application credentials that were already distributed.</p>
 <h3 id="audit-trail">Audit Trail<a class="headerlink" href="#audit-trail" title="Permanent link">&para;</a></h3>
 <p>All authorization changes are auditable:</p>
 <p><strong>Via Kubernetes audit logs:</strong>
@@ -5599,7 +5654,7 @@
 </span></code></pre></div></p>
 <h2 id="rbac-configuration">RBAC Configuration<a class="headerlink" href="#rbac-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="operator-service-account">Operator Service Account<a class="headerlink" href="#operator-service-account" title="Permanent link">&para;</a></h3>
-<p>The operator needs these cluster-wide permissions:</p>
+<p>The operator needs these core cluster-wide permissions:</p>
 <p><strong>Read access for authorization checks:</strong>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;vriesdemichael.github.io&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;keycloakrealms&quot;</span><span class="p p-Indicator">]</span>
@@ -5610,11 +5665,19 @@
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;keycloakrealms/status&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;keycloakclients/status&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;update&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;patch&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div></p>
-<p><strong>Secret access (read-only):</strong>
+<p>The operator does not get a blanket cluster-wide "read all secrets" grant.</p>
+<p><strong>Delegated Secret access in opted-in namespaces:</strong>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;secrets&quot;</span><span class="p p-Indicator">]</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;create&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;update&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;patch&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;delete&quot;</span><span class="p p-Indicator">]</span>
 </span></code></pre></div></p>
+<p><strong>Guarantees around this Secret access:</strong>
+- The rule above lives on the operator chart's release-scoped <code>*-namespace-access</code> <code>ClusterRole</code>, not on the operator's always-on core cluster role.
+- It is inactive until a tenant namespace creates a <code>RoleBinding</code> to that <code>ClusterRole</code>.
+- The <code>keycloak-realm</code> and <code>keycloak-client</code> charts create that <code>RoleBinding</code> by default when <code>rbac.create=true</code>.
+- The binding targets one concrete operator ServiceAccount in one concrete namespace, so another operator release does not inherit the access.
+- The operator still rejects unlabeled Secrets. Tenant Secrets must carry <code>vriesdemichael.github.io/keycloak-allow-operator-read=true</code>.
+- Secret references remain same-namespace, so the operator is not allowed to roam across unrelated namespaces looking for credentials.</p>
 <p>See <a href="../../decisions/032-minimal-rbac-with-namespaced-service-accounts.yaml">ADR 032</a> for complete RBAC design.</p>
 <h3 id="application-team-rbac">Application Team RBAC<a class="headerlink" href="#application-team-rbac" title="Permanent link">&para;</a></h3>
 <p><strong>Minimal permissions for realm management:</strong></p>
@@ -5699,7 +5762,24 @@
 4. Partner creates client via GitOps or kubectl</p>
 <h3 id="temporary-access">Temporary Access<a class="headerlink" href="#temporary-access" title="Permanent link">&para;</a></h3>
 <p><strong>Scenario</strong>: Grant temporary access for testing</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+<ul>
+<li><strong>Opt-in namespace access</strong>: The operator cannot read tenant namespace secrets unless that namespace contains a <code>RoleBinding</code> pointing at the operator chart's <code>*-namespace-access</code> <code>ClusterRole</code>.</li>
+<li><strong>Chart-created binding by default</strong>: The <code>keycloak-realm</code> and <code>keycloak-client</code> charts create that <code>RoleBinding</code> automatically when <code>rbac.create=true</code>, binding the operator ServiceAccount from <code>operatorRef.namespace</code> or <code>rbac.operatorNamespace</code> into the tenant namespace.</li>
+<li><strong>Release-scoped subject</strong>: The binding targets a specific ServiceAccount name and namespace, not a wildcard. A different operator release does not inherit that access unless you bind it explicitly.</li>
+<li><strong>Secret-label gate</strong>: Even with the <code>RoleBinding</code>, the operator only accepts tenant secrets that carry <code>vriesdemichael.github.io/keycloak-allow-operator-read=true</code>. Unlabeled secrets are rejected by validation and runtime checks.</li>
+<li><strong>Same-namespace secret references</strong>: Realm and client secret references stay in the namespace of the resource that uses them. The operator is not allowed to jump across arbitrary namespaces looking for credentials.</li>
+<li><strong>Auditable wiring</strong>: The access path is visible in Git and Kubernetes objects: the operator chart creates the <code>ClusterRole</code>, realm/client charts create per-namespace <code>RoleBinding</code>s, and the Secret itself carries an explicit allow-read label.</li>
+</ul>
+<p><strong>What this means in practice:</strong> security reviewers can treat secret access as a two-step allowlist. First, a namespace must opt in by binding the operator ServiceAccount. Second, the specific Secret must opt in with the operator-read label. Missing either one blocks access.</p>
+<p><strong>How the charts wire this:</strong></p>
+<ol>
+<li>The operator chart creates a release-scoped <code>ClusterRole</code> named like <code>&lt;operator-release&gt;-&lt;namespace&gt;-namespace-access</code>.</li>
+<li>The realm and client charts create a namespaced <code>RoleBinding</code> such as <code>&lt;release&gt;-operator-access</code> in the tenant namespace.</li>
+<li>That <code>RoleBinding</code> points to the operator access <code>ClusterRole</code> and binds only the operator ServiceAccount from the configured operator namespace.</li>
+<li>Secrets still need the <code>vriesdemichael.github.io/keycloak-allow-operator-read=true</code> label before the operator will use them.</li>
+</ol>
+<p><strong>Cleanup:</strong></p>
+<p><div class="language-yaml highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakRealm</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nt">metadata</span><span class="p">:</span>
 </span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-realm</span>
@@ -5712,7 +5792,6 @@
 </span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
 </span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-team</span><span class="w">  </span><span class="c1"># Temporary grant</span>
 </span></code></pre></div>
-<p><strong>Cleanup:</strong>
 - Set calendar reminder for expiration date
 - Remove from grant list after testing complete
 - Document in Git commit message</p>

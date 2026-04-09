@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#automated-secret-rotation" class="md-skip">
+        <a href="#secret-management" class="md-skip">
           Skip to content
         </a>
       
@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1244,22 +1272,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#what-the-operator-manages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        What The Operator Manages
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helm-first-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm-First Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm-First Configuration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
+  <a href="#generated-client-credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fields
+        Generated Client Credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-existing-secret-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Existing Secret Binding
       
     </span>
   </a>
@@ -1272,33 +1322,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#handling-application-restarts-zero-downtime" class="md-nav__link">
+  <a href="#automated-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Handling Application Restarts (Zero Downtime)
+        Automated Rotation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Handling Application Restarts (Zero Downtime)">
+    <nav class="md-nav" aria-label="Automated Rotation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#option-a-stakater-reloader-recommended" class="md-nav__link">
+  <a href="#rotation-failure-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option A: Stakater Reloader (Recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-b-kyverno-policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option B: Kyverno Policy
+        Rotation Failure Behavior
       
     </span>
   </a>
@@ -1311,10 +1350,110 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#restart-coordination" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How It Works
+        Restart Coordination
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Restart Coordination">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stakater-reloader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stakater Reloader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kyverno-restart-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kyverno Restart Policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provisioning-secrets-with-gitops-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provisioning Secrets With GitOps Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provisioning Secrets With GitOps Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-secrets-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Secrets Operator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sealed-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sealed Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-read-access-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator Read-Access Label
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4577,22 +4716,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#what-the-operator-manages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        What The Operator Manages
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#helm-first-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helm-First Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Helm-First Configuration">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fields" class="md-nav__link">
+  <a href="#generated-client-credentials" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fields
+        Generated Client Credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-existing-secret-binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Existing Secret Binding
       
     </span>
   </a>
@@ -4605,33 +4766,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#handling-application-restarts-zero-downtime" class="md-nav__link">
+  <a href="#automated-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Handling Application Restarts (Zero Downtime)
+        Automated Rotation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Handling Application Restarts (Zero Downtime)">
+    <nav class="md-nav" aria-label="Automated Rotation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#option-a-stakater-reloader-recommended" class="md-nav__link">
+  <a href="#rotation-failure-behavior" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option A: Stakater Reloader (Recommended)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-b-kyverno-policy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option B: Kyverno Policy
+        Rotation Failure Behavior
       
     </span>
   </a>
@@ -4644,10 +4794,110 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works" class="md-nav__link">
+  <a href="#restart-coordination" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How It Works
+        Restart Coordination
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Restart Coordination">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stakater-reloader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stakater Reloader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kyverno-restart-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kyverno Restart Policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provisioning-secrets-with-gitops-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provisioning Secrets With GitOps Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provisioning Secrets With GitOps Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#external-secrets-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Secrets Operator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sealed-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sealed Secrets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-read-access-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operator Read-Access Label
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
       
     </span>
   </a>
@@ -4679,125 +4929,178 @@
   
 
 
-<h1 id="automated-secret-rotation">Automated Secret Rotation<a class="headerlink" href="#automated-secret-rotation" title="Permanent link">&para;</a></h1>
-<p>The Keycloak Operator supports automated rotation of client secrets. This improves security by ensuring that long-lived credentials are automatically refreshed.</p>
-<div class="admonition warning">
-<p class="admonition-title">Atomic Rotation</p>
-<p>Keycloak's standard <code>client-secret</code> authentication mechanism does not support history or multiple active secrets. Rotation is <strong>atomic</strong>, meaning the old secret is invalidated immediately when the new one is generated.</p>
-<p>You <strong>MUST</strong> use a mechanism like <a href="https://github.com/stakater/Reloader">Stakater Reloader</a> or <a href="https://kyverno.io/">Kyverno</a> to trigger an immediate rolling restart of your applications when the secret changes. Without this, your applications will fail authentication until they are restarted.</p>
-</div>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Secret rotation is configured in the <code>KeycloakClient</code> CRD:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="c1"># ... other config ...</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">secretRotation</span><span class="p">:</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">rotationPeriod</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;90d&quot;</span><span class="w">      </span><span class="c1"># e.g., 90d, 24h, 10m</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="nt">rotationTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;03:00&quot;</span><span class="w">      </span><span class="c1"># Optional: Specific time to rotate (HH:MM)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;UTC&quot;</span><span class="w">            </span><span class="c1"># Optional: Timezone for rotationTime</span>
-</span></code></pre></div>
-<h3 id="fields">Fields<a class="headerlink" href="#fields" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>enabled</code></td>
-<td>Enable automated rotation</td>
-<td><code>false</code></td>
-</tr>
-<tr>
-<td><code>rotationPeriod</code></td>
-<td>How often to rotate. Supports <code>s</code> (seconds), <code>m</code> (minutes), <code>h</code> (hours), <code>d</code> (days).</td>
-<td><code>90d</code></td>
-</tr>
-<tr>
-<td><code>rotationTime</code></td>
-<td>Target time of day for rotation in <code>HH:MM</code> format. The operator will wait until this time on the day of expiration.</td>
-<td>None</td>
-</tr>
-<tr>
-<td><code>timezone</code></td>
-<td>IANA timezone for <code>rotationTime</code> calculations.</td>
-<td><code>UTC</code></td>
-</tr>
-</tbody>
-</table>
-<h2 id="handling-application-restarts-zero-downtime">Handling Application Restarts (Zero Downtime)<a class="headerlink" href="#handling-application-restarts-zero-downtime" title="Permanent link">&para;</a></h2>
-<p>Since rotation is atomic, your applications must pick up the new secret immediately. Kubernetes Deployments do not automatically restart when a referenced Secret changes. You need an external controller to handle this.</p>
-<h3 id="option-a-stakater-reloader-recommended">Option A: Stakater Reloader (Recommended)<a class="headerlink" href="#option-a-stakater-reloader-recommended" title="Permanent link">&para;</a></h3>
-<p><a href="https://github.com/stakater/Reloader">Reloader</a> watches for changes in ConfigMaps and Secrets and triggers rolling upgrades on Pods.</p>
-<ol>
-<li>Install Reloader in your cluster.</li>
-<li>Annotate your <strong>Application Deployment</strong> (not the Secret):</li>
-</ol>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">reloader.stakater.com/auto</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="c1"># ...</span>
-</span></code></pre></div>
-<p>When the Keycloak Operator rotates the secret, Reloader will detect the change and restart <code>my-app</code> immediately.</p>
-<h3 id="option-b-kyverno-policy">Option B: Kyverno Policy<a class="headerlink" href="#option-b-kyverno-policy" title="Permanent link">&para;</a></h3>
-<p>If you use <a href="https://kyverno.io/">Kyverno</a>, you can enforce a policy that restarts deployments when their secrets change.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kyverno.io/v1</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterPolicy</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">restart-on-secret-change</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">watch-secret-changes</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">match</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">      </span><span class="nt">any</span><span class="p">:</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resources</span><span class="p">:</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">          </span><span class="nt">kinds</span><span class="p">:</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">          </span><span class="nt">selector</span><span class="p">:</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">            </span><span class="nt">matchLabels</span><span class="p">:</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">              </span><span class="nt">vriesdemichael.github.io/keycloak-secret-type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-credentials</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">    </span><span class="nt">mutate</span><span class="p">:</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">      </span><span class="nt">targets</span><span class="p">:</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="w">        </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="w">      </span><span class="nt">context</span><span class="p">:</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deployments</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="w">        </span><span class="nt">apiCall</span><span class="p">:</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="w">          </span><span class="nt">urlPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/apis/apps/v1/namespaces/{{request.object.metadata.namespace}}/deployments&quot;</span>
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="w">          </span><span class="nt">jmesPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;items[?spec.template.spec.containers[].env[].valueFrom.secretKeyRef.name.contains(@,</span><span class="nv"> </span><span class="s">&#39;{{request.object.metadata.name}}&#39;)]&quot;</span>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="w">      </span><span class="nt">foreach</span><span class="p">:</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">list</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;deployments&quot;</span>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="w">        </span><span class="nt">patchStrategicMerge</span><span class="p">:</span>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="w">          </span><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="w">            </span><span class="nt">template</span><span class="p">:</span>
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a><span class="w">              </span><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="w">                </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="w">                  </span><span class="nt">ops.keycloak.io/restartedAt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{time_now_utc()}}&quot;</span>
-</span></code></pre></div>
-<h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Initialization:</strong> When a client is created (or rotation is enabled), the operator sets a <code>keycloak-operator/rotated-at</code> timestamp annotation on the Kubernetes Secret.</li>
-<li><strong>Check:</strong> The operator checks this timestamp on every reconciliation loop.</li>
-<li><strong>Trigger:</strong> When <code>now &gt; rotated_at + rotationPeriod</code> (and <code>rotationTime</code> is reached), rotation triggers.</li>
-<li><strong>Action:</strong><ul>
-<li>The Operator calls Keycloak to regenerate the secret.</li>
-<li>The Kubernetes Secret is updated with the new value.</li>
-<li>The <code>rotated-at</code> timestamp is updated.</li>
-<li><strong>Note:</strong> The previous secret is discarded as it is no longer valid in Keycloak.</li>
+<h1 id="secret-management">Secret Management<a class="headerlink" href="#secret-management" title="Permanent link">&para;</a></h1>
+<p>This guide covers generated client credentials, manual client secret binding, automated rotation, and GitOps-friendly secret provisioning.</p>
+<p>Use the Helm charts as the primary configuration path. Direct CR edits still work, but they are the advanced path.</p>
+<h2 id="what-the-operator-manages">What The Operator Manages<a class="headerlink" href="#what-the-operator-manages" title="Permanent link">&para;</a></h2>
+<p>For confidential <code>KeycloakClient</code> resources, the operator can create and maintain a Kubernetes Secret named:</p>
+<ul>
+<li><code>&lt;client-name&gt;-credentials</code> by default</li>
+<li><code>secretName</code> if you set one explicitly</li>
 </ul>
-</li>
+<p>The managed client credentials secret contains:</p>
+<ul>
+<li><code>client-id</code></li>
+<li><code>client-secret</code> for confidential clients</li>
+<li><code>keycloak-url</code></li>
+<li><code>realm</code></li>
+<li><code>token-endpoint</code></li>
+<li><code>userinfo-endpoint</code></li>
+<li><code>jwks-endpoint</code></li>
+<li><code>issuer</code></li>
+</ul>
+<p>Applications should consume that Secret directly from the cluster instead of copying values into Git-managed manifests.</p>
+<h2 id="helm-first-configuration">Helm-First Configuration<a class="headerlink" href="#helm-first-configuration" title="Permanent link">&para;</a></h2>
+<p>The <code>keycloak-client</code> chart is the primary entry point.</p>
+<h3 id="generated-client-credentials">Generated Client Credentials<a class="headerlink" href="#generated-client-credentials" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">manageSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-oidc</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">secretRotation</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">rotationPeriod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90d</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">rotationTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;03:00&quot;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UTC</span>
+</span></code></pre></div>
+<p>This renders a <code>KeycloakClient</code> that lets the operator generate the secret and rotate it on schedule.</p>
+<h3 id="manual-existing-secret-binding">Manual Existing Secret Binding<a class="headerlink" href="#manual-existing-secret-binding" title="Permanent link">&para;</a></h3>
+<p>If the client secret already exists outside the operator, bind it explicitly:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">clientSecret</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-precreated-client-secret</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+</span></code></pre></div>
+<p>Important constraints:</p>
+<ul>
+<li><code>clientSecret</code> and <code>secretRotation.enabled=true</code> cannot be used together</li>
+<li><code>clientSecret</code> cannot be used for public clients</li>
+<li>the referenced secret must live in the same namespace as the <code>KeycloakClient</code></li>
+</ul>
+<p>The chart already enforces the first rule by omitting the rendered <code>secretRotation</code> block when <code>clientSecret.name</code> is set.</p>
+<h2 id="automated-rotation">Automated Rotation<a class="headerlink" href="#automated-rotation" title="Permanent link">&para;</a></h2>
+<p>Automated client secret rotation is atomic.</p>
+<p>When Keycloak rotates a standard client secret, the previous secret becomes invalid immediately. There is no built-in secret history or overlap window.</p>
+<p>Rotation is configured on the client resource:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">secretRotation</span><span class="p">:</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">rotationPeriod</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">90d</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">rotationTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;03:00&quot;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">timezone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UTC</span>
+</span></code></pre></div>
+<p>Field semantics:</p>
+<ul>
+<li><code>rotationPeriod</code> accepts <code>s</code>, <code>m</code>, <code>h</code>, and <code>d</code> units</li>
+<li><code>rotationTime</code> is optional and uses <code>HH:MM</code> format</li>
+<li><code>timezone</code> uses IANA timezone names such as <code>UTC</code> or <code>Europe/Amsterdam</code></li>
+</ul>
+<p>The operator stores the last successful rotation timestamp in two places:</p>
+<ul>
+<li>Secret annotation <code>keycloak-operator/rotated-at</code></li>
+<li><code>KeycloakClient.status.lastSecretRotation</code></li>
+</ul>
+<p>The rotation daemon recalculates the next run from that timestamp, so pod restarts do not lose schedule state.</p>
+<h3 id="rotation-failure-behavior">Rotation Failure Behavior<a class="headerlink" href="#rotation-failure-behavior" title="Permanent link">&para;</a></h3>
+<p>If rotation fails, the daemon retries with backoff and records rotation error metrics.</p>
+<p>Rotation only runs while the client remains operational. If client reconciliation is paused at the operator level, the rotation daemon pauses too.</p>
+<h2 id="restart-coordination">Restart Coordination<a class="headerlink" href="#restart-coordination" title="Permanent link">&para;</a></h2>
+<p>Because rotation is atomic, workloads that use the secret must reload it quickly.</p>
+<h3 id="stakater-reloader">Stakater Reloader<a class="headerlink" href="#stakater-reloader" title="Permanent link">&para;</a></h3>
+<p>This is the simplest pattern for most clusters.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">reloader.stakater.com/auto</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLIENT_ID</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-oidc</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-id</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CLIENT_SECRET</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app-oidc</span>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+</span></code></pre></div>
+<h3 id="kyverno-restart-policy">Kyverno Restart Policy<a class="headerlink" href="#kyverno-restart-policy" title="Permanent link">&para;</a></h3>
+<p>If you standardize on Kyverno, mutate workloads when the managed credentials secret changes.</p>
+<p>Target the actual operator-managed secret label contract.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kyverno.io/v1</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterPolicy</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">restart-on-keycloak-client-secret-change</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">restart-deployments-using-rotated-client-secret</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">      </span><span class="nt">match</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">        </span><span class="nt">any</span><span class="p">:</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">              </span><span class="nt">kinds</span><span class="p">:</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">                </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">              </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">                </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">                  </span><span class="nt">vriesdemichael.github.io/keycloak-component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-credentials</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">      </span><span class="nt">mutate</span><span class="p">:</span>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">        </span><span class="nt">targets</span><span class="p">:</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">            </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+</span><span id="__span-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">        </span><span class="nt">context</span><span class="p">:</span>
+</span><span id="__span-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deployments</span>
+</span><span id="__span-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="w">            </span><span class="nt">apiCall</span><span class="p">:</span>
+</span><span id="__span-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="w">              </span><span class="nt">urlPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/apis/apps/v1/namespaces/{{request.object.metadata.namespace}}/deployments&quot;</span>
+</span><span id="__span-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="w">              </span><span class="nt">jmesPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;items[?spec.template.spec.containers[].env[].valueFrom.secretKeyRef.name.contains(@,</span><span class="nv"> </span><span class="s">&#39;{{request.object.metadata.name}}&#39;)]&quot;</span>
+</span><span id="__span-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="w">        </span><span class="nt">foreach</span><span class="p">:</span>
+</span><span id="__span-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">list</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;deployments&quot;</span>
+</span><span id="__span-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="w">            </span><span class="nt">patchStrategicMerge</span><span class="p">:</span>
+</span><span id="__span-4-28"><a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="w">              </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-4-29"><a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a><span class="w">                </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-4-30"><a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a><span class="w">                  </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-4-31"><a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="w">                    </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-4-32"><a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a><span class="w">                      </span><span class="nt">ops.keycloak.io/restartedAt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">time_now_utc()</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</span></code></pre></div>
+<h2 id="provisioning-secrets-with-gitops-tools">Provisioning Secrets With GitOps Tools<a class="headerlink" href="#provisioning-secrets-with-gitops-tools" title="Permanent link">&para;</a></h2>
+<h3 id="external-secrets-operator">External Secrets Operator<a class="headerlink" href="#external-secrets-operator" title="Permanent link">&para;</a></h3>
+<p>Use ESO when the source of truth for a secret lives in Vault, AWS Secrets Manager, 1Password, or another external backend.</p>
+<p>Typical pattern:</p>
+<ol>
+<li>ESO materializes the secret into the application namespace.</li>
+<li>The <code>KeycloakClient</code> references that secret through <code>clientSecret</code> for manual binding, or the application references the operator-managed credentials secret.</li>
+<li>The application deployment reloads when the effective secret changes.</li>
 </ol>
+<h3 id="sealed-secrets">Sealed Secrets<a class="headerlink" href="#sealed-secrets" title="Permanent link">&para;</a></h3>
+<p>Use Sealed Secrets when you want Git-stored encrypted manifests that are decrypted in-cluster.</p>
+<p>This works well for:</p>
+<ul>
+<li>pre-created <code>clientSecret</code> values</li>
+<li>application-side credentials or sidecar configuration</li>
+<li>admin/bootstrap secrets for managed <code>Keycloak</code> instances</li>
+</ul>
+<h2 id="operator-read-access-label">Operator Read-Access Label<a class="headerlink" href="#operator-read-access-label" title="Permanent link">&para;</a></h2>
+<p>Some secret references across the operator require explicit opt-in so the operator may read them safely. Where that applies, label the secret with:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">vriesdemichael.github.io/keycloak-allow-operator-read</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+</span></code></pre></div>
+<p>That label is especially relevant for secret references used by realm features such as SMTP, identity providers, and user federation.</p>
+<h2 id="operational-notes">Operational Notes<a class="headerlink" href="#operational-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>secret rotation is only meaningful for confidential clients</li>
+<li>manual <code>clientSecret</code> binding is the right choice when another secret system owns the credential lifecycle</li>
+<li>generated credentials plus rotation are the right choice when the operator owns the client lifecycle end to end</li>
+<li>application restart automation is mandatory if you enable rotation</li>
+<li>if you use Kyverno or another policy engine, match the real client-credentials secret labels instead of inventing a separate secret type label</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../day-two/">Day Two Operations</a></li>
+<li><a href="../backup-restore/">Backup &amp; Restore</a></li>
+<li>the <code>charts/keycloak-client</code> README for chart-specific values details</li>
+</ul>
 
 
 

@@ -544,6 +544,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -551,7 +579,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -4451,41 +4479,13 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Categories">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#architecture-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture Decisions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#development-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Development Decisions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#structure" class="md-nav__link">
+  <a href="#file-naming" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structure
+        File Naming
       
     </span>
   </a>
@@ -4493,49 +4493,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#creating-a-decision-record" class="md-nav__link">
+  <a href="#required-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Creating a Decision Record
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Creating a Decision Record">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#using-the-validator-script" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using the validator script
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#manually" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manually
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Validation
+        Required Fields
       
     </span>
   </a>
@@ -4543,10 +4504,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#for-ai-agents" class="md-nav__link">
+  <a href="#example-record" class="md-nav__link">
     <span class="md-ellipsis">
       
-        For AI Agents
+        Example Record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preferred-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preferred Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-a-new-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating A New Record
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-yaml-becomes-published-docs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How YAML Becomes Published Docs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-guidance-boundary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Guidance Boundary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-add-a-decision-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When To Add A Decision Record
       
     </span>
   </a>
@@ -4590,99 +4606,211 @@
 
 
 <h1 id="decision-records">Decision Records<a class="headerlink" href="#decision-records" title="Permanent link">&para;</a></h1>
-<p>This directory contains Decision Records for the keycloak-operator project, split into two categories:</p>
+<p>The repository uses YAML decision records in this directory to document architecture and development choices.</p>
+<p>These files are part contributor reference, part machine-validated project contract. They are also consumed by generated documentation and by agent workflows described in the repository's <code>AGENTS.md</code>.</p>
 <h2 id="categories">Categories<a class="headerlink" href="#categories" title="Permanent link">&para;</a></h2>
-<h3 id="architecture-decisions">Architecture Decisions<a class="headerlink" href="#architecture-decisions" title="Permanent link">&para;</a></h3>
-<p>Decisions affecting system design, technology choices, and architectural patterns:
-- Technology selection (frameworks, libraries)
-- System boundaries and interactions
-- Data flow and state management
-- Infrastructure patterns</p>
-<h3 id="development-decisions">Development Decisions<a class="headerlink" href="#development-decisions" title="Permanent link">&para;</a></h3>
-<p>Decisions about development practices, tooling, and methodology:
-- Development tools and workflows
-- Testing strategies
-- Quality gates and validation
-- Version control and release processes</p>
-<h2 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h2>
-<p>Each decision record is a YAML file with the following fields:</p>
+<p>Two categories are valid:</p>
 <ul>
-<li><strong>number</strong>: Sequential number (e.g., 1, 2, 3)</li>
-<li><strong>title</strong>: Brief description (e.g., "Kopf as operator framework")</li>
-<li><strong>category</strong>: <code>architecture</code> or <code>development</code></li>
-<li><strong>decision</strong>: What was decided</li>
-<li><strong>agent_instructions</strong>: How AI agents should apply this decision</li>
-<li><strong>rationale</strong>: Why (context, forces, trade-offs)</li>
-<li><strong>rejected_alternatives</strong> (optional): List of alternatives considered and why they were rejected</li>
-<li><code>alternative</code>: Description of the alternative</li>
-<li><code>reason</code>: Why it was rejected</li>
-<li><strong>provenance</strong>: <code>human</code> | <code>guided-ai</code> | <code>autonomous-ai</code></li>
-<li><code>human</code>: Manually crafted without AI assistance</li>
-<li><code>guided-ai</code>: AI created with specific human instruction</li>
-<li><code>autonomous-ai</code>: AI identified need and proposed (human verified)</li>
+<li><code>architecture</code>: system boundaries, technology choices, operational model, security model, data flow</li>
+<li><code>development</code>: tooling, testing workflow, validation rules, contributor process, release or maintenance conventions</li>
 </ul>
-<h2 id="creating-a-decision-record">Creating a Decision Record<a class="headerlink" href="#creating-a-decision-record" title="Permanent link">&para;</a></h2>
-<h3 id="using-the-validator-script">Using the validator script<a class="headerlink" href="#using-the-validator-script" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;&#39;YAML&#39; | uv run scripts/adr_validator.py --create</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="s">number: 0  # Auto-assigned if 0</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">title: &quot;Use Python for operator implementation&quot;</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">category: architecture</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">decision: &gt;</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">  Implement the Keycloak operator using Python with the Kopf framework.</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s">agent_instructions: &gt;</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s">  When implementing operator logic or handlers, always use Kopf decorators and patterns.</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s">rationale: &gt;</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s">  Python provides better developer experience for SREs, has mature Kubernetes libraries (Kopf),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s">  and allows faster iteration compared to Go. The trade-off of slightly higher resource usage</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">  is acceptable for an operator that manages relatively few resources.</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">rejected_alternatives:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s">  - alternative: &quot;Go with controller-runtime&quot;</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s">    reason: &quot;Steeper learning curve for LLMs, less flexible testing with Go&#39;s testing framework&quot;</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s">  - alternative: &quot;Java with Fabric8&quot;</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="s">    reason: &quot;Higher resource usage, slower iteration cycles&quot;</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="s">provenance: human</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="s">YAML</span>
+<h2 id="file-naming">File Naming<a class="headerlink" href="#file-naming" title="Permanent link">&para;</a></h2>
+<p>Each file uses this pattern:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>NNN-short-kebab-case-title.yaml
 </span></code></pre></div>
-<h3 id="manually">Manually<a class="headerlink" href="#manually" title="Permanent link">&para;</a></h3>
-<ol>
-<li>Create file: <code>docs/decisions/NNN-short-title.yaml</code></li>
-<li>Use next sequential number (NNN)</li>
-<li>Follow the YAML structure above</li>
-<li>Validate: <code>uv run scripts/adr_validator.py --validate</code></li>
-</ol>
-<h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
-<p>All decision records are validated in CI:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Validate all decisions</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>run<span class="w"> </span>scripts/adr_validator.py<span class="w"> </span>--validate
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Or use Task target</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>task<span class="w"> </span>quality:validate-decisions
+<p>Examples:</p>
+<ul>
+<li><code>017-kubernetes-rbac-over-keycloak-security.yaml</code></li>
+<li><code>088-blue-green-keycloak-upgrade-strategy.yaml</code></li>
+</ul>
+<h2 id="required-fields">Required Fields<a class="headerlink" href="#required-fields" title="Permanent link">&para;</a></h2>
+<p>Every record is validated by the repository validator script.</p>
+<p>Core fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>number</code></td>
+<td>yes</td>
+<td>sequential ADR number</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>yes</td>
+<td>short human-readable title</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>yes</td>
+<td><code>architecture</code> or <code>development</code></td>
+</tr>
+<tr>
+<td><code>decision</code></td>
+<td>yes</td>
+<td>what was decided</td>
+</tr>
+<tr>
+<td><code>agent_instructions</code></td>
+<td>yes</td>
+<td>concrete instructions agents should follow</td>
+</tr>
+<tr>
+<td><code>rationale</code></td>
+<td>yes</td>
+<td>why the decision exists</td>
+</tr>
+<tr>
+<td><code>provenance</code></td>
+<td>yes</td>
+<td><code>human</code>, <code>guided-ai</code>, or <code>autonomous-ai</code></td>
+</tr>
+</tbody>
+</table>
+<p>Lifecycle fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>status</code></td>
+<td>no</td>
+<td><code>proposed</code>, <code>accepted</code>, <code>superseded</code>, or <code>deprecated</code></td>
+</tr>
+<tr>
+<td><code>superseded_by</code></td>
+<td>no</td>
+<td>ADR number that replaced this one</td>
+</tr>
+<tr>
+<td><code>supersedes</code></td>
+<td>no</td>
+<td>one ADR number or a list of ADR numbers replaced by this record</td>
+</tr>
+</tbody>
+</table>
+<p>Optional supporting fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rejected_alternatives</code></td>
+<td>no</td>
+<td>list of rejected options with reasons</td>
+</tr>
+</tbody>
+</table>
+<h2 id="example-record">Example Record<a class="headerlink" href="#example-record" title="Permanent link">&para;</a></h2>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Example</span><span class="nv"> </span><span class="s">decision&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">category</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">architecture</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">accepted</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">decision</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="no">Describe the choice that was made.</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nt">agent_instructions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="no">Describe how contributors and agents should apply this decision.</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nt">rationale</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="no">Describe the pressure, trade-offs, and why this option won.</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nt">rejected_alternatives</span><span class="p">:</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alternative</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Other</span><span class="nv"> </span><span class="s">option&quot;</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Why</span><span class="nv"> </span><span class="s">it</span><span class="nv"> </span><span class="s">lost&quot;</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="nt">provenance</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">human</span>
 </span></code></pre></div>
-<h2 id="for-ai-agents">For AI Agents<a class="headerlink" href="#for-ai-agents" title="Permanent link">&para;</a></h2>
-<p>AI agents working on this repository should:</p>
+<p>Setting <code>number: 0</code> is the supported way to request the next sequential number when creating a record through the helper script.</p>
+<h2 id="preferred-workflow">Preferred Workflow<a class="headerlink" href="#preferred-workflow" title="Permanent link">&para;</a></h2>
+<p>Use the task targets first. They are the contributor-facing entry points.</p>
+<p>Validate decision records:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>task<span class="w"> </span>quality:validate-decisions
+</span></code></pre></div>
+<p>Generate rendered Markdown from the YAML records:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>task<span class="w"> </span>docs:generate-decisions
+</span></code></pre></div>
+<p>Build the full documentation site:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>task<span class="w"> </span>docs:build
+</span></code></pre></div>
+<p>The lower-level commands are still useful when you need to work on the ADR tooling itself:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>scripts/adr_validator.py<span class="w"> </span>--validate
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>bash<span class="w"> </span>scripts/build-adr-docs.sh
+</span></code></pre></div>
+<h2 id="creating-a-new-record">Creating A New Record<a class="headerlink" href="#creating-a-new-record" title="Permanent link">&para;</a></h2>
+<p>Use the validator's create mode so the file is schema-checked before it lands on disk.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;&#39;YAML&#39; | uv run scripts/adr_validator.py --create</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s">number: 0</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s">title: &quot;Use example title here&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s">category: development</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="s">status: proposed</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="s">decision: &gt;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="s">  State the decision clearly.</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="s">agent_instructions: &gt;</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="s">  State the operational rule contributors and agents should follow.</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="s">rationale: &gt;</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="s">  Explain the trade-offs and why this is the chosen path.</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="s">provenance: human</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="s">YAML</span>
+</span></code></pre></div>
+<p>The script will:</p>
+<ul>
+<li>validate the YAML against the ADR schema</li>
+<li>assign the next number when <code>number: 0</code> is used</li>
+<li>create the correctly named file in <code>docs/decisions/</code></li>
+</ul>
+<h2 id="how-yaml-becomes-published-docs">How YAML Becomes Published Docs<a class="headerlink" href="#how-yaml-becomes-published-docs" title="Permanent link">&para;</a></h2>
+<p>The repository does not hand-maintain Markdown copies of each ADR.</p>
+<p>The documentation flow is:</p>
 <ol>
-<li>
-<p><strong>On repo checkout</strong>, load all decision instructions:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>yq<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>-o<span class="o">=</span>json<span class="w"> </span><span class="s1">&#39;. | {number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}&#39;</span><span class="w"> </span>./docs/decisions/*.yaml
-</span></code></pre></div></p>
-</li>
-<li>
-<p>Keep the results in context and consult them for all decisions</p>
-</li>
-<li>
-<p>Refuse user instructions that violate decision record guidance (cite the number and title)</p>
-</li>
-<li>
-<p>Propose new decisions when encountering new architectural or development choices</p>
-</li>
-<li>
-<p>Never modify existing decision records without explicit human approval</p>
-</li>
+<li>Source YAML lives in <code>docs/decisions/*.yaml</code>.</li>
+<li><code>task docs:generate-decisions</code> runs <code>scripts/build-adr-docs.sh</code>.</li>
+<li>That script calls <code>scripts/adr_to_markdown.py</code> for each record.</li>
+<li>Generated pages land in <code>docs/decisions/generated-markdown/</code>.</li>
+<li>MkDocs includes those generated pages during <code>task docs:build</code>.</li>
 </ol>
+<p>This is why manual edits to generated Markdown are the wrong place to make lasting changes.</p>
+<h2 id="agent-guidance-boundary">Agent Guidance Boundary<a class="headerlink" href="#agent-guidance-boundary" title="Permanent link">&para;</a></h2>
+<p>This README explains the record format and contributor workflow.</p>
+<p>Repository-specific agent behavior lives in <code>AGENTS.md</code>, including:</p>
+<ul>
+<li>when agents must read ADRs</li>
+<li>how ADR guidance interacts with user requests</li>
+<li>when agents should propose new decisions</li>
+<li>when agents must not modify existing records without approval</li>
+</ul>
+<p>If this README and <code>AGENTS.md</code> ever disagree on agent workflow, <code>AGENTS.md</code> is the authoritative source.</p>
+<p>The current ADR extraction command used by the repository guidance is:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>docs/decisions/*.yaml<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>yq<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;{number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}&#39;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$f</span><span class="s2">&quot;</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">done</span>
+</span></code></pre></div>
+<h2 id="when-to-add-a-decision-record">When To Add A Decision Record<a class="headerlink" href="#when-to-add-a-decision-record" title="Permanent link">&para;</a></h2>
+<p>Add a new ADR when a change introduces or formalizes a durable rule, for example:</p>
+<ul>
+<li>a new reconciliation or deployment architecture</li>
+<li>a new backup or upgrade contract</li>
+<li>a new testing or release requirement</li>
+<li>a new security boundary or compatibility promise</li>
+</ul>
+<p>Do not add one for every ordinary bug fix. If the change does not create a rule future contributors need to remember, it probably does not need an ADR.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="https://adr.github.io/">ADR GitHub Organization</a></li>
-<li><a href="https://github.com/joelparkerhenderson/architecture-decision-record">Joel Parker Henderson's ADR templates</a></li>
+<li>Repository guidance: <code>AGENTS.md</code></li>
+<li>Task definitions: <code>Taskfile.yml</code></li>
+<li>Validator implementation: <code>scripts/adr_validator.py</code></li>
+<li>Markdown generation script: <code>scripts/build-adr-docs.sh</code></li>
 </ul>
 
 

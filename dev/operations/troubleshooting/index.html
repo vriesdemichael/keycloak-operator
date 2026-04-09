@@ -550,6 +550,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
@@ -557,7 +585,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -1300,10 +1328,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-diagnostic-commands" class="md-nav__link">
+  <a href="#quick-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Diagnostic Commands
+        Quick Diagnostics
       
     </span>
   </a>
@@ -1311,10 +1339,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
+  <a href="#understand-the-status-you-are-seeing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Table of Contents
+        Understand The Status You Are Seeing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-and-port-confusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version And Port Confusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-credentials-secret-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin Credentials Secret Lifecycle
       
     </span>
   </a>
@@ -1334,32 +1384,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#symptom-operator-pods-not-starting" class="md-nav__link">
+  <a href="#symptom-operator-pods-are-restarting-or-failing-readiness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Operator Pods Not Starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-crashes-or-restarts-frequently" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Crashes or Restarts Frequently
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-not-reconciling-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Not Reconciling Resources
+        Symptom: Operator Pods Are Restarting Or Failing Readiness
       
     </span>
   </a>
@@ -1380,114 +1408,36 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Keycloak Instance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-keycloak-instance-stuck-in-pendingprovisioning" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symptom-operator-not-reconciling-a-resource" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Keycloak Instance Stuck in Pending/Provisioning
+        Symptom: Operator Not Reconciling A Resource
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-keycloak-pods-crashloopbackoff" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Keycloak Pods CrashLoopBackOff
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-need-to-verify-keycloak-internal-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Need to Verify Keycloak Internal State
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#realm-issues" class="md-nav__link">
+  <a href="#symptom-keycloak-pod-fails-health-checks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Realm Issues
+        Symptom: Keycloak Pod Fails Health Checks
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Realm Issues">
+    <nav class="md-nav" aria-label="Symptom: Keycloak Pod Fails Health Checks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#symptom-realm-stuck-in-pendingprovisioning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Realm Stuck in Pending/Provisioning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-realm-configuration-not-applied" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Realm Configuration Not Applied
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#client-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-creation-fails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Creation Fails
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-credentials-not-created" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Credentials Not Created
+        Symptom: Realm Stuck In Pending/Provisioning
       
     </span>
   </a>
@@ -1512,43 +1462,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#symptom-realm-creation-fails-with-permission-denied" class="md-nav__link">
+  <a href="#symptom-namespace-grant-looks-correct-but-client-creation-still-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Realm Creation Fails with Permission Denied
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-creation-fails-namespace-not-authorized" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Creation Fails - Namespace Not Authorized
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-cant-read-secrets-in-client-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Can't Read Secrets in Client Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-cross-namespace-client-creation-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Cross-Namespace Client Creation Not Working
+        Symptom: Namespace Grant Looks Correct But Client Creation Still Fails
       
     </span>
   </a>
@@ -1561,188 +1478,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-issues" class="md-nav__link">
+  <a href="#client-issues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database Issues
+        Client Issues
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Database Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-database-cluster-not-starting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Database Cluster Not Starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-database-connection-refused" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Database Connection Refused
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#networking-ingress-issues" class="md-nav__link">
+  <a href="#symptom-manual-admin-console-changes-keep-disappearing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Networking &amp; Ingress Issues
+        Symptom: Manual Admin Console Changes Keep Disappearing
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Networking &amp; Ingress Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-cannot-access-keycloak-via-ingress" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Cannot Access Keycloak via Ingress
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-port-forward-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Port-Forward Not Working
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
+  <a href="#symptom-client-credentials-stop-working-after-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance Issues
+        Symptom: Client Credentials Stop Working After Rotation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Performance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-slow-reconciliation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Slow Reconciliation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-high-memory-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: High Memory Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#common-pitfalls" class="md-nav__link">
+  <a href="#symptom-rate-limiting-or-slow-reconciliation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Common Pitfalls
+        Symptom: Rate Limiting Or Slow Reconciliation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Common Pitfalls">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-1-wrong-keycloak-version-2500" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 1: Wrong Keycloak Version (&lt; 25.0.0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-2-manual-changes-in-keycloak-admin-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 2: Manual Changes in Keycloak Admin Console
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-5-port-8080-vs-port-9000-confusion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 5: Port 8080 vs Port 9000 Confusion
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-6-rbac-in-multi-namespace-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 6: RBAC in Multi-Namespace Setup
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
+  <a href="#symptom-host-side-access-to-keycloak-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Getting Help
+        Symptom: Host-Side Access To Keycloak Fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symptom-authorization-looks-correct-but-clients-still-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Authorization Looks Correct But Clients Still Fail
       
     </span>
   </a>
@@ -1754,17 +1548,6 @@
     <span class="md-ellipsis">
       
         See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
       
     </span>
   </a>
@@ -4971,10 +4754,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quick-diagnostic-commands" class="md-nav__link">
+  <a href="#quick-diagnostics" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Diagnostic Commands
+        Quick Diagnostics
       
     </span>
   </a>
@@ -4982,10 +4765,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
+  <a href="#understand-the-status-you-are-seeing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Table of Contents
+        Understand The Status You Are Seeing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-and-port-confusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version And Port Confusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#admin-credentials-secret-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Admin Credentials Secret Lifecycle
       
     </span>
   </a>
@@ -5005,32 +4810,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#symptom-operator-pods-not-starting" class="md-nav__link">
+  <a href="#symptom-operator-pods-are-restarting-or-failing-readiness" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Operator Pods Not Starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-crashes-or-restarts-frequently" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Crashes or Restarts Frequently
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-not-reconciling-resources" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Not Reconciling Resources
+        Symptom: Operator Pods Are Restarting Or Failing Readiness
       
     </span>
   </a>
@@ -5051,114 +4834,36 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Keycloak Instance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-keycloak-instance-stuck-in-pendingprovisioning" class="md-nav__link">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symptom-operator-not-reconciling-a-resource" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Keycloak Instance Stuck in Pending/Provisioning
+        Symptom: Operator Not Reconciling A Resource
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-keycloak-pods-crashloopbackoff" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Keycloak Pods CrashLoopBackOff
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-need-to-verify-keycloak-internal-state" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Need to Verify Keycloak Internal State
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#realm-issues" class="md-nav__link">
+  <a href="#symptom-keycloak-pod-fails-health-checks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Realm Issues
+        Symptom: Keycloak Pod Fails Health Checks
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Realm Issues">
+    <nav class="md-nav" aria-label="Symptom: Keycloak Pod Fails Health Checks">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#symptom-realm-stuck-in-pendingprovisioning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Realm Stuck in Pending/Provisioning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-realm-configuration-not-applied" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Realm Configuration Not Applied
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#client-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Client Issues
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Client Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-creation-fails" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Creation Fails
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-credentials-not-created" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Credentials Not Created
+        Symptom: Realm Stuck In Pending/Provisioning
       
     </span>
   </a>
@@ -5183,43 +4888,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#symptom-realm-creation-fails-with-permission-denied" class="md-nav__link">
+  <a href="#symptom-namespace-grant-looks-correct-but-client-creation-still-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Symptom: Realm Creation Fails with Permission Denied
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-client-creation-fails-namespace-not-authorized" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Client Creation Fails - Namespace Not Authorized
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-operator-cant-read-secrets-in-client-namespace" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Operator Can't Read Secrets in Client Namespace
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-cross-namespace-client-creation-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Cross-Namespace Client Creation Not Working
+        Symptom: Namespace Grant Looks Correct But Client Creation Still Fails
       
     </span>
   </a>
@@ -5232,188 +4904,65 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#database-issues" class="md-nav__link">
+  <a href="#client-issues" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database Issues
+        Client Issues
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Database Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-database-cluster-not-starting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Database Cluster Not Starting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-database-connection-refused" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Database Connection Refused
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#networking-ingress-issues" class="md-nav__link">
+  <a href="#symptom-manual-admin-console-changes-keep-disappearing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Networking &amp; Ingress Issues
+        Symptom: Manual Admin Console Changes Keep Disappearing
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Networking &amp; Ingress Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-cannot-access-keycloak-via-ingress" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Cannot Access Keycloak via Ingress
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-port-forward-not-working" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Port-Forward Not Working
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance-issues" class="md-nav__link">
+  <a href="#symptom-client-credentials-stop-working-after-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance Issues
+        Symptom: Client Credentials Stop Working After Rotation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Performance Issues">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#symptom-slow-reconciliation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: Slow Reconciliation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#symptom-high-memory-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Symptom: High Memory Usage
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#common-pitfalls" class="md-nav__link">
+  <a href="#symptom-rate-limiting-or-slow-reconciliation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Common Pitfalls
+        Symptom: Rate Limiting Or Slow Reconciliation
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Common Pitfalls">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-1-wrong-keycloak-version-2500" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 1: Wrong Keycloak Version (&lt; 25.0.0)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-2-manual-changes-in-keycloak-admin-console" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 2: Manual Changes in Keycloak Admin Console
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-5-port-8080-vs-port-9000-confusion" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 5: Port 8080 vs Port 9000 Confusion
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pitfall-6-rbac-in-multi-namespace-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pitfall 6: RBAC in Multi-Namespace Setup
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#getting-help" class="md-nav__link">
+  <a href="#symptom-host-side-access-to-keycloak-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Getting Help
+        Symptom: Host-Side Access To Keycloak Fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symptom-authorization-looks-correct-but-clients-still-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symptom: Authorization Looks Correct But Clients Still Fail
       
     </span>
   </a>
@@ -5425,17 +4974,6 @@
     <span class="md-ellipsis">
       
         See Also
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
       
     </span>
   </a>
@@ -5468,978 +5006,168 @@
 
 
 <h1 id="troubleshooting-guide">Troubleshooting Guide<a class="headerlink" href="#troubleshooting-guide" title="Permanent link">&para;</a></h1>
-<p>This guide helps you diagnose and resolve common issues with the Keycloak operator. Issues are organized by <strong>symptom</strong> for faster troubleshooting.</p>
-<h2 id="quick-diagnostic-commands">Quick Diagnostic Commands<a class="headerlink" href="#quick-diagnostic-commands" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Check all Keycloak resources at once</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Check operator health</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Check events (recent issues)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--all-namespaces<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">&#39;.lastTimestamp&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
+<p>This guide focuses on practical diagnosis of operator, Keycloak, realm, and client issues using the current implementation contracts.</p>
+<p>Use Helm values and normal reconciliation flows as the primary fix path. Raw <code>kubectl patch</code> commands are useful as temporary diagnostics, not as the steady-state operating model.</p>
+<h2 id="quick-diagnostics">Quick Diagnostics<a class="headerlink" href="#quick-diagnostics" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--all-namespaces<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">&#39;.lastTimestamp&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
 </span></code></pre></div>
-<hr />
-<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
-<ol>
-<li><a href="#operator-issues">Operator Issues</a></li>
-<li><a href="#keycloak-instance-issues">Keycloak Instance Issues</a></li>
-<li><a href="#realm-issues">Realm Issues</a></li>
-<li><a href="#client-issues">Client Issues</a></li>
-<li><a href="#authorization-issues">Authorization Issues</a></li>
-<li><a href="#database-issues">Database Issues</a></li>
-<li><a href="#networking-ingress-issues">Networking &amp; Ingress Issues</a></li>
-<li><a href="#performance-issues">Performance Issues</a></li>
-<li><a href="#common-pitfalls">Common Pitfalls</a></li>
-</ol>
-<hr />
+<h2 id="understand-the-status-you-are-seeing">Understand The Status You Are Seeing<a class="headerlink" href="#understand-the-status-you-are-seeing" title="Permanent link">&para;</a></h2>
+<p>Common phases across the operator include:</p>
+<ul>
+<li><code>Pending</code></li>
+<li><code>Provisioning</code></li>
+<li><code>Reconciling</code></li>
+<li><code>Ready</code></li>
+<li><code>Degraded</code></li>
+<li><code>Updating</code></li>
+<li><code>Failed</code></li>
+<li><code>Paused</code></li>
+</ul>
+<p>Additional upgrade progress for managed Keycloak instances may appear under <code>status.blueGreen</code>, including states such as <code>BackingUp</code>.</p>
+<p>Practical interpretation:</p>
+<ul>
+<li><code>Pending</code>, <code>Provisioning</code>, and <code>Reconciling</code> usually mean the operator is still working</li>
+<li><code>Degraded</code> means the resource is running but needs attention</li>
+<li><code>Failed</code> means the current reconciliation path hit a terminal problem</li>
+<li><code>Paused</code> means operator configuration intentionally suspended reconciliation</li>
+</ul>
+<h2 id="version-and-port-confusion">Version And Port Confusion<a class="headerlink" href="#version-and-port-confusion" title="Permanent link">&para;</a></h2>
+<p>Supported Keycloak versions start at <code>24.x</code>.</p>
+<p>Important port split:</p>
+<ul>
+<li>Keycloak <code>24.x</code> uses <code>8080</code> for health handling</li>
+<li>Keycloak <code>25.x+</code> exposes the separate management interface on <code>9000</code></li>
+<li>operator metrics are on the operator pod, typically <code>8081</code></li>
+</ul>
+<p>Treat <code>9000</code> as version-conditional. On <code>24.x</code>, health and management behavior still lives on <code>8080</code>.</p>
+<h2 id="admin-credentials-secret-lifecycle">Admin Credentials Secret Lifecycle<a class="headerlink" href="#admin-credentials-secret-lifecycle" title="Permanent link">&para;</a></h2>
+<p>Managed Keycloak instances use a proxy secret named:</p>
+<ul>
+<li><code>&lt;keycloak-name&gt;-admin-credentials</code></li>
+</ul>
+<p>That secret always contains:</p>
+<ul>
+<li><code>username</code></li>
+<li><code>password</code></li>
+</ul>
+<p>The operator reads from that proxy secret when it needs to authenticate to Keycloak.</p>
+<p>If <code>keycloak.admin.existingSecret</code> is configured, the operator copies the source secret into the proxy secret and marks it as externally sourced. Otherwise it generates credentials itself.</p>
 <h2 id="operator-issues">Operator Issues<a class="headerlink" href="#operator-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-operator-pods-not-starting">Symptom: Operator Pods Not Starting<a class="headerlink" href="#symptom-operator-pods-not-starting" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Image pull failure
-- RBAC permissions missing
-- Resource constraints
-- CRD installation failure</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Check pod status</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Check pod events</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;
+<h3 id="symptom-operator-pods-are-restarting-or-failing-readiness">Symptom: Operator Pods Are Restarting Or Failing Readiness<a class="headerlink" href="#symptom-operator-pods-are-restarting-or-failing-readiness" title="Permanent link">&para;</a></h3>
+<p>Check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>&lt;pod-name&gt;
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--previous
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Image Pull Failure:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Check imagePullSecrets configured</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>keycloak-operator<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>imagePullSecrets
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Verify image exists and is accessible</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>run<span class="w"> </span>test-pull<span class="w"> </span>--image<span class="o">=</span>&lt;operator-image&gt;<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>test-pull<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span></code></pre></div></p>
-<p><strong>RBAC Issues:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Verify ClusterRole exists</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>clusterrole<span class="w"> </span>keycloak-operator
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Verify ClusterRoleBinding exists</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>clusterrolebinding<span class="w"> </span>keycloak-operator
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Test operator service account permissions</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>keycloaks<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:keycloak-operator-system:keycloak-operator
-</span></code></pre></div></p>
-<p><strong>Resource Constraints:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Check node resources</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>top<span class="w"> </span>nodes
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Increase operator resources</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span>--set<span class="w"> </span>operator.resources.requests.cpu<span class="o">=</span>200m<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span>--set<span class="w"> </span>operator.resources.requests.memory<span class="o">=</span>512Mi
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-operator-crashes-or-restarts-frequently">Symptom: Operator Crashes or Restarts Frequently<a class="headerlink" href="#symptom-operator-crashes-or-restarts-frequently" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Memory pressure (OOMKilled)
-- Unhandled exceptions
-- Rate limiting issues
-- Too many reconciliation loops</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Check restart count</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Check for OOMKilled</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">&quot;Last State&quot;</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Check logs before crash</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--previous
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Check memory usage</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>kubectl<span class="w"> </span>top<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>OOMKilled:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Increase memory limits</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>--set<span class="w"> </span>operator.resources.limits.memory<span class="o">=</span>1Gi
-</span></code></pre></div></p>
-<p><strong>Reconciliation Loops:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Check for stuck resources</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloaks,keycloakrealms,keycloakclients<span class="w"> </span>--all-namespaces<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>Ready
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Check operator logs for specific resource</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;namespace/resource-name&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Rate Limiting:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Check rate limit metrics</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Increase rate limits if needed</span>
-</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">  </span>--set<span class="w"> </span><span class="s1">&#39;operator.env[0].value=100&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-operator-not-reconciling-resources">Symptom: Operator Not Reconciling Resources<a class="headerlink" href="#symptom-operator-not-reconciling-resources" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Operator not watching the namespace
-- Resource validation failures
-- API server connectivity issues
-- Rate limiting</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Check if operator sees the resource</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;namespace/resource-name&quot;</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Check resource status</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Check for validation errors</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A10<span class="w"> </span>status
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Operator Not Watching Namespace:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Verify operator is cluster-scoped (watches all namespaces)</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>clusterrole<span class="w"> </span>keycloak-operator<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>namespaces
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Restart operator to pick up new namespaces</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span></code></pre></div></p>
-<p><strong>Validation Failures:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Check resource against schema</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Fix validation issues and reapply</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>fixed-resource.yaml
-</span></code></pre></div></p>
-<hr />
+<p>Common causes:</p>
+<ul>
+<li>resource pressure or OOMKilled restarts</li>
+<li>missing RBAC</li>
+<li>bad image configuration</li>
+<li>cluster API or webhook startup issues</li>
+</ul>
 <h2 id="keycloak-instance-issues">Keycloak Instance Issues<a class="headerlink" href="#keycloak-instance-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-keycloak-instance-stuck-in-pendingprovisioning">Symptom: Keycloak Instance Stuck in Pending/Provisioning<a class="headerlink" href="#symptom-keycloak-instance-stuck-in-pendingprovisioning" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Database not ready
-- Image pull failure
-- Insufficient resources
-- PVC not bound</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Check Keycloak status</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Check Keycloak pods</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Check events</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">&#39;.lastTimestamp&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>
-</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="c1"># Check database cluster</span>
-</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;
+<h2 id="symptom-operator-not-reconciling-a-resource">Symptom: Operator Not Reconciling A Resource<a class="headerlink" href="#symptom-operator-not-reconciling-a-resource" title="Permanent link">&para;</a></h2>
+<p>Check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&lt;namespace&gt;&#39;</span>
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Database Not Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Check database cluster status</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>&lt;cluster-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span>-l<span class="w"> </span>cnpg.io/cluster<span class="o">=</span>&lt;cluster-name&gt;
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># Wait for database to become ready</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>cluster/&lt;cluster-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="w">  </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span>--timeout<span class="o">=</span>10m
-</span></code></pre></div></p>
-<p><strong>Image Pull Failure:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Check image name/tag</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.image}&#39;</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># Test image pull manually</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>kubectl<span class="w"> </span>run<span class="w"> </span>test-keycloak<span class="w"> </span>--image<span class="o">=</span>quay.io/keycloak/keycloak:26.0.0<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>--restart<span class="o">=</span>Never<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>test-keycloak<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span></code></pre></div></p>
-<p><strong>Insufficient Resources:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Check node resources</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>kubectl<span class="w"> </span>top<span class="w"> </span>nodes
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Check resource requests</span>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span>resources
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
-</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># Reduce resource requests temporarily</span>
-</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s1">spec:</span>
-</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="s1">  resources:</span>
-</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s1">    requests:</span>
-</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="s1">      cpu: 250m</span>
-</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="s1">      memory: 512Mi</span>
-</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-keycloak-pods-crashloopbackoff">Symptom: Keycloak Pods CrashLoopBackOff<a class="headerlink" href="#symptom-keycloak-pods-crashloopbackoff" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Database connection failure
-- Invalid configuration
-- Port conflicts
-- Health check failures</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># Check pod logs</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Check previous container logs</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--previous
-</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
-</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1"># Check liveness/readiness probes</span>
-</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A5<span class="w"> </span><span class="s2">&quot;Liveness\|Readiness&quot;</span>
+<p>Common causes:</p>
+<ul>
+<li>bad <code>operatorRef</code></li>
+<li>namespace not actually authorized by the referenced realm</li>
+<li>admission validation failure</li>
+<li>reconciliation pause enabled for that resource type</li>
+</ul>
+<h2 id="symptom-keycloak-pod-fails-health-checks">Symptom: Keycloak Pod Fails Health Checks<a class="headerlink" href="#symptom-keycloak-pod-fails-health-checks" title="Permanent link">&para;</a></h2>
+<p>Check the version first.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.image}{&quot;\n&quot;}&#39;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Database Connection Failure:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Verify database credentials secret exists</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;db-credentials-secret&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Test database connection from pod</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span>psql<span class="w"> </span>-h<span class="w"> </span>&lt;db-host&gt;<span class="w"> </span>-U<span class="w"> </span>&lt;db-user&gt;<span class="w"> </span>-d<span class="w"> </span>keycloak<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="c1"># Check database credentials are correct</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;db-credentials-secret&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.username}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span>
-</span></code></pre></div></p>
-<p><strong>Port 9000 Not Available (Keycloak &lt; 25.0.0):</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Check Keycloak version</span>
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.image.tag}&#39;</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># Keycloak requires version 25.0.0+ for management port 9000</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="c1"># Upgrade to supported version:</span>
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="s1">spec:</span>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="s1">  image:</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="s1">    tag: &quot;26.0.0&quot;</span>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<p><strong>Health Check Too Aggressive:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># Increase probe delays</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="s1">spec:</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="s1">  probes:</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="s1">    liveness:</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="s1">      initialDelaySeconds: 180</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="s1">      periodSeconds: 30</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="s1">    readiness:</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="s1">      initialDelaySeconds: 120</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="s1">      periodSeconds: 10</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-need-to-verify-keycloak-internal-state">Symptom: Need to Verify Keycloak Internal State<a class="headerlink" href="#symptom-need-to-verify-keycloak-internal-state" title="Permanent link">&para;</a></h3>
-<p><strong>Important:</strong> You should <strong>never</strong> need to access the Keycloak admin console. All configuration and verification should be done through CRDs and Kubernetes-native tools.</p>
-<p><strong>Preferred Verification Methods:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Check Keycloak instance status</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="c1"># Check all managed resources</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm,keycloakclient<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
-</span><span id="__span-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="c1"># View detailed realm configuration</span>
-</span><span id="__span-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>
-</span><span id="__span-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="c1"># Check operator reconciliation logs</span>
-</span><span id="__span-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span>
+<p>If the deployment expects <code>9000</code> on a <code>24.x</code> image, you are debugging stale assumptions, not a real platform bug.</p>
+<h3 id="symptom-realm-stuck-in-pendingprovisioning">Symptom: Realm Stuck In Pending/Provisioning<a class="headerlink" href="#symptom-realm-stuck-in-pendingprovisioning" title="Permanent link">&para;</a></h3>
+<p>Check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
 </span></code></pre></div>
-<p><strong>Advanced Debugging (Operator Developers Only):</strong></p>
-<p>If CRD status fields are insufficient and you need to query Keycloak's internal state directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># Port-forward to management API (port 9000, NOT UI)</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/&lt;keycloak-service&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="m">9000</span>:9000
-</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
-</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1"># Get admin credentials</span>
-</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="nv">ADMIN_USER</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;name&gt;-admin-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.username}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-21-7"><a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="nv">ADMIN_PASS</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;name&gt;-admin-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-8"><a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.password}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-21-9"><a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>
-</span><span id="__span-21-10"><a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a><span class="c1"># Get access token</span>
-</span><span id="__span-21-11"><a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a><span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9000/realms/master/protocol/openid-connect/token<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-12"><a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/x-www-form-urlencoded&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-13"><a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;username=</span><span class="nv">$ADMIN_USER</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-14"><a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;password=</span><span class="nv">$ADMIN_PASS</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-15"><a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;grant_type=password&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-16"><a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;client_id=admin-cli&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.access_token&#39;</span><span class="k">)</span>
-</span><span id="__span-21-17"><a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>
-</span><span id="__span-21-18"><a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="c1"># Query Keycloak API (example: get realm)</span>
-</span><span id="__span-21-19"><a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:9000/admin/realms/&lt;realm-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-20"><a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
-</span></code></pre></div>
-<p><strong>Note:</strong> The admin console UI (port 8080) is intentionally not exposed. This operator enforces least privilege - all configuration must be done through GitOps/CRDs.</p>
-<hr />
-<h2 id="realm-issues">Realm Issues<a class="headerlink" href="#realm-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-realm-stuck-in-pendingprovisioning">Symptom: Realm Stuck in Pending/Provisioning<a class="headerlink" href="#symptom-realm-stuck-in-pendingprovisioning" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Keycloak instance not ready
-- API connectivity issues
-- Rate limiting</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Check realm status</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># Check Keycloak instance status</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>-n<span class="w"> </span>&lt;keycloak-namespace&gt;
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
-</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;keycloakrealm/&lt;name&gt;&quot;</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Keycloak Instance Not Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Wait for Keycloak to become ready</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>keycloak/&lt;name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">  </span>-n<span class="w"> </span>&lt;keycloak-namespace&gt;<span class="w"> </span>--timeout<span class="o">=</span>5m
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="c1"># Check Keycloak pods</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;keycloak-namespace&gt;<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak
-</span></code></pre></div></p>
-<p><strong>API Connectivity:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># Test connectivity from operator to Keycloak</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="w">  </span>curl<span class="w"> </span>-v<span class="w"> </span>http://keycloak-keycloak.&lt;keycloak-namespace&gt;.svc:8080/health
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="c1"># Check network policies</span>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>networkpolicy<span class="w"> </span>-n<span class="w"> </span>&lt;keycloak-namespace&gt;
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-realm-configuration-not-applied">Symptom: Realm Configuration Not Applied<a class="headerlink" href="#symptom-realm-configuration-not-applied" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Drift detection disabled
-- Manual changes in Keycloak admin console
-- Reconciliation not triggered
-- Invalid configuration values</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Check realm status</span>
-</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A20<span class="w"> </span>status
-</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
-</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1"># Check if drift detected</span>
-</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>drift
-</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
-</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="c1"># Compare CRD config to Keycloak</span>
-</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="c1"># (Requires admin access to Keycloak)</span>
-</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
-</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="c1"># Check operator logs for reconciliation</span>
-</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;keycloakrealm/&lt;namespace&gt;/&lt;name&gt;&quot;</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Force Reconciliation:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># Add/update annotation to trigger reconciliation</span>
-</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>kubectl<span class="w"> </span>annotate<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span><span class="nv">reconcile</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="w"> </span>--overwrite
-</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>
-</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="c1"># Watch reconciliation</span>
-</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>-f<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;keycloakrealm/&lt;namespace&gt;/&lt;name&gt;&quot;</span>
-</span></code></pre></div></p>
-<p><strong>Drift Detection:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># Check if drift detection is enabled (check operator config)</span>
-</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>deployment<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>DRIFT_DETECTION
-</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>
-</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="c1"># Drift detection automatically corrects manual changes</span>
-</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="c1"># Manual changes in admin console will be reverted on next reconciliation</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="client-issues">Client Issues<a class="headerlink" href="#client-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-client-creation-fails">Symptom: Client Creation Fails<a class="headerlink" href="#symptom-client-creation-fails" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Realm not ready
-- Namespace not authorized (Grant List)
-- Invalid client configuration
-- Client ID already exists</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Check client status</span>
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
-</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># Check realm is Ready</span>
-</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>
-</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;keycloakclient/&lt;namespace&gt;/&lt;name&gt;&quot;</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Realm Not Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># Wait for realm</span>
-</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>keycloakrealm/&lt;realm-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">  </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--timeout<span class="o">=</span>2m
-</span></code></pre></div></p>
-<p><strong>Namespace Not Authorized:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="c1"># Check realm&#39;s grant list</span>
-</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span>
-</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>
-</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="c1"># Add client namespace to grant list</span>
-</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="s1">spec:</span>
-</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="s1">  clientAuthorizationGrants:</span>
-</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="s1">    - &lt;existing-namespaces&gt;</span>
-</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="s1">    - &lt;client-namespace&gt;</span>
-</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<p><strong>Invalid Configuration:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Check client spec for validation errors</span>
-</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
-</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="c1"># Common issues:</span>
-</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="c1"># - Invalid redirect URIs</span>
-</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="c1"># - Missing required fields for client type</span>
-</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="c1"># - Invalid protocol mapper configuration</span>
-</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>
-</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="c1"># Fix and reapply</span>
-</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>fixed-client.yaml
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-client-credentials-not-created">Symptom: Client Credentials Not Created<a class="headerlink" href="#symptom-client-credentials-not-created" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Client not Ready
-- Secret name conflict
-- RBAC issues preventing secret creation</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="c1"># Check client status</span>
-</span><span id="__span-32-2"><a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-32-3"><a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>
-</span><span id="__span-32-4"><a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="c1"># Check if credentials secret exists</span>
-</span><span id="__span-32-5"><a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;name&gt;-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-32-6"><a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
-</span><span id="__span-32-7"><a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="c1"># Check operator logs for secret creation</span>
-</span><span id="__span-32-8"><a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-32-9"><a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;secret/&lt;namespace&gt;/&lt;name&gt;-credentials&quot;</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Wait for Client to become Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>keycloakclient/&lt;name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-33-2"><a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="w">  </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--timeout<span class="o">=</span>2m
-</span><span id="__span-33-3"><a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>
-</span><span id="__span-33-4"><a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="c1"># Secret is created when client transitions to Ready</span>
-</span></code></pre></div></p>
-<p><strong>Secret Name Conflict:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Check if secret already exists (from previous client)</span>
-</span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;name&gt;-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-34-3"><a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>
-</span><span id="__span-34-4"><a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="c1"># Delete old secret if safe to do so</span>
-</span><span id="__span-34-5"><a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>secret<span class="w"> </span>&lt;name&gt;-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-34-6"><a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>
-</span><span id="__span-34-7"><a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="c1"># Force client reconciliation</span>
-</span><span id="__span-34-8"><a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>kubectl<span class="w"> </span>annotate<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-34-9"><a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="w">  </span><span class="nv">reconcile</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="w"> </span>--overwrite
-</span></code></pre></div></p>
-<hr />
+<p>Common causes:</p>
+<ul>
+<li>the referenced Keycloak instance is still provisioning</li>
+<li><code>operatorRef</code> points at the wrong namespace or instance</li>
+<li>the realm is blocked on authorization or validation before first reconcile</li>
+</ul>
 <h2 id="authorization-issues">Authorization Issues<a class="headerlink" href="#authorization-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-realm-creation-fails-with-permission-denied">Symptom: Realm Creation Fails with Permission Denied<a class="headerlink" href="#symptom-realm-creation-fails-with-permission-denied" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Missing RBAC permissions to create KeycloakRealm resources
-- ServiceAccount lacks necessary ClusterRole binding
-- Namespace doesn't exist</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="c1"># Check if user/ServiceAccount can create realms</span>
-</span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>keycloakrealms.vriesdemichael.github.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-35-3"><a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;namespace&gt;
-</span><span id="__span-35-4"><a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>
-</span><span id="__span-35-5"><a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="c1"># Check existing RoleBindings</span>
-</span><span id="__span-35-6"><a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding,clusterrolebinding<span class="w"> </span>-A<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-35-7"><a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.items[] | select(.subjects[]?.name==&quot;&lt;serviceaccount-name&gt;&quot;) | {name: .metadata.name, namespace: .metadata.namespace, role: .roleRef.name}&#39;</span>
-</span><span id="__span-35-8"><a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a>
-</span><span id="__span-35-9"><a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="c1"># Check operator logs for authorization errors</span>
-</span><span id="__span-35-10"><a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-35-11"><a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;permission\|forbidden\|unauthorized&quot;</span>
+<h3 id="symptom-namespace-grant-looks-correct-but-client-creation-still-fails">Symptom: Namespace Grant Looks Correct But Client Creation Still Fails<a class="headerlink" href="#symptom-namespace-grant-looks-correct-but-client-creation-still-fails" title="Permanent link">&para;</a></h3>
+<p>Check the realm-side grant list directly:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;client-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;client-namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.authorizationGranted}{&quot;\n&quot;}{.status.authorizationMessage}{&quot;\n&quot;}&#39;</span>
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Grant Realm Creation Permission:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="c1"># Create RoleBinding in target namespace</span>
-</span><span id="__span-36-2"><a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>realm-creator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-3"><a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-realm-manager<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-4"><a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>&lt;namespace&gt;:&lt;serviceaccount&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-5"><a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;namespace&gt;
-</span><span id="__span-36-6"><a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>
-</span><span id="__span-36-7"><a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="c1"># Or use ClusterRoleBinding for cluster-wide access</span>
-</span><span id="__span-36-8"><a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>kubectl<span class="w"> </span>create<span class="w"> </span>clusterrolebinding<span class="w"> </span>realm-creator-global<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-9"><a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-realm-manager<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-36-10"><a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>&lt;namespace&gt;:&lt;serviceaccount&gt;
-</span></code></pre></div></p>
-<p><strong>Verify Permissions:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-37-1"><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="c1"># Test as the ServiceAccount</span>
-</span><span id="__span-37-2"><a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>create<span class="w"> </span>keycloakrealms.vriesdemichael.github.io<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-37-3"><a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:&lt;namespace&gt;:&lt;serviceaccount&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-37-4"><a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;namespace&gt;
-</span><span id="__span-37-5"><a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="c1"># Should return &quot;yes&quot;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-client-creation-fails-namespace-not-authorized">Symptom: Client Creation Fails - Namespace Not Authorized<a class="headerlink" href="#symptom-client-creation-fails-namespace-not-authorized" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Client's namespace not in realm's <code>clientAuthorizationGrants</code> list
-- Realm doesn't exist or isn't ready
-- Typo in namespace name</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-38-1"><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># Check realm&#39;s authorization grants</span>
-</span><span id="__span-38-2"><a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-38-3"><a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-38-4"><a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>
-</span><span id="__span-38-5"><a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a><span class="c1"># Check if client namespace is in the list</span>
-</span><span id="__span-38-6"><a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-38-7"><a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants[*]}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-w<span class="w"> </span>&lt;client-namespace&gt;
-</span><span id="__span-38-8"><a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a>
-</span><span id="__span-38-9"><a id="__codelineno-38-9" name="__codelineno-38-9" href="#__codelineno-38-9"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-38-10"><a id="__codelineno-38-10" name="__codelineno-38-10" href="#__codelineno-38-10"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-38-11"><a id="__codelineno-38-11" name="__codelineno-38-11" href="#__codelineno-38-11"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;authorization\|grant&quot;</span>
+<p>Things to verify:</p>
+<ul>
+<li>the client namespace is present in <code>spec.clientAuthorizationGrants</code></li>
+<li>the <code>realmRef</code> points at the realm you actually intended</li>
+<li>the realm and client namespaces are not being confused</li>
+<li>the realm’s <code>operatorRef</code> points at the correct operator-managed Keycloak</li>
+</ul>
+<p>This operator authorizes client creation through Kubernetes RBAC plus realm-managed namespace grants. A valid ServiceAccount alone is not enough if the realm grant list does not include the client namespace.</p>
+<h2 id="client-issues">Client Issues<a class="headerlink" href="#client-issues" title="Permanent link">&para;</a></h2>
+<h2 id="symptom-manual-admin-console-changes-keep-disappearing">Symptom: Manual Admin Console Changes Keep Disappearing<a class="headerlink" href="#symptom-manual-admin-console-changes-keep-disappearing" title="Permanent link">&para;</a></h2>
+<p>That is usually normal drift correction.</p>
+<p>Direct UI access is not technically impossible, but it is the wrong source of truth for managed configuration. If you change realms or clients manually in the admin console, the operator may reconcile them back to the CR spec.</p>
+<p>Use the CRs or Helm values instead.</p>
+<h2 id="symptom-client-credentials-stop-working-after-rotation">Symptom: Client Credentials Stop Working After Rotation<a class="headerlink" href="#symptom-client-credentials-stop-working-after-rotation" title="Permanent link">&para;</a></h2>
+<p>Check:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;client-secret-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span>yaml
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.lastSecretRotation}{&quot;\n&quot;}&#39;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rotation
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Add Namespace to Grant List:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-39-1"><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a><span class="c1"># Add client&#39;s namespace to realm&#39;s grants</span>
-</span><span id="__span-39-2"><a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-39-3"><a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a><span class="s1">spec:</span>
-</span><span id="__span-39-4"><a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a><span class="s1">  clientAuthorizationGrants:</span>
-</span><span id="__span-39-5"><a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a><span class="s1">    - &lt;existing-namespace&gt;</span>
-</span><span id="__span-39-6"><a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a><span class="s1">    - &lt;client-namespace&gt;  # Add this</span>
-</span><span id="__span-39-7"><a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a><span class="s1">&#39;</span>
-</span><span id="__span-39-8"><a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>
-</span><span id="__span-39-9"><a id="__codelineno-39-9" name="__codelineno-39-9" href="#__codelineno-39-9"></a><span class="c1"># Verify the update</span>
-</span><span id="__span-39-10"><a id="__codelineno-39-10" name="__codelineno-39-10" href="#__codelineno-39-10"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-39-11"><a id="__codelineno-39-11" name="__codelineno-39-11" href="#__codelineno-39-11"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span></code></pre></div></p>
-<p><strong>Check Realm Status:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-40-1"><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Ensure realm is Ready before creating clients</span>
-</span><span id="__span-40-2"><a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-40-3"><a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.phase}&#39;</span>
-</span><span id="__span-40-4"><a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># Should be &quot;Ready&quot;</span>
-</span><span id="__span-40-5"><a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>
-</span><span id="__span-40-6"><a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a><span class="c1"># If not ready, check status</span>
-</span><span id="__span-40-7"><a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-operator-cant-read-secrets-in-client-namespace">Symptom: Operator Can't Read Secrets in Client Namespace<a class="headerlink" href="#symptom-operator-cant-read-secrets-in-client-namespace" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Missing RoleBinding in client's namespace
-- Operator ServiceAccount lacks namespace access
-- <code>rbac.create=false</code> in Helm chart</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-41-1"><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># Check if operator can read secrets in namespace</span>
-</span><span id="__span-41-2"><a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-3"><a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-4"><a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;client-namespace&gt;
-</span><span id="__span-41-5"><a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a>
-</span><span id="__span-41-6"><a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a><span class="c1"># Check for RoleBinding</span>
-</span><span id="__span-41-7"><a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>kubectl<span class="w"> </span>get<span class="w"> </span>rolebinding<span class="w"> </span>-n<span class="w"> </span>&lt;client-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-8"><a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a><span class="w">  </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.items[] | select(.subjects[]?.name==&quot;keycloak-operator&quot;)&#39;</span>
-</span><span id="__span-41-9"><a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>
-</span><span id="__span-41-10"><a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="c1"># Check operator logs</span>
-</span><span id="__span-41-11"><a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-41-12"><a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;forbidden\|access denied&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>&lt;client-namespace&gt;
+<p>Likely cause:</p>
+<ul>
+<li>the workload did not restart or reload after atomic secret rotation</li>
+</ul>
+<p>Fix the restart coordination, usually with Reloader or an equivalent policy.</p>
+<h2 id="symptom-rate-limiting-or-slow-reconciliation">Symptom: Rate Limiting Or Slow Reconciliation<a class="headerlink" href="#symptom-rate-limiting-or-slow-reconciliation" title="Permanent link">&para;</a></h2>
+<p>Inspect the operator’s metrics endpoint, not the managed Keycloak pod:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>deploy/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Create RoleBinding for Operator:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-42-1"><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="c1"># Grant operator read access to secrets</span>
-</span><span id="__span-42-2"><a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>kubectl<span class="w"> </span>create<span class="w"> </span>rolebinding<span class="w"> </span>keycloak-operator-secret-reader<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-3"><a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">  </span>--clusterrole<span class="o">=</span>keycloak-operator-namespace-access<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-4"><a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">  </span>--serviceaccount<span class="o">=</span>keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-5"><a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;client-namespace&gt;
-</span><span id="__span-42-6"><a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>
-</span><span id="__span-42-7"><a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="c1"># Or use Helm chart with rbac.create=true</span>
-</span><span id="__span-42-8"><a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>charts/keycloak-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-9"><a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-10"><a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorNamespace<span class="o">=</span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-42-11"><a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;client-namespace&gt;
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-cross-namespace-client-creation-not-working">Symptom: Cross-Namespace Client Creation Not Working<a class="headerlink" href="#symptom-cross-namespace-client-creation-not-working" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Realm and client in different namespaces without grant
-- Incorrect namespace in <code>realmRef</code>
-- Network policies blocking cross-namespace communication</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-43-1"><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c1"># Verify realmRef is correct</span>
-</span><span id="__span-43-2"><a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>&lt;client-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;client-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-3"><a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.realmRef}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-</span><span id="__span-43-4"><a id="__codelineno-43-4" name="__codelineno-43-4" href="#__codelineno-43-4"></a>
-</span><span id="__span-43-5"><a id="__codelineno-43-5" name="__codelineno-43-5" href="#__codelineno-43-5"></a><span class="c1"># Check if client namespace is authorized</span>
-</span><span id="__span-43-6"><a id="__codelineno-43-6" name="__codelineno-43-6" href="#__codelineno-43-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-7"><a id="__codelineno-43-7" name="__codelineno-43-7" href="#__codelineno-43-7"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants[*]}&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-8"><a id="__codelineno-43-8" name="__codelineno-43-8" href="#__codelineno-43-8"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-w<span class="w"> </span>&lt;client-namespace&gt;
-</span><span id="__span-43-9"><a id="__codelineno-43-9" name="__codelineno-43-9" href="#__codelineno-43-9"></a>
-</span><span id="__span-43-10"><a id="__codelineno-43-10" name="__codelineno-43-10" href="#__codelineno-43-10"></a><span class="c1"># Check operator can access both namespaces</span>
-</span><span id="__span-43-11"><a id="__codelineno-43-11" name="__codelineno-43-11" href="#__codelineno-43-11"></a><span class="k">for</span><span class="w"> </span>ns<span class="w"> </span><span class="k">in</span><span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span>&lt;client-namespace&gt;<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-43-12"><a id="__codelineno-43-12" name="__codelineno-43-12" href="#__codelineno-43-12"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Checking namespace: </span><span class="nv">$ns</span><span class="s2">&quot;</span>
-</span><span id="__span-43-13"><a id="__codelineno-43-13" name="__codelineno-43-13" href="#__codelineno-43-13"></a><span class="w">  </span>kubectl<span class="w"> </span>auth<span class="w"> </span>can-i<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-14"><a id="__codelineno-43-14" name="__codelineno-43-14" href="#__codelineno-43-14"></a><span class="w">    </span>--as<span class="o">=</span>system:serviceaccount:keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-43-15"><a id="__codelineno-43-15" name="__codelineno-43-15" href="#__codelineno-43-15"></a><span class="w">    </span>--namespace<span class="o">=</span><span class="nv">$ns</span>
-</span><span id="__span-43-16"><a id="__codelineno-43-16" name="__codelineno-43-16" href="#__codelineno-43-16"></a><span class="k">done</span>
+<p>If you need to adjust rate limits, change the chart values under:</p>
+<ul>
+<li><code>operator.rateLimiting.global.*</code></li>
+<li><code>operator.rateLimiting.namespace.*</code></li>
+<li><code>operator.reconciliation.jitterMaxSeconds</code></li>
+</ul>
+<p>Then upgrade the chart instead of injecting ad hoc env var overrides.</p>
+<h2 id="symptom-host-side-access-to-keycloak-fails">Symptom: Host-Side Access To Keycloak Fails<a class="headerlink" href="#symptom-host-side-access-to-keycloak-fails" title="Permanent link">&para;</a></h2>
+<p>Tests and local debugging from the host often require port forwarding because cluster-internal DNS names are not resolvable from your laptop or WSL host.</p>
+<p>Use:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>svc/&lt;keycloak-service&gt;<span class="w"> </span><span class="m">8080</span>:8080
 </span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Ensure Proper Configuration:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-44-1"><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c1"># Realm in namespace &quot;platform&quot;</span>
-</span><span id="__span-44-2"><a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-44-3"><a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakRealm</span>
-</span><span id="__span-44-4"><a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-44-5"><a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-realm</span>
-</span><span id="__span-44-6"><a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span>
-</span><span id="__span-44-7"><a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-44-8"><a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a><span class="w">  </span><span class="nt">clientAuthorizationGrants</span><span class="p">:</span>
-</span><span id="__span-44-9"><a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-team-a</span>
-</span><span id="__span-44-10"><a id="__codelineno-44-10" name="__codelineno-44-10" href="#__codelineno-44-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-team-b</span>
-</span><span id="__span-44-11"><a id="__codelineno-44-11" name="__codelineno-44-11" href="#__codelineno-44-11"></a>
-</span><span id="__span-44-12"><a id="__codelineno-44-12" name="__codelineno-44-12" href="#__codelineno-44-12"></a><span class="nn">---</span>
-</span><span id="__span-44-13"><a id="__codelineno-44-13" name="__codelineno-44-13" href="#__codelineno-44-13"></a><span class="c1"># Client in namespace &quot;app-team-a&quot;</span>
-</span><span id="__span-44-14"><a id="__codelineno-44-14" name="__codelineno-44-14" href="#__codelineno-44-14"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-44-15"><a id="__codelineno-44-15" name="__codelineno-44-15" href="#__codelineno-44-15"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-44-16"><a id="__codelineno-44-16" name="__codelineno-44-16" href="#__codelineno-44-16"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-44-17"><a id="__codelineno-44-17" name="__codelineno-44-17" href="#__codelineno-44-17"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-44-18"><a id="__codelineno-44-18" name="__codelineno-44-18" href="#__codelineno-44-18"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app-team-a</span>
-</span><span id="__span-44-19"><a id="__codelineno-44-19" name="__codelineno-44-19" href="#__codelineno-44-19"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-44-20"><a id="__codelineno-44-20" name="__codelineno-44-20" href="#__codelineno-44-20"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-44-21"><a id="__codelineno-44-21" name="__codelineno-44-21" href="#__codelineno-44-21"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-realm</span>
-</span><span id="__span-44-22"><a id="__codelineno-44-22" name="__codelineno-44-22" href="#__codelineno-44-22"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span><span class="w">  </span><span class="c1"># Points to realm&#39;s namespace</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="database-issues">Database Issues<a class="headerlink" href="#database-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-database-cluster-not-starting">Symptom: Database Cluster Not Starting<a class="headerlink" href="#symptom-database-cluster-not-starting" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Storage not available
-- Credentials secret missing
-- CNPG operator not running
-- Resource constraints</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-45-1"><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="c1"># Check cluster status</span>
-</span><span id="__span-45-2"><a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-45-3"><a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>
-</span><span id="__span-45-4"><a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="c1"># Check cluster events</span>
-</span><span id="__span-45-5"><a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>cluster<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-45-6"><a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a>
-</span><span id="__span-45-7"><a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="c1"># Check pods</span>
-</span><span id="__span-45-8"><a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>-l<span class="w"> </span>cnpg.io/cluster<span class="o">=</span>&lt;name&gt;
-</span><span id="__span-45-9"><a id="__codelineno-45-9" name="__codelineno-45-9" href="#__codelineno-45-9"></a>
-</span><span id="__span-45-10"><a id="__codelineno-45-10" name="__codelineno-45-10" href="#__codelineno-45-10"></a><span class="c1"># Check CNPG operator</span>
-</span><span id="__span-45-11"><a id="__codelineno-45-11" name="__codelineno-45-11" href="#__codelineno-45-11"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>cnpg-system
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Storage Issues:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-46-1"><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="c1"># Check PVCs</span>
-</span><span id="__span-46-2"><a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pvc<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-46-3"><a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>
-</span><span id="__span-46-4"><a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a><span class="c1"># Check StorageClass</span>
-</span><span id="__span-46-5"><a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>storageclass
-</span><span id="__span-46-6"><a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a>
-</span><span id="__span-46-7"><a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a><span class="c1"># Ensure StorageClass exists and is default</span>
-</span><span id="__span-46-8"><a id="__codelineno-46-8" name="__codelineno-46-8" href="#__codelineno-46-8"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>storageclass<span class="w"> </span>&lt;name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-46-9"><a id="__codelineno-46-9" name="__codelineno-46-9" href="#__codelineno-46-9"></a><span class="w">  </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;metadata&quot;: {&quot;annotations&quot;:{&quot;storageclass.kubernetes.io/is-default-class&quot;:&quot;true&quot;}}}&#39;</span>
-</span></code></pre></div></p>
-<p><strong>Credentials Secret Missing:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-47-1"><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a><span class="c1"># Check secret exists</span>
-</span><span id="__span-47-2"><a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;credentials-secret&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-47-3"><a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>
-</span><span id="__span-47-4"><a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a><span class="c1"># Recreate if missing</span>
-</span><span id="__span-47-5"><a id="__codelineno-47-5" name="__codelineno-47-5" href="#__codelineno-47-5"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>&lt;credentials-secret&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-47-6"><a id="__codelineno-47-6" name="__codelineno-47-6" href="#__codelineno-47-6"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">username</span><span class="o">=</span>keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-47-7"><a id="__codelineno-47-7" name="__codelineno-47-7" href="#__codelineno-47-7"></a><span class="w">  </span>--from-literal<span class="o">=</span><span class="nv">password</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;import secrets; print(secrets.token_urlsafe(32))&#39;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-47-8"><a id="__codelineno-47-8" name="__codelineno-47-8" href="#__codelineno-47-8"></a><span class="w">  </span>--namespace<span class="o">=</span>&lt;namespace&gt;
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-database-connection-refused">Symptom: Database Connection Refused<a class="headerlink" href="#symptom-database-connection-refused" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Database pods not ready
-- Wrong database host/port
-- Network policies blocking traffic
-- Credentials incorrect</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-48-1"><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a><span class="c1"># Check database pods</span>
-</span><span id="__span-48-2"><a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span>-l<span class="w"> </span>cnpg.io/cluster<span class="o">=</span>&lt;cluster-name&gt;
-</span><span id="__span-48-3"><a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>
-</span><span id="__span-48-4"><a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a><span class="c1"># Identify primary pod</span>
-</span><span id="__span-48-5"><a id="__codelineno-48-5" name="__codelineno-48-5" href="#__codelineno-48-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cluster<span class="w"> </span>&lt;cluster-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-48-6"><a id="__codelineno-48-6" name="__codelineno-48-6" href="#__codelineno-48-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.currentPrimary}&#39;</span>
-</span><span id="__span-48-7"><a id="__codelineno-48-7" name="__codelineno-48-7" href="#__codelineno-48-7"></a>
-</span><span id="__span-48-8"><a id="__codelineno-48-8" name="__codelineno-48-8" href="#__codelineno-48-8"></a><span class="c1"># Test connection from Keycloak pod</span>
-</span><span id="__span-48-9"><a id="__codelineno-48-9" name="__codelineno-48-9" href="#__codelineno-48-9"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>-n<span class="w"> </span>&lt;keycloak-namespace&gt;<span class="w"> </span>&lt;keycloak-pod&gt;<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-48-10"><a id="__codelineno-48-10" name="__codelineno-48-10" href="#__codelineno-48-10"></a><span class="w">  </span>psql<span class="w"> </span>-h<span class="w"> </span>&lt;cluster-name&gt;-rw.&lt;db-namespace&gt;.svc<span class="w"> </span>-U<span class="w"> </span>keycloak<span class="w"> </span>-d<span class="w"> </span>keycloak<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Database Not Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-49-1"><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="c1"># Wait for database</span>
-</span><span id="__span-49-2"><a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>cluster/&lt;cluster-name&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-49-3"><a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a><span class="w">  </span>-n<span class="w"> </span>&lt;db-namespace&gt;<span class="w"> </span>--timeout<span class="o">=</span>5m
-</span></code></pre></div></p>
-<p><strong>Wrong Connection String:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-50-1"><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="c1"># Correct format for CNPG:</span>
-</span><span id="__span-50-2"><a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="c1"># Host: &lt;cluster-name&gt;-rw.&lt;namespace&gt;.svc</span>
-</span><span id="__span-50-3"><a id="__codelineno-50-3" name="__codelineno-50-3" href="#__codelineno-50-3"></a><span class="c1"># Port: 5432</span>
-</span><span id="__span-50-4"><a id="__codelineno-50-4" name="__codelineno-50-4" href="#__codelineno-50-4"></a><span class="c1"># Database: keycloak</span>
-</span><span id="__span-50-5"><a id="__codelineno-50-5" name="__codelineno-50-5" href="#__codelineno-50-5"></a>
-</span><span id="__span-50-6"><a id="__codelineno-50-6" name="__codelineno-50-6" href="#__codelineno-50-6"></a><span class="c1"># Update Keycloak resource with correct database config</span>
-</span><span id="__span-50-7"><a id="__codelineno-50-7" name="__codelineno-50-7" href="#__codelineno-50-7"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-50-8"><a id="__codelineno-50-8" name="__codelineno-50-8" href="#__codelineno-50-8"></a><span class="s1">spec:</span>
-</span><span id="__span-50-9"><a id="__codelineno-50-9" name="__codelineno-50-9" href="#__codelineno-50-9"></a><span class="s1">  database:</span>
-</span><span id="__span-50-10"><a id="__codelineno-50-10" name="__codelineno-50-10" href="#__codelineno-50-10"></a><span class="s1">    type: cnpg</span>
-</span><span id="__span-50-11"><a id="__codelineno-50-11" name="__codelineno-50-11" href="#__codelineno-50-11"></a><span class="s1">    cluster: &lt;cluster-name&gt;</span>
-</span><span id="__span-50-12"><a id="__codelineno-50-12" name="__codelineno-50-12" href="#__codelineno-50-12"></a><span class="s1">    namespace: &lt;db-namespace&gt;</span>
-</span><span id="__span-50-13"><a id="__codelineno-50-13" name="__codelineno-50-13" href="#__codelineno-50-13"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="networking-ingress-issues">Networking &amp; Ingress Issues<a class="headerlink" href="#networking-ingress-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-cannot-access-keycloak-via-ingress">Symptom: Cannot Access Keycloak via Ingress<a class="headerlink" href="#symptom-cannot-access-keycloak-via-ingress" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Ingress not created
-- DNS not configured
-- TLS certificate not ready
-- Ingress controller not working</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-51-1"><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="c1"># Check ingress exists</span>
-</span><span id="__span-51-2"><a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ingress<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-51-3"><a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a>
-</span><span id="__span-51-4"><a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a><span class="c1"># Check ingress details</span>
-</span><span id="__span-51-5"><a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>ingress<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-51-6"><a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>
-</span><span id="__span-51-7"><a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a><span class="c1"># Check ingress controller</span>
-</span><span id="__span-51-8"><a id="__codelineno-51-8" name="__codelineno-51-8" href="#__codelineno-51-8"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>ingress-nginx
-</span><span id="__span-51-9"><a id="__codelineno-51-9" name="__codelineno-51-9" href="#__codelineno-51-9"></a>
-</span><span id="__span-51-10"><a id="__codelineno-51-10" name="__codelineno-51-10" href="#__codelineno-51-10"></a><span class="c1"># Test DNS resolution</span>
-</span><span id="__span-51-11"><a id="__codelineno-51-11" name="__codelineno-51-11" href="#__codelineno-51-11"></a>nslookup<span class="w"> </span>&lt;hostname&gt;
-</span><span id="__span-51-12"><a id="__codelineno-51-12" name="__codelineno-51-12" href="#__codelineno-51-12"></a>
-</span><span id="__span-51-13"><a id="__codelineno-51-13" name="__codelineno-51-13" href="#__codelineno-51-13"></a><span class="c1"># Check certificate</span>
-</span><span id="__span-51-14"><a id="__codelineno-51-14" name="__codelineno-51-14" href="#__codelineno-51-14"></a>kubectl<span class="w"> </span>get<span class="w"> </span>certificate<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>DNS Not Configured:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-52-1"><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="c1"># Get ingress external IP</span>
-</span><span id="__span-52-2"><a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>-n<span class="w"> </span>ingress-nginx<span class="w"> </span>ingress-nginx-controller
-</span><span id="__span-52-3"><a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a>
-</span><span id="__span-52-4"><a id="__codelineno-52-4" name="__codelineno-52-4" href="#__codelineno-52-4"></a><span class="c1"># Configure DNS A record:</span>
-</span><span id="__span-52-5"><a id="__codelineno-52-5" name="__codelineno-52-5" href="#__codelineno-52-5"></a><span class="c1"># &lt;hostname&gt; → &lt;external-ip&gt;</span>
-</span><span id="__span-52-6"><a id="__codelineno-52-6" name="__codelineno-52-6" href="#__codelineno-52-6"></a>
-</span><span id="__span-52-7"><a id="__codelineno-52-7" name="__codelineno-52-7" href="#__codelineno-52-7"></a><span class="c1"># Verify DNS propagation</span>
-</span><span id="__span-52-8"><a id="__codelineno-52-8" name="__codelineno-52-8" href="#__codelineno-52-8"></a>nslookup<span class="w"> </span>&lt;hostname&gt;
-</span></code></pre></div></p>
-<p><strong>TLS Certificate Not Ready:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-53-1"><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="c1"># Check certificate status</span>
-</span><span id="__span-53-2"><a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>certificate<span class="w"> </span>&lt;name&gt;-tls<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-53-3"><a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a>
-</span><span id="__span-53-4"><a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a><span class="c1"># Check cert-manager logs</span>
-</span><span id="__span-53-5"><a id="__codelineno-53-5" name="__codelineno-53-5" href="#__codelineno-53-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>cert-manager<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>cert-manager
-</span><span id="__span-53-6"><a id="__codelineno-53-6" name="__codelineno-53-6" href="#__codelineno-53-6"></a>
-</span><span id="__span-53-7"><a id="__codelineno-53-7" name="__codelineno-53-7" href="#__codelineno-53-7"></a><span class="c1"># Force certificate renewal</span>
-</span><span id="__span-53-8"><a id="__codelineno-53-8" name="__codelineno-53-8" href="#__codelineno-53-8"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>certificaterequest<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--all
-</span></code></pre></div></p>
-<p><strong>Ingress Not Created:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-54-1"><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a><span class="c1"># Enable ingress in Keycloak resource</span>
-</span><span id="__span-54-2"><a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-54-3"><a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a><span class="s1">spec:</span>
-</span><span id="__span-54-4"><a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a><span class="s1">  ingress:</span>
-</span><span id="__span-54-5"><a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a><span class="s1">    enabled: true</span>
-</span><span id="__span-54-6"><a id="__codelineno-54-6" name="__codelineno-54-6" href="#__codelineno-54-6"></a><span class="s1">    className: nginx</span>
-</span><span id="__span-54-7"><a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a><span class="s1">    host: keycloak.example.com</span>
-</span><span id="__span-54-8"><a id="__codelineno-54-8" name="__codelineno-54-8" href="#__codelineno-54-8"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-port-forward-not-working">Symptom: Port-Forward Not Working<a class="headerlink" href="#symptom-port-forward-not-working" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Service not found
-- Pods not ready
-- kubectl not configured correctly
-- Port already in use</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-55-1"><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a><span class="c1"># Check service exists</span>
-</span><span id="__span-55-2"><a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-55-3"><a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a>
-</span><span id="__span-55-4"><a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a><span class="c1"># Check pods are running</span>
-</span><span id="__span-55-5"><a id="__codelineno-55-5" name="__codelineno-55-5" href="#__codelineno-55-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-55-6"><a id="__codelineno-55-6" name="__codelineno-55-6" href="#__codelineno-55-6"></a>
-</span><span id="__span-55-7"><a id="__codelineno-55-7" name="__codelineno-55-7" href="#__codelineno-55-7"></a><span class="c1"># Check port not already in use</span>
-</span><span id="__span-55-8"><a id="__codelineno-55-8" name="__codelineno-55-8" href="#__codelineno-55-8"></a>lsof<span class="w"> </span>-i<span class="w"> </span>:8080<span class="w">  </span><span class="c1"># On macOS/Linux</span>
-</span><span id="__span-55-9"><a id="__codelineno-55-9" name="__codelineno-55-9" href="#__codelineno-55-9"></a>netstat<span class="w"> </span>-ano<span class="w"> </span><span class="p">|</span><span class="w"> </span>findstr<span class="w"> </span>:8080<span class="w">  </span><span class="c1"># On Windows</span>
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Use Different Local Port:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-56-1"><a id="__codelineno-56-1" name="__codelineno-56-1" href="#__codelineno-56-1"></a><span class="c1"># Use different local port</span>
-</span><span id="__span-56-2"><a id="__codelineno-56-2" name="__codelineno-56-2" href="#__codelineno-56-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/&lt;service-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="m">8888</span>:8080
-</span><span id="__span-56-3"><a id="__codelineno-56-3" name="__codelineno-56-3" href="#__codelineno-56-3"></a>
-</span><span id="__span-56-4"><a id="__codelineno-56-4" name="__codelineno-56-4" href="#__codelineno-56-4"></a><span class="c1"># Access at http://localhost:8888</span>
-</span></code></pre></div></p>
-<p><strong>Port-Forward to Pod Directly:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-57-1"><a id="__codelineno-57-1" name="__codelineno-57-1" href="#__codelineno-57-1"></a><span class="c1"># If service not working, port-forward to pod</span>
-</span><span id="__span-57-2"><a id="__codelineno-57-2" name="__codelineno-57-2" href="#__codelineno-57-2"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span><span class="m">8080</span>:8080
-</span></code></pre></div></p>
-<hr />
-<h2 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h2>
-<h3 id="symptom-slow-reconciliation">Symptom: Slow Reconciliation<a class="headerlink" href="#symptom-slow-reconciliation" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Rate limiting too aggressive
-- High API latency
-- Resource constraints on operator
-- Large number of resources</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a><span class="c1"># Check rate limit metrics</span>
-</span><span id="__span-58-2"><a id="__codelineno-58-2" name="__codelineno-58-2" href="#__codelineno-58-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-58-3"><a id="__codelineno-58-3" name="__codelineno-58-3" href="#__codelineno-58-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
-</span><span id="__span-58-4"><a id="__codelineno-58-4" name="__codelineno-58-4" href="#__codelineno-58-4"></a>
-</span><span id="__span-58-5"><a id="__codelineno-58-5" name="__codelineno-58-5" href="#__codelineno-58-5"></a><span class="c1"># Check operator resource usage</span>
-</span><span id="__span-58-6"><a id="__codelineno-58-6" name="__codelineno-58-6" href="#__codelineno-58-6"></a>kubectl<span class="w"> </span>top<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-58-7"><a id="__codelineno-58-7" name="__codelineno-58-7" href="#__codelineno-58-7"></a>
-</span><span id="__span-58-8"><a id="__codelineno-58-8" name="__codelineno-58-8" href="#__codelineno-58-8"></a><span class="c1"># Check reconciliation metrics</span>
-</span><span id="__span-58-9"><a id="__codelineno-58-9" name="__codelineno-58-9" href="#__codelineno-58-9"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-58-10"><a id="__codelineno-58-10" name="__codelineno-58-10" href="#__codelineno-58-10"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>reconcile
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Increase Rate Limits:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-59-1"><a id="__codelineno-59-1" name="__codelineno-59-1" href="#__codelineno-59-1"></a><span class="c1"># Increase global and namespace rate limits</span>
-</span><span id="__span-59-2"><a id="__codelineno-59-2" name="__codelineno-59-2" href="#__codelineno-59-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-59-3"><a id="__codelineno-59-3" name="__codelineno-59-3" href="#__codelineno-59-3"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-59-4"><a id="__codelineno-59-4" name="__codelineno-59-4" href="#__codelineno-59-4"></a><span class="w">  </span>--set<span class="w"> </span>env.KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS<span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-59-5"><a id="__codelineno-59-5" name="__codelineno-59-5" href="#__codelineno-59-5"></a><span class="w">  </span>--set<span class="w"> </span>env.KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS<span class="o">=</span><span class="m">10</span>
-</span></code></pre></div></p>
-<p><strong>Increase Operator Resources:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-60-1"><a id="__codelineno-60-1" name="__codelineno-60-1" href="#__codelineno-60-1"></a><span class="c1"># Increase CPU/memory for operator</span>
-</span><span id="__span-60-2"><a id="__codelineno-60-2" name="__codelineno-60-2" href="#__codelineno-60-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-60-3"><a id="__codelineno-60-3" name="__codelineno-60-3" href="#__codelineno-60-3"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-60-4"><a id="__codelineno-60-4" name="__codelineno-60-4" href="#__codelineno-60-4"></a><span class="w">  </span>--set<span class="w"> </span>resources.requests.cpu<span class="o">=</span>500m<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-60-5"><a id="__codelineno-60-5" name="__codelineno-60-5" href="#__codelineno-60-5"></a><span class="w">  </span>--set<span class="w"> </span>resources.requests.memory<span class="o">=</span>512Mi
-</span></code></pre></div></p>
-<hr />
-<h3 id="symptom-high-memory-usage">Symptom: High Memory Usage<a class="headerlink" href="#symptom-high-memory-usage" title="Permanent link">&para;</a></h3>
-<p><strong>Possible Causes:</strong>
-- Memory leak in operator
-- Too many reconciliation loops
-- Large resource specifications
-- Not enough replicas</p>
-<p><strong>Diagnosis:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-61-1"><a id="__codelineno-61-1" name="__codelineno-61-1" href="#__codelineno-61-1"></a><span class="c1"># Check memory usage</span>
-</span><span id="__span-61-2"><a id="__codelineno-61-2" name="__codelineno-61-2" href="#__codelineno-61-2"></a>kubectl<span class="w"> </span>top<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
-</span><span id="__span-61-3"><a id="__codelineno-61-3" name="__codelineno-61-3" href="#__codelineno-61-3"></a>
-</span><span id="__span-61-4"><a id="__codelineno-61-4" name="__codelineno-61-4" href="#__codelineno-61-4"></a><span class="c1"># Check for OOMKills</span>
-</span><span id="__span-61-5"><a id="__codelineno-61-5" name="__codelineno-61-5" href="#__codelineno-61-5"></a>kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>oom
-</span><span id="__span-61-6"><a id="__codelineno-61-6" name="__codelineno-61-6" href="#__codelineno-61-6"></a>
-</span><span id="__span-61-7"><a id="__codelineno-61-7" name="__codelineno-61-7" href="#__codelineno-61-7"></a><span class="c1"># Check operator logs for memory errors</span>
-</span><span id="__span-61-8"><a id="__codelineno-61-8" name="__codelineno-61-8" href="#__codelineno-61-8"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>memory
-</span></code></pre></div>
-<p><strong>Solutions:</strong></p>
-<p><strong>Increase Memory Limits:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-62-1"><a id="__codelineno-62-1" name="__codelineno-62-1" href="#__codelineno-62-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-62-2"><a id="__codelineno-62-2" name="__codelineno-62-2" href="#__codelineno-62-2"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-62-3"><a id="__codelineno-62-3" name="__codelineno-62-3" href="#__codelineno-62-3"></a><span class="w">  </span>--set<span class="w"> </span>resources.limits.memory<span class="o">=</span>1Gi
-</span></code></pre></div></p>
-<p><strong>Scale Operator Replicas:</strong>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="c1"># Distribute load across multiple replicas</span>
-</span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-63-3"><a id="__codelineno-63-3" name="__codelineno-63-3" href="#__codelineno-63-3"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-operator-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-63-4"><a id="__codelineno-63-4" name="__codelineno-63-4" href="#__codelineno-63-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">replicas</span><span class="o">=</span><span class="m">3</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="common-pitfalls">Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permanent link">&para;</a></h2>
-<h3 id="pitfall-1-wrong-keycloak-version-2500">Pitfall 1: Wrong Keycloak Version (&lt; 25.0.0)<a class="headerlink" href="#pitfall-1-wrong-keycloak-version-2500" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Using Keycloak version &lt; 25.0.0 which doesn't support management port 9000.</p>
-<p><strong>Impact</strong>: Health checks fail, pods crash</p>
-<p><strong>Solution</strong>: Upgrade to Keycloak 25.0.0+:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-64-2"><a id="__codelineno-64-2" name="__codelineno-64-2" href="#__codelineno-64-2"></a><span class="s1">spec:</span>
-</span><span id="__span-64-3"><a id="__codelineno-64-3" name="__codelineno-64-3" href="#__codelineno-64-3"></a><span class="s1">  image:</span>
-</span><span id="__span-64-4"><a id="__codelineno-64-4" name="__codelineno-64-4" href="#__codelineno-64-4"></a><span class="s1">    tag: &quot;26.0.0&quot;</span>
-</span><span id="__span-64-5"><a id="__codelineno-64-5" name="__codelineno-64-5" href="#__codelineno-64-5"></a><span class="s1">&#39;</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="pitfall-2-manual-changes-in-keycloak-admin-console">Pitfall 2: Manual Changes in Keycloak Admin Console<a class="headerlink" href="#pitfall-2-manual-changes-in-keycloak-admin-console" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Making configuration changes directly in Keycloak admin console instead of updating CRDs.</p>
-<p><strong>Impact</strong>: Changes reverted on next reconciliation (drift detection)</p>
-<p><strong>Solution</strong>: Always update CRDs, not admin console:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a>kubectl<span class="w"> </span>edit<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;
-</span><span id="__span-65-2"><a id="__codelineno-65-2" name="__codelineno-65-2" href="#__codelineno-65-2"></a><span class="c1"># Changes apply automatically via reconciliation</span>
-</span></code></pre></div></p>
-<hr />
-<h3 id="pitfall-5-port-8080-vs-port-9000-confusion">Pitfall 5: Port 8080 vs Port 9000 Confusion<a class="headerlink" href="#pitfall-5-port-8080-vs-port-9000-confusion" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Trying to access management endpoints on port 8080 or user endpoints on port 9000.</p>
-<p><strong>Ports</strong>:
-- <strong>8080</strong>: User-facing (realms, OAuth2, admin console)
-- <strong>9000</strong>: Management only (health checks, metrics) - internal use</p>
-<p><strong>Solution</strong>: Always use port 8080 for user/admin access:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-66-1"><a id="__codelineno-66-1" name="__codelineno-66-1" href="#__codelineno-66-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/&lt;keycloak-service&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="m">8080</span>:8080
-</span></code></pre></div></p>
-<hr />
-<h3 id="pitfall-6-rbac-in-multi-namespace-setup">Pitfall 6: RBAC in Multi-Namespace Setup<a class="headerlink" href="#pitfall-6-rbac-in-multi-namespace-setup" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Not configuring RBAC for application teams to read authorization secrets.</p>
-<p><strong>Impact</strong>: Teams can't create realms/clients</p>
-<p><strong>Solution</strong>: Create Role allowing secret read access:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-67-1"><a id="__codelineno-67-1" name="__codelineno-67-1" href="#__codelineno-67-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-</span><span id="__span-67-2"><a id="__codelineno-67-2" name="__codelineno-67-2" href="#__codelineno-67-2"></a><span class="s">apiVersion: rbac.authorization.k8s.io/v1</span>
-</span><span id="__span-67-3"><a id="__codelineno-67-3" name="__codelineno-67-3" href="#__codelineno-67-3"></a><span class="s">kind: Role</span>
-</span><span id="__span-67-4"><a id="__codelineno-67-4" name="__codelineno-67-4" href="#__codelineno-67-4"></a><span class="s">metadata:</span>
-</span><span id="__span-67-5"><a id="__codelineno-67-5" name="__codelineno-67-5" href="#__codelineno-67-5"></a><span class="s">  name: keycloak-realm-manager</span>
-</span><span id="__span-67-6"><a id="__codelineno-67-6" name="__codelineno-67-6" href="#__codelineno-67-6"></a><span class="s">  namespace: &lt;team-namespace&gt;</span>
-</span><span id="__span-67-7"><a id="__codelineno-67-7" name="__codelineno-67-7" href="#__codelineno-67-7"></a><span class="s">rules:</span>
-</span><span id="__span-67-8"><a id="__codelineno-67-8" name="__codelineno-67-8" href="#__codelineno-67-8"></a><span class="s">  - apiGroups: [&quot;vriesdemichael.github.io&quot;]</span>
-</span><span id="__span-67-9"><a id="__codelineno-67-9" name="__codelineno-67-9" href="#__codelineno-67-9"></a><span class="s">    resources: [&quot;keycloakrealms&quot;, &quot;keycloakclients&quot;]</span>
-</span><span id="__span-67-10"><a id="__codelineno-67-10" name="__codelineno-67-10" href="#__codelineno-67-10"></a><span class="s">    verbs: [&quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;, &quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</span>
-</span><span id="__span-67-11"><a id="__codelineno-67-11" name="__codelineno-67-11" href="#__codelineno-67-11"></a><span class="s">  - apiGroups: [&quot;&quot;]</span>
-</span><span id="__span-67-12"><a id="__codelineno-67-12" name="__codelineno-67-12" href="#__codelineno-67-12"></a><span class="s">    resources: [&quot;secrets&quot;]</span>
-</span><span id="__span-67-13"><a id="__codelineno-67-13" name="__codelineno-67-13" href="#__codelineno-67-13"></a><span class="s">    resourceNames: [&quot;&lt;namespace&gt;-operator-token&quot;, &quot;*-realm-auth&quot;]</span>
-</span><span id="__span-67-14"><a id="__codelineno-67-14" name="__codelineno-67-14" href="#__codelineno-67-14"></a><span class="s">    verbs: [&quot;get&quot;]</span>
-</span><span id="__span-67-15"><a id="__codelineno-67-15" name="__codelineno-67-15" href="#__codelineno-67-15"></a><span class="s">EOF</span>
-</span></code></pre></div></p>
-<hr />
-<h2 id="getting-help">Getting Help<a class="headerlink" href="#getting-help" title="Permanent link">&para;</a></h2>
-<p>If you've tried the solutions above and still have issues:</p>
-<ol>
-<li>
-<p><strong>Check Operator Logs</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-68-1"><a id="__codelineno-68-1" name="__codelineno-68-1" href="#__codelineno-68-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>keycloak-operator<span class="w"> </span>--tail<span class="o">=</span><span class="m">200</span>
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Gather Diagnostics</strong>:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-69-1"><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>diagnostics.yaml
-</span><span id="__span-69-2"><a id="__codelineno-69-2" name="__codelineno-69-2" href="#__codelineno-69-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--all-namespaces<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">&#39;.lastTimestamp&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>events.txt
-</span></code></pre></div></p>
-</li>
-<li>
-<p><strong>Report Issue</strong>:</p>
-</li>
-<li><a href="https://github.com/vriesdemichael/keycloak-operator/issues">GitHub Issues</a></li>
-<li>
-<p>Include operator logs, resource YAML, and error messages</p>
-</li>
-<li>
-<p><strong>Community Support</strong>:</p>
-</li>
-<li><a href="https://github.com/vriesdemichael/keycloak-operator/discussions">GitHub Discussions</a></li>
-</ol>
-<hr />
+<p>Then hit <code>http://localhost:8080</code> locally.</p>
+<h2 id="symptom-authorization-looks-correct-but-clients-still-fail">Symptom: Authorization Looks Correct But Clients Still Fail<a class="headerlink" href="#symptom-authorization-looks-correct-but-clients-still-fail" title="Permanent link">&para;</a></h2>
+<p>Check all of these together:</p>
+<ul>
+<li>the <code>KeycloakClient.spec.realmRef</code></li>
+<li>the target realm’s namespace authorization configuration</li>
+<li>the realm’s <code>spec.clientAuthorizationGrants</code></li>
+<li>the <code>operatorRef</code> on the realm or Keycloak instance</li>
+<li>whether the client namespace and realm namespace are actually the ones you think they are</li>
+</ul>
+<p>Cross-namespace mistakes are common and look deceptively similar to permission bugs.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<p><strong>Problem-Specific Guides:</strong></p>
 <ul>
-<li><a href="../../concepts/security/">Security Model</a> - Authorization and access control</li>
-<li><a href="../migration/">Migration Guide</a> - Troubleshooting migration from official Keycloak operator</li>
-<li><a href="../../faq/#troubleshooting">FAQ: Troubleshooting</a> - Quick answers to frequent problems</li>
-</ul>
-<p><strong>Configuration Reference:</strong></p>
-<ul>
-<li><a href="../../reference/keycloak-crd/">Keycloak CRD Reference</a> - Valid configuration for Keycloak instances</li>
-<li><a href="../../reference/keycloak-realm-crd/">KeycloakRealm CRD Reference</a> - Valid realm configurations</li>
-<li><a href="../../reference/keycloak-client-crd/">KeycloakClient CRD Reference</a> - Valid client configurations</li>
-</ul>
-<p><strong>Setup Guides:</strong></p>
-<ul>
-<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup</a> - Complete production deployment walkthrough</li>
-<li><a href="../../how-to/database-setup/">Database Setup</a> - PostgreSQL configuration and troubleshooting</li>
-<li><a href="../../how-to/ha-deployment/">High Availability Deployment</a> - HA-specific troubleshooting</li>
-<li><a href="../../how-to/multi-tenant/">Multi-Tenant Setup</a> - Multi-tenant configuration issues</li>
-</ul>
-<p><strong>Architecture:</strong></p>
-<ul>
-<li><a href="../../concepts/architecture/">Architecture Overview</a> - Understanding reconciliation flow and token system</li>
-<li><a href="../../concepts/security/">Security Model</a> - Authorization model and token types</li>
-<li><a href="../../guides/observability/">Observability</a> - Metrics and monitoring for proactive issue detection</li>
-</ul>
-<hr />
-<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../../how-to/end-to-end-setup/">End-to-End Setup Guide</a></li>
-<li><a href="../../how-to/multi-tenant/">Multi-Tenant Configuration</a></li>
-<li><a href="../../concepts/security/">Security Model</a></li>
-<li><a href="../../faq/">FAQ</a></li>
+<li><a href="../day-two/">Day Two Operations</a></li>
+<li><a href="../../guides/observability/">Observability</a></li>
+<li><a href="../../how-to/multi-tenant/">Multi-Tenant</a></li>
+<li><a href="../../reference/keycloak-version-support/">Keycloak Version Support</a></li>
 </ul>
 
 

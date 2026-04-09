@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/how-to/end-to-end-setup/">
       
       
-        <link rel="prev" href="../../quickstart/">
+        <link rel="prev" href="../helm-vs-cr-deployments/">
       
       
         <link rel="next" href="../../concepts/architecture/">
@@ -27,7 +27,7 @@
     
     
       
-        <title>Installation - Keycloak Operator</title>
+        <title>End-to-End Setup - Keycloak Operator</title>
       
     
     
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              End-to-End Setup
             
           </span>
         </div>
@@ -550,6 +550,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -569,7 +597,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -587,7 +615,7 @@
   <span class="md-ellipsis">
     
   
-    Installation
+    End-to-End Setup
   
 
     
@@ -974,10 +1002,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#54-retrieve-client-credentials" class="md-nav__link">
+  <a href="#54-managed-client-credentials-secret" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.4 Retrieve Client Credentials
+        5.4 Managed Client Credentials Secret
       
     </span>
   </a>
@@ -985,10 +1013,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#55-generate-environment-file" class="md-nav__link">
+  <a href="#55-wire-the-secret-into-an-application-deployment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.5 Generate Environment File
+        5.5 Wire the Secret Into an Application Deployment
       
     </span>
   </a>
@@ -5514,10 +5542,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#54-retrieve-client-credentials" class="md-nav__link">
+  <a href="#54-managed-client-credentials-secret" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.4 Retrieve Client Credentials
+        5.4 Managed Client Credentials Secret
       
     </span>
   </a>
@@ -5525,10 +5553,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#55-generate-environment-file" class="md-nav__link">
+  <a href="#55-wire-the-secret-into-an-application-deployment" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5.5 Generate Environment File
+        5.5 Wire the Secret Into an Application Deployment
       
     </span>
   </a>
@@ -5834,6 +5862,7 @@
 <h1 id="end-to-end-setup-guide">End-to-End Setup Guide<a class="headerlink" href="#end-to-end-setup-guide" title="Permanent link">&para;</a></h1>
 <p>This guide walks you through deploying a <strong>production-ready</strong> Keycloak setup from scratch, including database configuration, high availability, TLS, and monitoring.</p>
 <p>For a simpler quick start, see the <a href="../../quickstart/">Quick Start Guide</a>.</p>
+<p>This is the longer infrastructure-heavy path for platform teams setting up shared Keycloak infrastructure and the first tenant onboarding flow. If you plan to manage raw CR manifests directly instead of using the charts, see <a href="../helm-vs-cr-deployments/">Helm vs Direct CR Deployments</a>.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>This guide covers:</p>
 <ol>
@@ -6001,7 +6030,7 @@
 <p>Deploy the operator with a production-ready Keycloak instance and CloudNativePG database:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span>install<span class="w"> </span>keycloak-operator<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.managed<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.replicas<span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.version<span class="o">=</span><span class="s2">&quot;26.0.0&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.database.cnpg.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
@@ -6011,14 +6040,13 @@
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.database.cnpg.storage.storageClass<span class="o">=</span>standard<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.className<span class="o">=</span>nginx<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.host<span class="o">=</span>keycloak.example.com<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.paths<span class="o">[</span><span class="m">0</span><span class="o">]</span>.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.hosts<span class="o">[</span><span class="m">0</span><span class="o">]</span>.paths<span class="o">[</span><span class="m">0</span><span class="o">]</span>.pathType<span class="o">=</span>Prefix<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.tls<span class="o">[</span><span class="m">0</span><span class="o">]</span>.secretName<span class="o">=</span>keycloak-tls<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.tls<span class="o">[</span><span class="m">0</span><span class="o">]</span>.hosts<span class="o">[</span><span class="m">0</span><span class="o">]=</span>keycloak.example.com<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.annotations.<span class="s2">&quot;cert-manager\.io/cluster-issuer&quot;</span><span class="o">=</span>letsencrypt-prod<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">  </span>--set<span class="w"> </span>monitoring.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">  </span>--set<span class="w"> </span>operator.replicaCount<span class="o">=</span><span class="m">2</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.host<span class="o">=</span>keycloak.example.com<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.tlsEnabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.tlsSecretName<span class="o">=</span>keycloak-tls<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">  </span>--set<span class="w"> </span>keycloak.ingress.annotations.<span class="s2">&quot;cert-manager\.io/cluster-issuer&quot;</span><span class="o">=</span>letsencrypt-prod<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">  </span>--set<span class="w"> </span>monitoring.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">  </span>--set<span class="w"> </span>operator.replicaCount<span class="o">=</span><span class="m">2</span>
 </span></code></pre></div>
 <blockquote>
 <p><strong>Note</strong>: Update <code>keycloak.example.com</code> to your actual domain and <code>storageClass</code> to match your cluster.</p>
@@ -6135,7 +6163,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-webapp-client<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-client<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>--namespace<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-webapp<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientName</span><span class="o">=</span><span class="s2">&quot;My Web Application&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">description</span><span class="o">=</span><span class="s2">&quot;My Web Application&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-app-realm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>team-alpha<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">publicClient</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
@@ -6149,7 +6177,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>helm<span class="w"> </span>install<span class="w"> </span>my-api-client<span class="w"> </span>oci://ghcr.io/vriesdemichael/charts/keycloak-client<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>--namespace<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-api<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientName</span><span class="o">=</span><span class="s2">&quot;My API Service&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">description</span><span class="o">=</span><span class="s2">&quot;My API Service&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-app-realm<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>team-alpha<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">publicClient</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
@@ -6165,28 +6193,65 @@
 </span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="c1"># List all clients</span>
 </span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakclient<span class="w"> </span>-n<span class="w"> </span>team-alpha
 </span></code></pre></div>
-<h3 id="54-retrieve-client-credentials">5.4 Retrieve Client Credentials<a class="headerlink" href="#54-retrieve-client-credentials" title="Permanent link">&para;</a></h3>
-<p>The operator automatically creates a secret with all OAuth2 credentials:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># View secret contents</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span>-o<span class="w"> </span>yaml
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="c1"># Extract individual values</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="nv">CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client_id}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="nv">CLIENT_SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client_secret}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="nv">ISSUER_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.issuer_url}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>
-</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Client ID: </span><span class="nv">$CLIENT_ID</span><span class="s2">&quot;</span>
-</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Client Secret: </span><span class="nv">$CLIENT_SECRET</span><span class="s2">&quot;</span>
-</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Issuer URL: </span><span class="nv">$ISSUER_URL</span><span class="s2">&quot;</span>
+<h3 id="54-managed-client-credentials-secret">5.4 Managed Client Credentials Secret<a class="headerlink" href="#54-managed-client-credentials-secret" title="Permanent link">&para;</a></h3>
+<p>The operator automatically creates a same-namespace Secret for confidential clients. If you do not set <code>secretName</code>, the default secret name is <code>&lt;release-fullname&gt;-credentials</code>, so the <code>my-webapp-client</code> release above produces <code>my-webapp-client-keycloak-client-credentials</code>.</p>
+<p>That Secret contains the fields most applications need directly:</p>
+<ul>
+<li><code>client-id</code></li>
+<li><code>client-secret</code></li>
+<li><code>issuer</code></li>
+<li><code>keycloak-url</code></li>
+<li><code>realm</code></li>
+<li><code>token-endpoint</code></li>
+<li><code>userinfo-endpoint</code></li>
+<li><code>jwks-endpoint</code></li>
+</ul>
+<h3 id="55-wire-the-secret-into-an-application-deployment">5.5 Wire the Secret Into an Application Deployment<a class="headerlink" href="#55-wire-the-secret-into-an-application-deployment" title="Permanent link">&para;</a></h3>
+<p>Keep the application in the same namespace and read the generated Secret through <code>secretKeyRef</code> or <code>envFrom</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team-alpha</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+</span><span id="__span-19-14"><a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp</span>
+</span><span id="__span-19-15"><a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-19-16"><a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+</span><span id="__span-19-17"><a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
+</span><span id="__span-19-18"><a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/example/my-webapp:latest</span>
+</span><span id="__span-19-19"><a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+</span><span id="__span-19-20"><a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OIDC_CLIENT_ID</span>
+</span><span id="__span-19-21"><a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-19-22"><a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-19-23"><a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp-client-keycloak-client-credentials</span>
+</span><span id="__span-19-24"><a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-id</span>
+</span><span id="__span-19-25"><a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OIDC_CLIENT_SECRET</span>
+</span><span id="__span-19-26"><a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-19-27"><a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-19-28"><a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp-client-keycloak-client-credentials</span>
+</span><span id="__span-19-29"><a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">client-secret</span>
+</span><span id="__span-19-30"><a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OIDC_ISSUER</span>
+</span><span id="__span-19-31"><a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-19-32"><a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-19-33"><a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp-client-keycloak-client-credentials</span>
+</span><span id="__span-19-34"><a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">issuer</span>
+</span><span id="__span-19-35"><a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OIDC_JWKS_ENDPOINT</span>
+</span><span id="__span-19-36"><a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a><span class="w">              </span><span class="nt">valueFrom</span><span class="p">:</span>
+</span><span id="__span-19-37"><a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a><span class="w">                </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+</span><span id="__span-19-38"><a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a><span class="w">                  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp-client-keycloak-client-credentials</span>
+</span><span id="__span-19-39"><a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a><span class="w">                  </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jwks-endpoint</span>
 </span></code></pre></div>
-<h3 id="55-generate-environment-file">5.5 Generate Environment File<a class="headerlink" href="#55-generate-environment-file" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span>-o<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.data | to_entries[] | &quot;\(.key | ascii_upcase)=\(.value | @base64d)&quot;&#39;</span><span class="w"> </span>&gt;<span class="w"> </span>oauth2.env
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>cat<span class="w"> </span>oauth2.env
+<p>If your application can consume all keys as environment variables, <code>envFrom</code> also works:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">envFrom</span><span class="p">:</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">secretRef</span><span class="p">:</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-webapp-client-keycloak-client-credentials</span>
 </span></code></pre></div>
 <hr />
 <h2 id="part-6-verification-testing">Part 6: Verification &amp; Testing<a class="headerlink" href="#part-6-verification-testing" title="Permanent link">&para;</a></h2>
@@ -6208,18 +6273,18 @@
 </span></code></pre></div>
 <p>All resources should show <code>PHASE=Ready</code>.</p>
 <h3 id="62-test-oidc-discovery">6.2 Test OIDC Discovery<a class="headerlink" href="#62-test-oidc-discovery" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nv">ISSUER_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.issuer_url}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nv">ISSUER_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.issuer}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
 </span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
 </span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$ISSUER_URL</span><span class="s2">/.well-known/openid-configuration&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
 <h3 id="63-test-client-credentials-flow">6.3 Test Client Credentials Flow<a class="headerlink" href="#63-test-client-credentials-flow" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nv">CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client_id}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nv">CLIENT_SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client_secret}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="nv">TOKEN_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token_url}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nv">CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client-id}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nv">CLIENT_SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client-secret}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="nv">TOKEN_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-api-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.token-endpoint}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
 </span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>
 </span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TOKEN_URL</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 </span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;grant_type=client_credentials&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -6227,13 +6292,14 @@
 </span><span id="__span-23-11"><a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="w">  </span>-d<span class="w"> </span><span class="s2">&quot;client_secret=</span><span class="nv">$CLIENT_SECRET</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.
 </span></code></pre></div>
 <h3 id="64-test-authorization-code-flow">6.4 Test Authorization Code Flow<a class="headerlink" href="#64-test-authorization-code-flow" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nv">CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client_id}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="nv">AUTH_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.auth_url}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
-</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>
-</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Open in browser:&quot;</span>
-</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AUTH_URL</span><span class="si">}</span><span class="s2">?client_id=</span><span class="si">${</span><span class="nv">CLIENT_ID</span><span class="si">}</span><span class="s2">&amp;redirect_uri=https://myapp.example.com/callback&amp;response_type=code&amp;scope=openid%20profile%20email&quot;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nv">CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client-id}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="nv">ISSUER_URL</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>my-webapp-client-keycloak-client-credentials<span class="w"> </span>-n<span class="w"> </span>team-alpha<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.issuer}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="k">)</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="nv">AUTH_URL</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">ISSUER_URL</span><span class="si">}</span><span class="s2">/protocol/openid-connect/auth&quot;</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Open in browser:&quot;</span>
+</span><span id="__span-24-8"><a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AUTH_URL</span><span class="si">}</span><span class="s2">?client_id=</span><span class="si">${</span><span class="nv">CLIENT_ID</span><span class="si">}</span><span class="s2">&amp;redirect_uri=https://myapp.example.com/callback&amp;response_type=code&amp;scope=openid%20profile%20email&quot;</span>
 </span></code></pre></div>
 <hr />
 <h2 id="part-7-production-checklist">Part 7: Production Checklist<a class="headerlink" href="#part-7-production-checklist" title="Permanent link">&para;</a></h2>
@@ -6401,7 +6467,7 @@
 <ol>
 <li><strong>Configure Identity Providers</strong> - Add Google, GitHub, Azure AD SSO (<a href="../../guides/identity-providers/">Guide</a>)</li>
 <li><strong>Set Up Monitoring</strong> - Import Grafana dashboards (<a href="../../guides/observability/">Observability</a>)</li>
-<li><strong>Configure Backups</strong> - Set up CloudNativePG backups to S3 (<a href="./backup-restore.md">Backup Guide</a>)</li>
+<li><strong>Configure Backups</strong> - Set up CloudNativePG backups to S3 (<a href="../../operations/backup-restore/">Backup Guide</a>)</li>
 <li><strong>Add More Teams</strong> - Repeat Part 3-5 for additional teams</li>
 <li><strong>Review Security</strong> - Implement network policies, audit logging</li>
 </ol>
@@ -6447,7 +6513,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../quickstart/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Quick Start">
+          <a href="../helm-vs-cr-deployments/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Helm vs Direct CR Deployments">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -6457,7 +6523,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Quick Start
+                Helm vs Direct CR Deployments
               </div>
             </div>
           </a>
