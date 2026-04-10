@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.2...operator-image-v0.10.3) (2026-04-10)
+
+
+### Bug Fixes
+
+* **operator-image:** bump opentelemetry-sdk from 1.40.0 to 1.41.0 ([32d523c](https://github.com/vriesdemichael/keycloak-operator/commit/32d523c8c25ee8a6fc4e21cc15dece9661b99fdd))
+* **operator-image:** bump prometheus-client from 0.24.1 to 0.25.0 ([2294d39](https://github.com/vriesdemichael/keycloak-operator/commit/2294d3984e047859c4517434242a58a4c5ed413f))
+
 ## [0.10.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.1...operator-image-v0.10.2) (2026-04-09)
 
 
