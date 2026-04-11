@@ -4,6 +4,9 @@ This guide covers operator upgrades, managed Keycloak upgrades, and migration gu
 
 For supported Keycloak versions, use [Keycloak Version Support](../reference/keycloak-version-support.md) as the single source of truth.
 
+!!! tip "Recovering from a complete failure?"
+    See the [Disaster Recovery](./disaster-recovery.md) guide for recovery order and what survives a database loss without a restore.
+
 ## Upgrade The Operator
 
 Helm is the primary upgrade path.

@@ -4,6 +4,9 @@ This guide focuses on practical diagnosis of operator, Keycloak, realm, and clie
 
 Use Helm values and normal reconciliation flows as the primary fix path. Raw `kubectl patch` commands are useful as temporary diagnostics, not as the steady-state operating model.
 
+!!! tip "Recovering from a failure or data loss?"
+    See the [Disaster Recovery](./disaster-recovery.md) guide for recovery order, what you actually lose without a database restore, and common recovery scenarios.
+
 ## Quick Diagnostics
 
 ```bash
