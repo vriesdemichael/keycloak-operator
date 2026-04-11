@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.3...operator-image-v0.10.4) (2026-04-11)
+
+
+### Documentation
+
+* add disaster recovery guide with loss matrix and recovery order ([#91](https://github.com/vriesdemichael/keycloak-operator/issues/91)) ([00f730f](https://github.com/vriesdemichael/keycloak-operator/commit/00f730f20daa58869d94a3d0096b3b952f9019a8))
+
 ## [0.10.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.2...operator-image-v0.10.3) (2026-04-10)
 
 
