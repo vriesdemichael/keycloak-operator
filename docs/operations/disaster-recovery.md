@@ -38,30 +38,32 @@ The more Keycloak is the identity source — local accounts, password-based logi
 
 ## Client secrets and automated rotation
 
-How the operator handles client secrets after a recovery depends on whether the Kubernetes Secret still exists:
+The authoritative source for client secrets is the **Keycloak database**. How recovery affects your consumers depends on whether you restored that database and how the client was configured.
 
-**If the Kubernetes Secret survives** (e.g., only Keycloak's database was lost, or you restored from a cluster backup): the operator reads the secret value from the existing Kubernetes Secret and syncs it back to the freshly initialized Keycloak. The value is unchanged. No consumers are affected.
+**With a database restore**: Keycloak has the same secret values as before. The operator reads them back from Keycloak and writes them into the credentials Secrets in your namespaces. Values are unchanged. No consumers are affected.
 
-**If the Kubernetes Secret is gone** (e.g., full cluster loss without a cluster backup, and no database restore): the operator creates the client fresh in Keycloak and generates a new secret. That new value is written into a new Kubernetes Secret in your namespace. Anything that was consuming the old value now has a mismatch.
+**Without a database restore**: Keycloak creates each client fresh with a new randomly generated secret. The new value is written into the credentials Secrets in your namespaces. Anything that was consuming the old value now has a mismatch until updated.
 
-### In-cluster applications
+**With a manually bound secret** (`spec.clientSecret`): the operator always reads the secret value from your referenced Kubernetes Secret and pushes it to Keycloak, regardless of what Keycloak currently has. If Keycloak was re-initialized, the operator will sync your value back into it. The credentials Secret in your namespace reflects your value. No consumers are affected.
 
-Applications that mount the Kubernetes Secret as a volume or environment variable will have stale values until their pods are restarted. Kubernetes does not automatically restart pods when a Secret changes.
+### In-cluster applications (without a database restore)
 
-Use [Stakater Reloader](https://github.com/stakater/Reloader) or a [Kyverno restart policy](./secret-management.md#kyverno-restart-policy) to automate this. See the [Secret Management guide](./secret-management.md) for configuration examples.
+Applications that mount the credentials Secret as a volume or environment variable will have stale values until their pods are restarted. Kubernetes does not automatically restart pods when a Secret changes.
 
-### Out-of-cluster consumers
+Use Stakater Reloader or a Kyverno restart policy to automate this. See the [Secret Management guide](./secret-management.md) for configuration examples.
 
-If you manually copied a client secret value somewhere outside the cluster — a CI/CD secret variable, a `.env` file, a cloud secrets manager entry — that copy is now wrong and there is no automated path to fix it. You need to export the new value from the Kubernetes Secret and update every external location by hand:
+### Out-of-cluster consumers (without a database restore)
+
+If you copied a client secret value somewhere outside the cluster — a CI/CD secret variable, a `.env` file, a cloud secrets manager — that copy is now wrong. There is no automated path to fix it. You need to export the new value and update every external location by hand:
 
 ```bash
 kubectl get secret <client-name>-credentials -n <namespace> \
   -o jsonpath='{.data.client-secret}' | base64 -d
 ```
 
-The only way to avoid this problem is to not copy secret values out-of-band in the first place. If you need the secret available outside the cluster, use a tool like [External Secrets Operator](https://external-secrets.io/) to continuously sync the Kubernetes Secret to your external store — so when the secret changes, the sync propagates the new value automatically.
+If you need client secrets available outside the cluster, use a tool like [External Secrets Operator](https://external-secrets.io/) to continuously sync the credentials Secret to your external store. When the value changes, the sync propagates it automatically.
 
-Alternatively, pin the secret to a known value from the start by using `spec.clientSecret` (a reference to a Kubernetes Secret you control) rather than operator-managed generation. When a manually bound secret is used, the operator always reads from your referenced Secret and pushes that value to Keycloak — so you control the value and a recovery never changes it unexpectedly.
+Alternatively, use `spec.clientSecret` to bind the client to a Kubernetes Secret you control. The operator will always push your value to Keycloak, so recovery never generates a new value unexpectedly.
 
 ---
 
