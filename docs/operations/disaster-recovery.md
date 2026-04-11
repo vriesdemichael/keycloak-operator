@@ -18,17 +18,17 @@ What you need in addition to your CRD manifests is a healthy **Keycloak database
 
 Whether a database restore is worth your operational investment depends on what you use Keycloak for. This table helps you decide:
 
-| What might be lost | Lost without DB restore? | Notes |
-|--------------------|--------------------------|-------|
-| Realm configuration | **No** — recovered from CRDs | Operator re-creates on reconcile |
-| Client configuration | **No** — recovered from CRDs | Operator re-creates on reconcile |
-| IdP / SSO federation settings | **No** — recovered from CRDs | Re-created from spec |
-| Registered user accounts | **Yes** | Passwords, attributes, MFA enrollments |
-| User role assignments | **Yes** | Must be re-assigned or re-imported |
-| Active OAuth sessions | **Yes** — but acceptable | Users simply re-authorize |
-| Operator-managed client secrets | Partial — see below | Operator regenerates on reconcile; external consumers need to pick up the new value |
-| Manually copied client secrets | **Yes** | If you copied a secret out-of-band, it will not match the newly generated one |
-| Keycloak audit / admin event log | **Yes** — usually acceptable | Purely historical |
+| What | Survives without DB restore? | Notes |
+|------|------------------------------|-------|
+| Realm configuration | ✅ Recovered from CRDs | Operator re-creates on reconcile |
+| Client configuration | ✅ Recovered from CRDs | Operator re-creates on reconcile |
+| IdP / SSO federation settings | ✅ Recovered from CRDs | Re-created from spec |
+| Active OAuth sessions | ⚠️ Lost — usually acceptable | Users simply re-authorize |
+| Keycloak audit / admin event log | ⚠️ Lost — usually acceptable | Purely historical |
+| Operator-managed client secrets | ⚠️ Changed — see below | Operator generates a new secret; consumers need to pick up the new value |
+| Manually bound client secrets | ✅ Preserved | Operator reads from your referenced Secret, syncs that value to Keycloak |
+| Registered user accounts | ❌ Lost | Passwords, attributes, MFA enrollments |
+| User role assignments | ❌ Lost | Must be re-assigned or re-imported |
 
 **The guiding principle:** the more Keycloak is a pass-through to an upstream IdP (Azure AD, Google, GitHub), the less your database matters. If users log in with their corporate SSO and Keycloak holds no local credentials, losing the database and re-applying your CRDs is a full recovery.
 
@@ -38,14 +38,30 @@ The more Keycloak is the identity source — local accounts, password-based logi
 
 ## Client secrets and automated rotation
 
-When the operator manages a client secret (`manageSecret: true` with rotation enabled), a database loss followed by a re-apply of your CRDs will cause the operator to **regenerate the client secret** and write the new value into the Kubernetes Secret in your namespace. Applications that read the Secret directly from the cluster — the intended pattern — will pick up the new value on their next restart or secret refresh.
+How the operator handles client secrets after a recovery depends on whether the Kubernetes Secret still exists:
 
-The problem arises when a secret has been **manually copied to a location outside the cluster** — for example, into an environment variable in a CI system, a `.env` file on a server, or a secrets store populated by hand. Those external copies will be stale and authentication will fail silently until they are updated.
+**If the Kubernetes Secret survives** (e.g., only Keycloak's database was lost, or you restored from a cluster backup): the operator reads the secret value from the existing Kubernetes Secret and syncs it back to the freshly initialized Keycloak. The value is unchanged. No consumers are affected.
 
-If you have consumers outside the cluster, see the [Secret Management guide](./secret-management.md) for how to:
+**If the Kubernetes Secret is gone** (e.g., full cluster loss without a cluster backup, and no database restore): the operator creates the client fresh in Keycloak and generates a new secret. That new value is written into a new Kubernetes Secret in your namespace. Anything that was consuming the old value now has a mismatch.
 
-- Automate pod restarts when a managed secret changes (Stakater Reloader, Kyverno)
-- Configure notifications or pipelines for external consumers on rotation events
+### In-cluster applications
+
+Applications that mount the Kubernetes Secret as a volume or environment variable will have stale values until their pods are restarted. Kubernetes does not automatically restart pods when a Secret changes.
+
+Use [Stakater Reloader](https://github.com/stakater/Reloader) or a [Kyverno restart policy](./secret-management.md#kyverno-restart-policy) to automate this. See the [Secret Management guide](./secret-management.md) for configuration examples.
+
+### Out-of-cluster consumers
+
+If you manually copied a client secret value somewhere outside the cluster — a CI/CD secret variable, a `.env` file, a cloud secrets manager entry — that copy is now wrong and there is no automated path to fix it. You need to export the new value from the Kubernetes Secret and update every external location by hand:
+
+```bash
+kubectl get secret <client-name>-credentials -n <namespace> \
+  -o jsonpath='{.data.client-secret}' | base64 -d
+```
+
+The only way to avoid this problem is to not copy secret values out-of-band in the first place. If you need the secret available outside the cluster, use a tool like [External Secrets Operator](https://external-secrets.io/) to continuously sync the Kubernetes Secret to your external store — so when the secret changes, the sync propagates the new value automatically.
+
+Alternatively, pin the secret to a known value from the start by using `spec.clientSecret` (a reference to a Kubernetes Secret you control) rather than operator-managed generation. When a manually bound secret is used, the operator always reads from your referenced Secret and pushes that value to Keycloak — so you control the value and a recovery never changes it unexpectedly.
 
 ---
 
