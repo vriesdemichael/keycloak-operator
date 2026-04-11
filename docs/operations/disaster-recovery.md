@@ -6,11 +6,11 @@ This page covers what you actually lose when things go wrong, the correct order 
 
 ## Your GitOps repository is your primary recovery mechanism
 
-The operator is stateless. Every Keycloak realm, client, and configuration setting is declared in your `KeycloakRealm` and `KeycloakClient` CRDs. When the operator is running and those CRDs exist in the cluster, it will reconcile them to the desired state without any manual intervention.
+The operator is stateless. Your desired Keycloak state is declared through your `Keycloak`, `KeycloakRealm`, and `KeycloakClient` resources, together with any referenced Kubernetes Secrets and Helm deployment values. When the operator is running and those resources exist in the cluster, it will reconcile them to the desired state without any manual intervention.
 
-If you store your CRD manifests in a Git repository — which is the intended deployment model — re-applying them is enough to reconstruct the configuration side of Keycloak. You do not need a special operator recovery procedure.
+If you store those manifests and referenced inputs in a Git repository — which is the intended deployment model — re-applying them is enough to reconstruct the configuration side of Keycloak. You do not need a special operator recovery procedure.
 
-What you need in addition to your CRD manifests is a healthy **Keycloak database**. That is it.
+What you need in addition to those declarative resources is a healthy **Keycloak database**. That is it.
 
 ---
 
@@ -48,9 +48,9 @@ The authoritative source for client secrets is the **Keycloak database**. How re
 
 ### In-cluster applications (without a database restore)
 
-Applications that mount the credentials Secret as a volume or environment variable will have stale values until their pods are restarted. Kubernetes does not automatically restart pods when a Secret changes.
+Applications that consume the credentials Secret through environment variables will keep the old value until their pods are restarted. Applications that mount the Secret as a volume usually see the updated files automatically after a short delay, but the application may still need a restart or reload to begin using the new value.
 
-Use Stakater Reloader or a Kyverno restart policy to automate this. See the [Secret Management guide](./secret-management.md) for configuration examples.
+Kubernetes does not automatically restart pods when a Secret changes, so tools such as Stakater Reloader or a Kyverno restart policy are a practical way to automate updates for workloads that need a restart or reload. See the [Secret Management guide](./secret-management.md) for configuration examples.
 
 ### Out-of-cluster consumers (without a database restore)
 
@@ -88,7 +88,7 @@ For situations that land you on this page, here is where to find the relevant pr
 | Scenario | Where to look |
 |----------|--------------|
 | Keycloak database lost or corrupted | Restore from your database provider's backup (CNPG, managed PostgreSQL, cloud provider snapshot). Then follow the recovery order above. For configuring automated pre-upgrade backups with CNPG, see [Backup & Restore](./backup-restore.md). |
-| Operator pod or namespace deleted | Re-deploy via Helm. No data loss — CRDs survive namespace deletion. Operator reconciles on startup. |
+| Operator pod or namespace deleted | Re-deploy via Helm. If only the operator pod or deployment was deleted, there is no data loss and the operator will reconcile on startup. If the namespace was deleted, all namespaced resources in it (including Keycloak CRs and Secrets) were deleted too — after recreating the namespace, re-apply your GitOps manifests and restore Secrets as needed. |
 | Entire cluster lost | Restore your database, recreate the cluster, apply your GitOps manifests. The rest follows from the order above. |
 | Migrating Keycloak to a different instance or cluster | See the [Migration & Upgrade guide](./migration.md) and [Escape Hatch](./escape-hatch.md). |
 | Drift detector marking resources as orphaned | See [Troubleshooting](./troubleshooting.md). |
