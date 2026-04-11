@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/operations/troubleshooting/">
       
       
-        <link rel="prev" href="../backup-restore/">
+        <link rel="prev" href="../disaster-recovery/">
       
       
         <link rel="next" href="../migration/">
@@ -1248,6 +1248,34 @@
     
   
     Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../disaster-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
   
 
     
@@ -5008,6 +5036,10 @@
 <h1 id="troubleshooting-guide">Troubleshooting Guide<a class="headerlink" href="#troubleshooting-guide" title="Permanent link">&para;</a></h1>
 <p>This guide focuses on practical diagnosis of operator, Keycloak, realm, and client issues using the current implementation contracts.</p>
 <p>Use Helm values and normal reconciliation flows as the primary fix path. Raw <code>kubectl patch</code> commands are useful as temporary diagnostics, not as the steady-state operating model.</p>
+<div class="admonition tip">
+<p class="admonition-title">Recovering from a failure or data loss?</p>
+<p>See the <a href="../disaster-recovery/">Disaster Recovery</a> guide for recovery order, what you actually lose without a database restore, and common recovery scenarios.</p>
+</div>
 <h2 id="quick-diagnostics">Quick Diagnostics<a class="headerlink" href="#quick-diagnostics" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>keycloak-system
@@ -5204,7 +5236,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../backup-restore/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backup &amp; Restore">
+          <a href="../disaster-recovery/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Disaster Recovery">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -5214,7 +5246,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Backup & Restore
+                Disaster Recovery
               </div>
             </div>
           </a>

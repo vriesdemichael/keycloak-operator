@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/086-migration-toolkit-design/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/operations/disaster-recovery/">
       
       
-        <link rel="prev" href="../085-taskfile-for-development-automation/">
+        <link rel="prev" href="../backup-restore/">
       
       
-        <link rel="next" href="../087-reconciliation-pause/">
+        <link rel="next" href="../troubleshooting/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>ADR-086: Go-based migration toolkit for Keycloak export transformation - Keycloak Operator</title>
+        <title>Disaster Recovery - Keycloak Operator</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-086-go-based-migration-toolkit-for-keycloak-export-transformation" class="md-skip">
+        <a href="#disaster-recovery" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +100,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+    <a href="../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="../../../assets/images/logo.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-086: Go-based migration toolkit for Keycloak export transformation
+              Disaster Recovery
             
           </span>
         </div>
@@ -237,7 +237,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -257,7 +257,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../concepts/architecture/" class="md-tabs__link">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
           
   
   
@@ -277,7 +277,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../guides/identity-providers/" class="md-tabs__link">
+        <a href="../../guides/identity-providers/" class="md-tabs__link">
           
   
   
@@ -293,11 +293,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../operations/day-two/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../day-two/" class="md-tabs__link">
           
   
   
@@ -317,7 +319,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../reference/keycloak-crd/" class="md-tabs__link">
+        <a href="../../reference/keycloak-crd/" class="md-tabs__link">
           
   
   
@@ -337,7 +339,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../development/" class="md-tabs__link">
+        <a href="../../development/" class="md-tabs__link">
           
   
   
@@ -353,11 +355,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../decisions/generated-markdown/" class="md-tabs__link">
         
   
   
@@ -376,7 +376,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../faq/" class="md-tabs__link">
+      <a href="../../faq/" class="md-tabs__link">
         
   
   
@@ -411,9 +411,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+    <a href="../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="../../../assets/images/logo.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     Keycloak Operator
@@ -494,7 +494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -522,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -550,7 +550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
         
   
   
@@ -578,7 +578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/end-to-end-setup/" class="md-nav__link">
+      <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
   
@@ -667,7 +667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/architecture/" class="md-nav__link">
+      <a href="../../concepts/architecture/" class="md-nav__link">
         
   
   
@@ -695,7 +695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/security/" class="md-nav__link">
+      <a href="../../concepts/security/" class="md-nav__link">
         
   
   
@@ -723,7 +723,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../admission-webhooks/" class="md-nav__link">
+      <a href="../../admission-webhooks/" class="md-nav__link">
         
   
   
@@ -751,7 +751,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../rbac-implementation/" class="md-nav__link">
+      <a href="../../rbac-implementation/" class="md-nav__link">
         
   
   
@@ -840,7 +840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/identity-providers/" class="md-nav__link">
+      <a href="../../guides/identity-providers/" class="md-nav__link">
         
   
   
@@ -868,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/user-federation/" class="md-nav__link">
+      <a href="../../guides/user-federation/" class="md-nav__link">
         
   
   
@@ -896,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/drift-detection/" class="md-nav__link">
+      <a href="../../guides/drift-detection/" class="md-nav__link">
         
   
   
@@ -924,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/observability/" class="md-nav__link">
+      <a href="../../guides/observability/" class="md-nav__link">
         
   
   
@@ -952,7 +952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/multi-tenant/" class="md-nav__link">
+      <a href="../../how-to/multi-tenant/" class="md-nav__link">
         
   
   
@@ -980,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/database-setup/" class="md-nav__link">
+      <a href="../../how-to/database-setup/" class="md-nav__link">
         
   
   
@@ -1008,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/export-realms/" class="md-nav__link">
+      <a href="../../how-to/export-realms/" class="md-nav__link">
         
   
   
@@ -1036,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/migration-toolkit/" class="md-nav__link">
+      <a href="../../how-to/migration-toolkit/" class="md-nav__link">
         
   
   
@@ -1064,7 +1064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/smtp-configuration/" class="md-nav__link">
+      <a href="../../how-to/smtp-configuration/" class="md-nav__link">
         
   
   
@@ -1092,7 +1092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/ha-deployment/" class="md-nav__link">
+      <a href="../../how-to/ha-deployment/" class="md-nav__link">
         
   
   
@@ -1124,28 +1124,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -1163,7 +1166,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1181,7 +1184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/day-two/" class="md-nav__link">
+      <a href="../day-two/" class="md-nav__link">
         
   
   
@@ -1209,7 +1212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/secret-management/" class="md-nav__link">
+      <a href="../secret-management/" class="md-nav__link">
         
   
   
@@ -1237,7 +1240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/backup-restore/" class="md-nav__link">
+      <a href="../backup-restore/" class="md-nav__link">
         
   
   
@@ -1262,10 +1265,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../operations/disaster-recovery/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1281,6 +1311,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#your-gitops-repository-is-your-primary-recovery-mechanism" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Your GitOps repository is your primary recovery mechanism
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-lose-without-a-database-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you lose without a database restore
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-secrets-and-automated-rotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Client secrets and automated rotation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Client secrets and automated rotation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-cluster-applications-without-a-database-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In-cluster applications (without a database restore)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#out-of-cluster-consumers-without-a-database-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Out-of-cluster consumers (without a database restore)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recovery-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common scenarios
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1293,7 +1426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/troubleshooting/" class="md-nav__link">
+      <a href="../troubleshooting/" class="md-nav__link">
         
   
   
@@ -1321,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/migration/" class="md-nav__link">
+      <a href="../migration/" class="md-nav__link">
         
   
   
@@ -1349,7 +1482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/escape-hatch/" class="md-nav__link">
+      <a href="../escape-hatch/" class="md-nav__link">
         
   
   
@@ -1438,7 +1571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-crd/" class="md-nav__link">
+      <a href="../../reference/keycloak-crd/" class="md-nav__link">
         
   
   
@@ -1466,7 +1599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-realm-crd/" class="md-nav__link">
+      <a href="../../reference/keycloak-realm-crd/" class="md-nav__link">
         
   
   
@@ -1494,7 +1627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-client-crd/" class="md-nav__link">
+      <a href="../../reference/keycloak-client-crd/" class="md-nav__link">
         
   
   
@@ -1522,7 +1655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-version-support/" class="md-nav__link">
+      <a href="../../reference/keycloak-version-support/" class="md-nav__link">
         
   
   
@@ -1550,7 +1683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../versioning/" class="md-nav__link">
+      <a href="../../versioning/" class="md-nav__link">
         
   
   
@@ -1578,7 +1711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/keycloak_operator/" class="md-nav__link">
+      <a href="../../api/keycloak_operator/" class="md-nav__link">
         
   
   
@@ -1667,7 +1800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/" class="md-nav__link">
+      <a href="../../development/" class="md-nav__link">
         
   
   
@@ -1695,7 +1828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/testing/" class="md-nav__link">
+      <a href="../../development/testing/" class="md-nav__link">
         
   
   
@@ -1723,7 +1856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
+      <a href="../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -1755,32 +1888,29 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../decisions/generated-markdown/" class="md-nav__link ">
               
   
   
@@ -1798,13 +1928,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1822,7 +1952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-kopf-as-operator-framework/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/001-kopf-as-operator-framework/" class="md-nav__link">
         
   
   
@@ -1850,7 +1980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-uv-for-dependency-management/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/002-uv-for-dependency-management/" class="md-nav__link">
         
   
   
@@ -1878,7 +2008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-least-privilege-everywhere/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/003-least-privilege-everywhere/" class="md-nav__link">
         
   
   
@@ -1906,7 +2036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-everything-must-be-gitopsable/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/004-everything-must-be-gitopsable/" class="md-nav__link">
         
   
   
@@ -1934,7 +2064,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-no-plaintext-secrets/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/005-no-plaintext-secrets/" class="md-nav__link">
         
   
   
@@ -1962,7 +2092,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
         
   
   
@@ -1990,7 +2120,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-integration-tests-in-kind-clusters/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/007-integration-tests-in-kind-clusters/" class="md-nav__link">
         
   
   
@@ -2018,7 +2148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
         
   
   
@@ -2046,7 +2176,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-ai-agents-as-first-class-developers/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/009-ai-agents-as-first-class-developers/" class="md-nav__link">
         
   
   
@@ -2074,7 +2204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
         
   
   
@@ -2102,7 +2232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-conventional-commits-for-all-development/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/011-conventional-commits-for-all-development/" class="md-nav__link">
         
   
   
@@ -2130,7 +2260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
         
   
   
@@ -2158,7 +2288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-pydantic-models-for-keycloak-api/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/013-pydantic-models-for-keycloak-api/" class="md-nav__link">
         
   
   
@@ -2186,7 +2316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-separate-helm-charts-per-resource-type/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/014-separate-helm-charts-per-resource-type/" class="md-nav__link">
         
   
   
@@ -2214,7 +2344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-cloudnativepg-as-first-class-database/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/015-cloudnativepg-as-first-class-database/" class="md-nav__link">
         
   
   
@@ -2242,7 +2372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-multi-namespace-operation-by-default/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/016-multi-namespace-operation-by-default/" class="md-nav__link">
         
   
   
@@ -2270,7 +2400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
         
   
   
@@ -2298,7 +2428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-management-port-separation-keycloak-25/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/018-management-port-separation-keycloak-25/" class="md-nav__link">
         
   
   
@@ -2326,7 +2456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
         
   
   
@@ -2354,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-real-kubernetes-for-integration-testing/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/020-real-kubernetes-for-integration-testing/" class="md-nav__link">
         
   
   
@@ -2382,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
         
   
   
@@ -2410,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
         
   
   
@@ -2438,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-make-for-development-automation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/023-make-for-development-automation/" class="md-nav__link">
         
   
   
@@ -2466,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-helm-as-deployment-mechanism/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/024-helm-as-deployment-mechanism/" class="md-nav__link">
         
   
   
@@ -2494,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
         
   
   
@@ -2522,7 +2652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
         
   
   
@@ -2550,7 +2680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-json-schemas-published-to-github-pages/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/027-json-schemas-published-to-github-pages/" class="md-nav__link">
         
   
   
@@ -2578,7 +2708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-documentation-published-to-github-pages/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/028-documentation-published-to-github-pages/" class="md-nav__link">
         
   
   
@@ -2606,7 +2736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-versioned-documentation-with-mike/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/029-versioned-documentation-with-mike/" class="md-nav__link">
         
   
   
@@ -2634,7 +2764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
         
   
   
@@ -2662,7 +2792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-automated-releases-with-release-please/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/031-automated-releases-with-release-please/" class="md-nav__link">
         
   
   
@@ -2690,7 +2820,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
         
   
   
@@ -2718,7 +2848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-custom-resource-definitions-as-api/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/033-custom-resource-definitions-as-api/" class="md-nav__link">
         
   
   
@@ -2746,7 +2876,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
         
   
   
@@ -2774,7 +2904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
         
   
   
@@ -2802,7 +2932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
         
   
   
@@ -2830,7 +2960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
         
   
   
@@ -2858,7 +2988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/038-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
   
@@ -2886,7 +3016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
   
@@ -2914,7 +3044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-admission-webhooks-for-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/040-admission-webhooks-for-validation/" class="md-nav__link">
         
   
   
@@ -2942,7 +3072,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-shared-operator-fixture-in-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/041-shared-operator-fixture-in-tests/" class="md-nav__link">
         
   
   
@@ -2970,7 +3100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
         
   
   
@@ -2998,7 +3128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
         
   
   
@@ -3026,7 +3156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
         
   
   
@@ -3054,7 +3184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
         
   
   
@@ -3082,7 +3212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
         
   
   
@@ -3110,7 +3240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-managed-keycloak-for-quick-start/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/047-managed-keycloak-for-quick-start/" class="md-nav__link">
         
   
   
@@ -3138,7 +3268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../048-prometheus-metrics-exposure/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/048-prometheus-metrics-exposure/" class="md-nav__link">
         
   
   
@@ -3166,7 +3296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
         
   
   
@@ -3194,7 +3324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../050-structured-json-logging/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/050-structured-json-logging/" class="md-nav__link">
         
   
   
@@ -3222,7 +3352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../051-multi-stage-docker-builds-for-minimal-images/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images/" class="md-nav__link">
         
   
   
@@ -3250,7 +3380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../052-optimized-keycloak-container-for-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/052-optimized-keycloak-container-for-tests/" class="md-nav__link">
         
   
   
@@ -3278,7 +3408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
         
   
   
@@ -3306,7 +3436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
         
   
   
@@ -3334,7 +3464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../055-container-image-registry-and-tagging/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/055-container-image-registry-and-tagging/" class="md-nav__link">
         
   
   
@@ -3362,7 +3492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
         
   
   
@@ -3390,7 +3520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../057-cr-data-validated-with-pydantic/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/057-cr-data-validated-with-pydantic/" class="md-nav__link">
         
   
   
@@ -3418,7 +3548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../058-single-keycloak-version-support/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/058-single-keycloak-version-support/" class="md-nav__link">
         
   
   
@@ -3446,7 +3576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/059-multi-version-keycloak-support/" class="md-nav__link">
         
   
   
@@ -3474,7 +3604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../060-cascading-deletes/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/060-cascading-deletes/" class="md-nav__link">
         
   
   
@@ -3502,7 +3632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../061-github-issues-with-ai-instructions/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/061-github-issues-with-ai-instructions/" class="md-nav__link">
         
   
   
@@ -3530,7 +3660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../062-one-keycloak-per-operator/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/062-one-keycloak-per-operator/" class="md-nav__link">
         
   
   
@@ -3558,7 +3688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../063-namespace-grant-list-authorization/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/063-namespace-grant-list-authorization/" class="md-nav__link">
         
   
   
@@ -3586,7 +3716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../064-no-force-delete-annotation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/064-no-force-delete-annotation/" class="md-nav__link">
         
   
   
@@ -3614,7 +3744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
         
   
   
@@ -3642,7 +3772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../066-centralized-settings-with-pydantic/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/066-centralized-settings-with-pydantic/" class="md-nav__link">
         
   
   
@@ -3670,7 +3800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
         
   
   
@@ -3698,7 +3828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../068-always-recreate-test-cluster/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/068-always-recreate-test-cluster/" class="md-nav__link">
         
   
   
@@ -3726,7 +3856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../069-documentation-schema-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/069-documentation-schema-validation/" class="md-nav__link">
         
   
   
@@ -3754,7 +3884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../070-auto-discovery-for-schema-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/070-auto-discovery-for-schema-validation/" class="md-nav__link">
         
   
   
@@ -3782,7 +3912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../071-crd-pydantic-schema-sync/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/071-crd-pydantic-schema-sync/" class="md-nav__link">
         
   
   
@@ -3810,7 +3940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../072-handling-unrecognized-doc-snippets/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/072-handling-unrecognized-doc-snippets/" class="md-nav__link">
         
   
   
@@ -3838,7 +3968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../073-security-and-multi-tenancy-model/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
         
   
   
@@ -3866,7 +3996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../074-keycloak-scalability-and-ha/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
         
   
   
@@ -3894,7 +4024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
         
   
   
@@ -3922,7 +4052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../076-no-network-policies-in-helm-chart/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/076-no-network-policies-in-helm-chart/" class="md-nav__link">
         
   
   
@@ -3950,7 +4080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../077-no-ingress-traffic-separation-for-admin-and-public-interfaces/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/077-no-ingress-traffic-separation-for-admin-and-public-interfaces/" class="md-nav__link">
         
   
   
@@ -3978,7 +4108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
         
   
   
@@ -4006,7 +4136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../079-no-managed-keycloak-upgrades/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/079-no-managed-keycloak-upgrades/" class="md-nav__link">
         
   
   
@@ -4034,7 +4164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../080-atomic-client-secret-rotation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/080-atomic-client-secret-rotation/" class="md-nav__link">
         
   
   
@@ -4062,7 +4192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../081-opentelemetry-distributed-tracing/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/081-opentelemetry-distributed-tracing/" class="md-nav__link">
         
   
   
@@ -4090,7 +4220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../082-trace-based-test-debugging/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/082-trace-based-test-debugging/" class="md-nav__link">
         
   
   
@@ -4118,7 +4248,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../083-kopf-version-pin/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/083-kopf-version-pin/" class="md-nav__link">
         
   
   
@@ -4146,7 +4276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../084-prometheus-metric-cardinality-policy/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/084-prometheus-metric-cardinality-policy/" class="md-nav__link">
         
   
   
@@ -4174,7 +4304,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/085-taskfile-for-development-automation/" class="md-nav__link">
         
   
   
@@ -4199,37 +4329,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-086: Go-based migration toolkit for Keycloak export transformation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/086-migration-toolkit-design/" class="md-nav__link">
         
   
   
@@ -4245,120 +4348,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#python-based-toolkit-using-the-existing-operator-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Python-based toolkit using the existing operator dependencies
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Output raw CRD manifests instead of Helm values.yaml
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fail-hard-on-unsupported-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fail hard on unsupported features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Embed secrets directly in values.yaml with a warning comment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4371,7 +4360,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../087-reconciliation-pause/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/087-reconciliation-pause/" class="md-nav__link">
         
   
   
@@ -4399,7 +4388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../088-blue-green-keycloak-upgrade-strategy/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/088-blue-green-keycloak-upgrade-strategy/" class="md-nav__link">
         
   
   
@@ -4427,7 +4416,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../089-kc-hostname-strict-default/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/089-kc-hostname-strict-default/" class="md-nav__link">
         
   
   
@@ -4455,7 +4444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../090-revision-oriented-cache-isolation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/090-revision-oriented-cache-isolation/" class="md-nav__link">
         
   
   
@@ -4483,7 +4472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
         
   
   
@@ -4511,7 +4500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../092-blue-green-upgrade-state-machine/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/092-blue-green-upgrade-state-machine/" class="md-nav__link">
         
   
   
@@ -4539,7 +4528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../093-user-import-via-migration-toolkit/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/093-user-import-via-migration-toolkit/" class="md-nav__link">
         
   
   
@@ -4567,7 +4556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../094-migration-toolkit-e2e-testing/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/094-migration-toolkit-e2e-testing/" class="md-nav__link">
         
   
   
@@ -4602,7 +4591,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../faq/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   
@@ -4649,10 +4638,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#your-gitops-repository-is-your-primary-recovery-mechanism" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        Your GitOps repository is your primary recovery mechanism
       
     </span>
   </a>
@@ -4660,10 +4649,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
+  <a href="#what-you-lose-without-a-database-restore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rationale
+        What you lose without a database restore
       
     </span>
   </a>
@@ -4671,33 +4660,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
+  <a href="#client-secrets-and-automated-rotation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Agent Instructions
+        Client secrets and automated rotation
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
+    <nav class="md-nav" aria-label="Client secrets and automated rotation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#python-based-toolkit-using-the-existing-operator-dependencies" class="md-nav__link">
+  <a href="#in-cluster-applications-without-a-database-restore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Python-based toolkit using the existing operator dependencies
+        In-cluster applications (without a database restore)
       
     </span>
   </a>
@@ -4705,32 +4683,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" class="md-nav__link">
+  <a href="#out-of-cluster-consumers-without-a-database-restore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Output raw CRD manifests instead of Helm values.yaml
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#fail-hard-on-unsupported-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Fail hard on unsupported features
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Embed secrets directly in values.yaml with a warning comment
+        Out-of-cluster consumers (without a database restore)
       
     </span>
   </a>
@@ -4739,6 +4695,28 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recovery-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recovery order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common scenarios
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4759,7 +4737,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/086-migration-toolkit-design.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/operations/disaster-recovery.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4767,24 +4745,142 @@
   
 
 
-<h1 id="adr-086-go-based-migration-toolkit-for-keycloak-export-transformation">ADR-086: Go-based migration toolkit for Keycloak export transformation<a class="headerlink" href="#adr-086-go-based-migration-toolkit-for-keycloak-export-transformation" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> architecture
-<strong>Provenance:</strong> guided-ai</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Provide a standalone Go binary (tools/migration-toolkit/) that transforms Keycloak realm export JSON into Helm chart values.yaml files compatible with the keycloak-realm and keycloak-client charts. The toolkit lives in the operator repository but is independently compiled with zero runtime dependencies. It emits warnings for unsupported features rather than failing hard, writes unsupported data to a sidecar file, and generates a NEXT-STEPS.md checklist for the operator. Secret values are never written to values.yaml files. Instead, the toolkit extracts secrets and generates separate manifests depending on the chosen --secret-mode: plain Kubernetes Secrets (with clear warnings about GitOps unsuitability), ExternalSecret manifests (recommended for production), or SealedSecret manifests.</p>
-<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>A standalone Go binary avoids adding Python packaging complexity to end users who may not have a Python environment. Go cross-compiles to all platforms and produces a single static binary. Outputting Helm values.yaml rather than raw CRDs ensures users benefit from chart-level validation, schema enforcement, and future chart upgrades without re-running the toolkit. The warn-not-fail strategy prevents blocking migration for features that can be manually configured post-migration. Secret extraction to separate manifests follows ADR-005 (no plaintext secrets) and ADR-056 (recommend ESO/Sealed Secrets).</p>
-<h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When working on the migration toolkit, use the toolkit: Taskfile namespace (toolkit:build, toolkit:test, toolkit:lint). The toolkit is Go code under tools/migration-toolkit/ and is independent of the Python operator codebase. Output format is Helm values.yaml, NOT raw CRDs. Users consume the output via helm install/upgrade with the keycloak-realm and keycloak-client charts. Never write plaintext secrets into values files — they go into separate Secret manifests controlled by --secret-mode. The plain mode generates real Kubernetes Secret manifests with stringData (actual plaintext values) and is appropriate for development or initial bootstrapping, but NOT for GitOps workflows. For production, recommend --secret-mode=eso or --secret-mode=sealed-secrets. Default client secret settings are manageSecret: false and secretRotation.enabled: false to avoid surprising workloads outside Kubernetes. Internal Keycloak clients (account, admin-cli, broker, realm-management, security-admin-console) are skipped by default. Deprecated client fields are silently dropped. Unsupported features produce stderr warnings with GitHub issue URLs, not hard failures.</p>
-<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="python-based-toolkit-using-the-existing-operator-dependencies">Python-based toolkit using the existing operator dependencies<a class="headerlink" href="#python-based-toolkit-using-the-existing-operator-dependencies" title="Permanent link">&para;</a></h3>
-<p>Would require users to install Python, uv, and all operator dependencies just to run a one-time migration tool. Go produces a single binary with zero runtime dependencies.</p>
-<h3 id="output-raw-crd-manifests-instead-of-helm-valuesyaml">Output raw CRD manifests instead of Helm values.yaml<a class="headerlink" href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" title="Permanent link">&para;</a></h3>
-<p>Raw CRDs bypass chart-level validation, default values, and schema evolution. Users would miss out on future chart improvements and would need to manually maintain CRD compliance.</p>
-<h3 id="fail-hard-on-unsupported-features">Fail hard on unsupported features<a class="headerlink" href="#fail-hard-on-unsupported-features" title="Permanent link">&para;</a></h3>
-<p>Would block migration entirely for features that may not even be needed in the new deployment. Warning strategy allows incremental migration where supported features work immediately.</p>
-<h3 id="embed-secrets-directly-in-valuesyaml-with-a-warning-comment">Embed secrets directly in values.yaml with a warning comment<a class="headerlink" href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" title="Permanent link">&para;</a></h3>
-<p>Violates ADR-005. Even with warnings, plaintext secrets in Helm values files are likely to be committed to git repositories. Instead, secrets are extracted to separate Secret manifests (--secret-mode=plain) or ExternalSecret/SealedSecret manifests. The plain mode outputs real Kubernetes Secrets with stringData for development use, but with clear warnings that these must not be committed to git.</p>
+<h1 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">&para;</a></h1>
+<p>This page covers what you actually lose when things go wrong, the correct order to bring things back, and where to find instructions for specific scenarios.</p>
+<hr />
+<h2 id="your-gitops-repository-is-your-primary-recovery-mechanism">Your GitOps repository is your primary recovery mechanism<a class="headerlink" href="#your-gitops-repository-is-your-primary-recovery-mechanism" title="Permanent link">&para;</a></h2>
+<p>The operator is stateless. Your desired Keycloak state is declared through your <code>Keycloak</code>, <code>KeycloakRealm</code>, and <code>KeycloakClient</code> resources, together with any referenced Kubernetes Secrets and Helm deployment values. When the operator is running and those resources exist in the cluster, it will reconcile them to the desired state without any manual intervention.</p>
+<p>If you store those manifests and referenced inputs in a Git repository — which is the intended deployment model — re-applying them is enough to reconstruct the configuration side of Keycloak. You do not need a special operator recovery procedure.</p>
+<p>What you need in addition to those declarative resources is a healthy <strong>Keycloak database</strong>. That is it.</p>
+<hr />
+<h2 id="what-you-lose-without-a-database-restore">What you lose without a database restore<a class="headerlink" href="#what-you-lose-without-a-database-restore" title="Permanent link">&para;</a></h2>
+<p>Whether a database restore is worth your operational investment depends on what you use Keycloak for. This table helps you decide:</p>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Survives without DB restore?</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Realm configuration</td>
+<td>✅ Recovered from CRDs</td>
+<td>Operator re-creates on reconcile</td>
+</tr>
+<tr>
+<td>Client configuration</td>
+<td>✅ Recovered from CRDs</td>
+<td>Operator re-creates on reconcile</td>
+</tr>
+<tr>
+<td>IdP / SSO federation settings</td>
+<td>✅ Recovered from CRDs</td>
+<td>Re-created from spec</td>
+</tr>
+<tr>
+<td>Active OAuth sessions</td>
+<td>⚠️ Lost — usually acceptable</td>
+<td>Users simply re-authorize</td>
+</tr>
+<tr>
+<td>Keycloak audit / admin event log</td>
+<td>⚠️ Lost — usually acceptable</td>
+<td>Purely historical</td>
+</tr>
+<tr>
+<td>Operator-managed client secrets</td>
+<td>⚠️ Changed — see below</td>
+<td>Operator generates a new secret; consumers need to pick up the new value</td>
+</tr>
+<tr>
+<td>Manually bound client secrets</td>
+<td>✅ Preserved</td>
+<td>Operator reads from your referenced Secret, syncs that value to Keycloak</td>
+</tr>
+<tr>
+<td>Registered user accounts</td>
+<td>❌ Lost</td>
+<td>Passwords, attributes, MFA enrollments</td>
+</tr>
+<tr>
+<td>User role assignments</td>
+<td>❌ Lost</td>
+<td>Must be re-assigned or re-imported</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The guiding principle:</strong> the more Keycloak is a pass-through to an upstream IdP (Azure AD, Google, GitHub), the less your database matters. If users log in with their corporate SSO and Keycloak holds no local credentials, losing the database and re-applying your CRDs is a full recovery.</p>
+<p>The more Keycloak is the identity source — local accounts, password-based login, self-registration — the more critical a timely database backup becomes.</p>
+<hr />
+<h2 id="client-secrets-and-automated-rotation">Client secrets and automated rotation<a class="headerlink" href="#client-secrets-and-automated-rotation" title="Permanent link">&para;</a></h2>
+<p>The authoritative source for client secrets is the <strong>Keycloak database</strong>. How recovery affects your consumers depends on whether you restored that database and how the client was configured.</p>
+<p><strong>With a database restore</strong>: Keycloak has the same secret values as before. The operator reads them back from Keycloak and writes them into the credentials Secrets in your namespaces. Values are unchanged. No consumers are affected.</p>
+<p><strong>Without a database restore</strong>: Keycloak creates each client fresh with a new randomly generated secret. The new value is written into the credentials Secrets in your namespaces. Anything that was consuming the old value now has a mismatch until updated.</p>
+<p><strong>With a manually bound secret</strong> (<code>spec.clientSecret</code>): the operator always reads the secret value from your referenced Kubernetes Secret and pushes it to Keycloak, regardless of what Keycloak currently has. If Keycloak was re-initialized, the operator will sync your value back into it. The credentials Secret in your namespace reflects your value. No consumers are affected.</p>
+<h3 id="in-cluster-applications-without-a-database-restore">In-cluster applications (without a database restore)<a class="headerlink" href="#in-cluster-applications-without-a-database-restore" title="Permanent link">&para;</a></h3>
+<p>Applications that consume the credentials Secret through environment variables will keep the old value until their pods are restarted. Applications that mount the Secret as a volume usually see the updated files automatically after a short delay, but the application may still need a restart or reload to begin using the new value.</p>
+<p>Kubernetes does not automatically restart pods when a Secret changes, so tools such as Stakater Reloader or a Kyverno restart policy are a practical way to automate updates for workloads that need a restart or reload. See the <a href="../secret-management/">Secret Management guide</a> for configuration examples.</p>
+<h3 id="out-of-cluster-consumers-without-a-database-restore">Out-of-cluster consumers (without a database restore)<a class="headerlink" href="#out-of-cluster-consumers-without-a-database-restore" title="Permanent link">&para;</a></h3>
+<p>If you copied a client secret value somewhere outside the cluster — a CI/CD secret variable, a <code>.env</code> file, a cloud secrets manager — that copy is now wrong. There is no automated path to fix it. You need to export the new value and update every external location by hand:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;client-name&gt;-credentials<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.client-secret}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d
+</span></code></pre></div>
+<p>If you need client secrets available outside the cluster, use a tool like <a href="https://external-secrets.io/">External Secrets Operator</a> to continuously sync the credentials Secret to your external store. When the value changes, the sync propagates it automatically.</p>
+<p>Alternatively, use <code>spec.clientSecret</code> to bind the client to a Kubernetes Secret you control. The operator will always push your value to Keycloak, so recovery never generates a new value unexpectedly.</p>
+<hr />
+<h2 id="recovery-order">Recovery order<a class="headerlink" href="#recovery-order" title="Permanent link">&para;</a></h2>
+<p>When recovering from a failure that involved data loss:</p>
+<ol>
+<li>
+<p><strong>Restore the Keycloak database first.</strong> Keycloak must be able to connect to a working database before it starts. Starting Keycloak against an empty database will initialize a blank instance.</p>
+</li>
+<li>
+<p><strong>Bring up Keycloak</strong> (or let the operator deploy it, if you use a managed Keycloak CR).</p>
+</li>
+<li>
+<p><strong>Ensure the operator is running</strong> and your CRDs are present in the cluster. The operator will reconcile immediately. No manual trigger is needed.</p>
+</li>
+</ol>
+<p>If the operator comes up before the database is ready, Keycloak will report unhealthy and the operator will set the status to <code>Degraded</code>. This self-corrects once the database is available — no action required.</p>
+<hr />
+<h2 id="common-scenarios">Common scenarios<a class="headerlink" href="#common-scenarios" title="Permanent link">&para;</a></h2>
+<p>For situations that land you on this page, here is where to find the relevant procedure:</p>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Where to look</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keycloak database lost or corrupted</td>
+<td>Restore from your database provider's backup (CNPG, managed PostgreSQL, cloud provider snapshot). Then follow the recovery order above. For configuring automated pre-upgrade backups with CNPG, see <a href="../backup-restore/">Backup &amp; Restore</a>.</td>
+</tr>
+<tr>
+<td>Operator pod or namespace deleted</td>
+<td>Re-deploy via Helm. If only the operator pod or deployment was deleted, there is no data loss and the operator will reconcile on startup. If the namespace was deleted, all namespaced resources in it (including Keycloak CRs and Secrets) were deleted too — after recreating the namespace, re-apply your GitOps manifests and restore Secrets as needed.</td>
+</tr>
+<tr>
+<td>Entire cluster lost</td>
+<td>Restore your database, recreate the cluster, apply your GitOps manifests. The rest follows from the order above.</td>
+</tr>
+<tr>
+<td>Migrating Keycloak to a different instance or cluster</td>
+<td>See the <a href="../migration/">Migration &amp; Upgrade guide</a> and <a href="../escape-hatch/">Escape Hatch</a>.</td>
+</tr>
+<tr>
+<td>Drift detector marking resources as orphaned</td>
+<td>See <a href="../troubleshooting/">Troubleshooting</a>.</td>
+</tr>
+<tr>
+<td>Client secret mismatch after recovery</td>
+<td>See <a href="../secret-management/">Secret Management</a>.</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -4820,7 +4916,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../085-taskfile-for-development-automation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-085: Taskfile for development automation">
+          <a href="../backup-restore/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Backup &amp; Restore">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4830,20 +4926,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-085: Taskfile for development automation
+                Backup & Restore
               </div>
             </div>
           </a>
         
         
           
-          <a href="../087-reconciliation-pause/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-087: Operator-level reconciliation pause for safe maintenance windows">
+          <a href="../troubleshooting/" class="md-footer__link md-footer__link--next" aria-label="Next: Troubleshooting">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-087: Operator-level reconciliation pause for safe maintenance windows
+                Troubleshooting
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -4896,10 +4992,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
       
