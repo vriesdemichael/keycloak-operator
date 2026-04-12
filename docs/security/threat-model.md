@@ -223,10 +223,11 @@ This is the highest-criticality boundary. Full admin credentials transit this ch
 **Threat**: Operator authenticates to a fake Keycloak instance and leaks admin credentials.
 
 **Controls**:
-- ✅ Keycloak is addressed by internal cluster DNS (`{name}.{namespace}.svc.cluster.local`) — not resolvable outside the cluster
-- ⚠️ **`verify_ssl` defaults to `False` in the admin client factory** — TLS certificate verification is disabled for all Keycloak connections. For managed (same-namespace) Keycloak, where HTTP is used internally, this is acceptable. For external Keycloak instances configured via `KEYCLOAK_URL`, this is a higher risk. **Tracked in issue #756.**
+- ✅ Operator-managed Keycloak is addressed by internal cluster DNS (`{name}.{namespace}.svc.cluster.local`) over in-cluster HTTP
+- ✅ External Keycloak connections derive TLS verification from `KEYCLOAK_URL`: `https://` defaults to certificate verification, `http://` defaults to no TLS verification
+- ✅ Operators can explicitly override TLS verification via `KEYCLOAK_VERIFY_SSL` / `keycloak.verifySsl`, which makes insecure external HTTPS an explicit configuration choice instead of an implicit default
 
-**Residual risk**: Medium for external Keycloak deployments until #756 is resolved. Low for operator-managed Keycloak (HTTP, same-namespace, not interceptable from outside the cluster).
+**Residual risk**: Low for operator-managed Keycloak (HTTP, same-namespace, not interceptable from outside the cluster). Low for external HTTPS when verification is left at the secure default. Medium only when external HTTPS deployments explicitly disable certificate verification for self-signed or non-standard PKI.
 
 ---
 
@@ -392,7 +393,7 @@ This is the highest-criticality boundary. Full admin credentials transit this ch
 | Operator → Keycloak over cluster-internal DNS | Not accessible from outside the cluster | ✅ In place |
 | Webhook TLS | cert-manager-issued certificate, automatic rotation | ✅ In place |
 | Network policies | Not shipped in Helm chart (ADR-076) | ⚠️ Platform responsibility |
-| TLS verification for Keycloak connections | Disabled by default in factory function | ❌ Gap — issue #756 |
+| TLS verification for Keycloak connections | Derived from URL scheme by default; explicit override available for self-signed or non-standard PKI | ✅ In place |
 
 ### Observability and Audit
 
@@ -471,17 +472,21 @@ spec:
 
 ---
 
-### GAP-3: TLS Verification Disabled for Keycloak Admin API
+### Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification
 
-**Severity**: Medium (external Keycloak) / Low (operator-managed Keycloak)
+**Severity**: Medium when explicitly configured / Low by default
 
-The `get_keycloak_admin_client()` factory defaults to `verify_ssl=False`, disabling certificate verification for the operator→Keycloak admin API connection. Admin credentials transit this channel.
+The operator now derives TLS verification from `KEYCLOAK_URL`: `https://` verifies certificates by default and `http://` does not. This closes the previous unsafe default described in issue #756.
 
-**For operator-managed Keycloak**: HTTP is used on `svc.cluster.local` — TLS verification is not meaningful. Risk is low (traffic does not leave the cluster network).
+**For operator-managed Keycloak**: HTTP is used on `svc.cluster.local` — TLS verification is not meaningful. Risk remains low because traffic stays on the cluster network.
 
-**For external Keycloak (`KEYCLOAK_URL` configured)**: This is a genuine MITM risk if the connection passes through a load balancer or service mesh where interception is possible.
+**For external Keycloak (`KEYCLOAK_URL` configured)**: HTTPS is now verified by default. The remaining risk appears only when an operator explicitly sets `KEYCLOAK_VERIFY_SSL=false` / `keycloak.verifySsl=false` to tolerate self-signed or otherwise non-verifiable certificates.
 
-**Tracked**: Issue #756. Fix will enforce TLS verification for external Keycloak and make the behavior explicit via a setting.
+**Accepted because**: Some environments still rely on self-signed or private PKI chains that are not trusted by the operator runtime, so a documented escape hatch is required.
+
+**Mitigations in place**: Secure default for external HTTPS, scheme-derived behavior for managed in-cluster HTTP, explicit Helm/env configuration for the override, and startup warning when HTTPS verification is disabled.
+
+**What would reduce risk further**: Mount a trusted CA bundle into the operator and keep `KEYCLOAK_VERIFY_SSL=true` for all HTTPS deployments.
 
 ---
 
@@ -629,5 +634,5 @@ Add an additional egress rule for your OTLP collector if tracing is enabled.
 - [OWASP Kubernetes Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html)
 - [NIST SP 800-190](https://csrc.nist.gov/publications/detail/sp/800/190/final) — Application Container Security Guide
 - GitHub issue #94 — original threat model tracking issue
-- GitHub issue #756 — TLS verification fix
+- GitHub issue #756 — resolved TLS verification fix
 - GitHub issue #760 — drift detection alerting and credential rotation
