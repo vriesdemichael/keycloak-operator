@@ -211,6 +211,7 @@ These settings are not interchangeable:
 
 - `keycloak.admin.existingSecret` configures the managed `Keycloak` CR and is only used when `keycloak.managed=true`.
 - `keycloak.adminSecret` and `keycloak.adminPasswordKey` configure how the operator authenticates to Keycloak. They are required for `keycloak.managed=false` and default to the generated proxy secret in managed mode.
+- `keycloak.verifySsl` controls TLS certificate verification for HTTPS operator-to-Keycloak traffic. Leave it unset to auto-detect from `keycloak.url`: managed/internal HTTP defaults to no verification, external HTTPS defaults to verification.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -220,6 +221,7 @@ These settings are not interchangeable:
 | `keycloak.adminUsername` | Username the operator uses when authenticating to Keycloak | `admin` |
 | `keycloak.adminSecret` | Secret name the operator reads for the admin password | `""` |
 | `keycloak.adminPasswordKey` | Key in `keycloak.adminSecret` containing the admin password | `password` |
+| `keycloak.verifySsl` | Override TLS certificate verification for HTTPS Keycloak URLs; `null` auto-detects from the URL scheme | `null` |
 | `keycloak.admin.existingSecret` | Existing secret to seed admin credentials for a managed Keycloak instance | `""` |
 | `keycloak.replicas` | Number of Keycloak replicas | `1` |
 | `keycloak.version` | Keycloak version (image tag) | `"26.4.1"` |

@@ -7927,7 +7927,7 @@ async def get_keycloak_admin_client(
     keycloak_name: str,
     namespace: str,
     rate_limiter: "RateLimiter | None" = None,
-    verify_ssl: bool = False,
+    verify_ssl: bool | None = None,
 ) -> KeycloakAdminClient:
     """
     Get or create a cached KeycloakAdminClient for the globally configured Keycloak instance.
@@ -7936,13 +7936,18 @@ async def get_keycloak_admin_client(
         keycloak_name: Name of the Keycloak instance (ignored in agnostic mode)
         namespace: Namespace where the Keycloak instance exists (ignored in agnostic mode)
         rate_limiter: Optional rate limiter for API throttling
-        verify_ssl: Whether to verify SSL certificates (default: False)
+        verify_ssl: Whether to verify SSL certificates. When unset, derived from
+            operator settings and the KEYCLOAK_URL scheme.
 
     Returns:
         Configured KeycloakAdminClient instance (may be cached)
     """
+    resolved_verify_ssl = (
+        settings.resolved_keycloak_verify_ssl if verify_ssl is None else verify_ssl
+    )
+
     # In agnostic mode, we always use the single globally configured instance
-    cache_key = ("__global__", "", verify_ssl)
+    cache_key = ("__global__", "", resolved_verify_ssl)
 
     current_loop_id = id(asyncio.get_running_loop())
 
@@ -8029,7 +8034,7 @@ async def get_keycloak_admin_client(
             server_url=server_url,
             username=username,
             password=password,
-            verify_ssl=verify_ssl,
+            verify_ssl=resolved_verify_ssl,
             rate_limiter=rate_limiter,
             keycloak_name="global",
             keycloak_namespace=settings.pod_namespace,

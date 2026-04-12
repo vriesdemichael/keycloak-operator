@@ -5,6 +5,8 @@ loaded from environment variables. Uses pydantic for automatic validation,
 type coercion, and documentation.
 """
 
+from urllib.parse import urlparse
+
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -128,6 +130,13 @@ class Settings(BaseSettings):
         default=True,
         validation_alias="KEYCLOAK_MANAGED",
         description="Whether the operator is allowed to manage Keycloak CRs.",
+    )
+    keycloak_verify_ssl: bool | None = Field(
+        default=None,
+        validation_alias="KEYCLOAK_VERIFY_SSL",
+        description="Whether to verify TLS certificates for HTTPS Keycloak admin API connections. "
+        "When unset, the operator derives the behavior from KEYCLOAK_URL: HTTPS defaults to true, "
+        "HTTP defaults to false.",
     )
 
     # Logging configuration
@@ -433,6 +442,17 @@ class Settings(BaseSettings):
         if self.namespaces:
             return [ns.strip() for ns in self.namespaces.split(",") if ns.strip()]
         return None
+
+    @property
+    def resolved_keycloak_verify_ssl(self) -> bool:
+        """Resolve Keycloak SSL verification from explicit config or URL scheme."""
+        if self.keycloak_verify_ssl is not None:
+            return self.keycloak_verify_ssl
+
+        if not self.keycloak_url:
+            return True
+
+        return urlparse(self.keycloak_url).scheme.lower() == "https"
 
 
 # Global settings instance - initialized once at module import
