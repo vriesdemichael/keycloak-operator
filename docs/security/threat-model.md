@@ -72,9 +72,9 @@ graph TB
 
     KC --- AdminSecret
 
-    style TB-1 color:#333
-    style opns fill:#e3f2fd
-    style teamns fill:#e8f5e9
+    style opns fill:#1a4a7a,color:#ffffff,stroke:#4a90d9
+    style teamns fill:#1a5c2a,color:#ffffff,stroke:#4caf50
+    style cluster fill:transparent,stroke:#666666
 ```
 
 ### Trust Boundary Definitions
@@ -169,33 +169,7 @@ graph TB
 
 **Gap**: The blocked-role list prevents the *operator* from assigning dangerous roles through CRDs. Someone with direct access to the Keycloak admin API (separate credentials or UI) can still assign these roles manually. If that happens, the operator will not detect or revert it — it only reconciles what it owns. This is addressed under the drift window discussion in TB-3.
 
-**Gap**: A realm owner can add any Kubernetes namespace to `clientAuthorizationGrants`. There is no platform-level blocklist within the operator itself. The recommended mitigation is an external policy engine (Kyverno or OPA/Gatekeeper):
-
-```yaml
-# Example: Kyverno policy blocking specific namespaces from appearing in grants
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
-metadata:
-  name: restrict-client-authorization-grants
-spec:
-  validationFailureAction: Enforce
-  rules:
-    - name: block-restricted-namespaces
-      match:
-        any:
-          - resources:
-              kinds: ["KeycloakRealm"]
-      validate:
-        message: "Namespace 'restricted-ns' cannot be added to clientAuthorizationGrants"
-        deny:
-          conditions:
-            any:
-              - key: "restricted-ns"
-                operator: AnyIn
-                value: "{{ request.object.spec.clientAuthorizationGrants }}"
-```
-
-When Kyverno blocks a grant update, ArgoCD will report the application as `OutOfSync`/`Degraded`, giving the realm manager a clear signal to resolve the policy violation — no platform team manual intervention needed.
+**Gap**: A realm owner can add any Kubernetes namespace to `clientAuthorizationGrants`. There is no operator-native blocklist. This is a platform incident-response concern — without an external control, a platform team cannot prevent a realm owner's GitOps tool from continuously re-applying a grant list that includes a namespace the platform wants to block. See [GAP-2](#gap-2-no-platform-veto-on-clientauthorizationgrants) for the recommended mitigation.
 
 ---
 
@@ -469,7 +443,31 @@ A realm owner with `update` permissions on a `KeycloakRealm` can add any namespa
 
 **Not fixed in the operator because**: The correct home for cluster-scoped policy enforcement is a policy engine (Kyverno, OPA/Gatekeeper), not an application operator.
 
-**Recommended mitigation**: Deploy a Kyverno `ClusterPolicy` that denies `KeycloakRealm` specs containing restricted namespaces in `clientAuthorizationGrants`. This integrates cleanly with ArgoCD — the policy engine blocks the apply, ArgoCD shows the application as `Degraded`, and the realm manager has a clear signal to resolve.
+**Recommended mitigation**: Deploy a Kyverno `ClusterPolicy` that denies `KeycloakRealm` specs containing restricted namespaces in `clientAuthorizationGrants`. The integration with GitOps tooling is clean: Kyverno blocks the apply at the Kubernetes API boundary, ArgoCD reports the application as `Degraded`, and the realm manager has a clear signal to resolve the policy violation — without any platform team needing to take manual action.
+
+```yaml
+# Example: Kyverno policy blocking specific namespaces from appearing in grants
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-client-authorization-grants
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: block-restricted-namespaces
+      match:
+        any:
+          - resources:
+              kinds: ["KeycloakRealm"]
+      validate:
+        message: "Namespace 'restricted-ns' cannot be added to clientAuthorizationGrants"
+        deny:
+          conditions:
+            any:
+              - key: "restricted-ns"
+                operator: AnyIn
+                value: "{{ request.object.spec.clientAuthorizationGrants }}"
+```
 
 ---
 
