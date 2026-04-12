@@ -531,8 +531,8 @@ The operator pod requires exactly these egress connections:
 
 | Destination | Port | Protocol | Purpose |
 |---|---|---|---|
-| Kubernetes API server | 443 | HTTPS | In-cluster SA token operations |
-| Keycloak service (`{name}.{namespace}.svc.cluster.local`) | 8080 | HTTP | Admin API |
+| Kubernetes API server | 6443 (kubeadm) / 443 (managed) | HTTPS | In-cluster SA token operations |
+| Keycloak service (`{name}.{namespace}.svc.cluster.local`) | 8080 (HTTP) / 8443 (HTTPS) | HTTP/S | Admin API |
 | OTLP collector | Configurable | gRPC/HTTP | Telemetry (optional) |
 | CoreDNS | 53 | UDP/TCP | DNS resolution |
 
@@ -551,15 +551,21 @@ spec:
   policyTypes:
     - Egress
   egress:
-    # Kubernetes API server — use the actual API server CIDR for your cluster
-    # This example uses an ipBlock; replace with the correct CIDR or use a named service
+    # Kubernetes API server.
+    # NetworkPolicy selectors only work for pods; the API server is a node-level process
+    # (or an external endpoint on managed clusters), so a podSelector cannot target it.
+    # Replace the CIDR below with the actual API server IP from:
+    #   kubectl get endpoints kubernetes -n default
     - to:
         - ipBlock:
-            cidr: 0.0.0.0/0  # Tighten to your API server IP/CIDR
+            cidr: 10.96.0.1/32  # Replace with your cluster's API server IP
       ports:
-        - port: 443
+        - port: 6443  # kubeadm default; use 443 for managed clusters (GKE/EKS/AKS)
           protocol: TCP
-    # Keycloak admin API (same namespace, Keycloak pods only)
+    # Keycloak admin API (same namespace, Keycloak pods only).
+    # Port 8080 for HTTP (in-cluster default); use 8443 if Keycloak runs with TLS.
+    # The operator talks only to the admin REST API — Keycloak's metrics port (9000)
+    # is scraped by Prometheus, not the operator, and does not need egress here.
     - to:
         - namespaceSelector:
             matchLabels:
