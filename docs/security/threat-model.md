@@ -290,7 +290,7 @@ This is the highest-criticality boundary. Full admin credentials transit this ch
 - ✅ Operator namespace is dedicated — workload pods do not run alongside it
 - ✅ Pod Security Standards can be enforced at the namespace level
 
-**Gap**: **No automatic rotation workflow exists for the Keycloak admin credential.** Rotating the password requires manually updating the Secret and restarting the operator pod. For long-running deployments, this means the credential age is unbounded unless an external secret manager (Vault, AWS Secrets Manager) manages rotation. **Tracked in issue #761.**
+**Gap**: **No automatic rotation workflow exists for the Keycloak admin credential.** The admin client is cached at startup with the password stored in memory — the Secret is not re-read on subsequent reconciliations. Rotating the password requires updating the Secret **and restarting the operator pod** to force a re-read. For long-running deployments, this means the credential age is unbounded unless an external secret manager (Vault, AWS Secrets Manager) manages rotation. **Tracked in issue #761.**
 
 **Residual risk**: High if the admin credential is compromised. Reduce the window by integrating external secret rotation and by restricting who can read the admin Secret to the operator SA only.
 
@@ -507,7 +507,7 @@ No built-in process exists to rotate the Keycloak admin credentials. Password ag
 
 **Tracked**: Issue #761.
 
-**Recommended mitigation**: Use an external secret management system (Vault, AWS Secrets Manager, External Secrets Operator) that rotates the credential and updates the K8s Secret. The operator picks up the new credential on the next reconciliation cycle without restart.
+**Recommended mitigation**: Use an external secret management system (Vault, AWS Secrets Manager, External Secrets Operator) that rotates the credential and updates the K8s Secret. Note that the operator caches the admin client at startup and stores the password in memory — updating the Secret does not automatically take effect. After rotating the credential, restart the operator pod so it re-creates the admin client and reads the new Secret value.
 
 ---
 
@@ -551,19 +551,26 @@ spec:
   policyTypes:
     - Egress
   egress:
-    # Kubernetes API server
-    - ports:
+    # Kubernetes API server — use the actual API server CIDR for your cluster
+    # This example uses an ipBlock; replace with the correct CIDR or use a named service
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0  # Tighten to your API server IP/CIDR
+      ports:
         - port: 443
           protocol: TCP
-    # Keycloak admin API (same namespace)
+    # Keycloak admin API (same namespace, Keycloak pods only)
     - to:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: keycloak-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: keycloak
       ports:
         - port: 8080
           protocol: TCP
-    # DNS
+    # DNS — permits DNS to any destination on port 53; tighten to CoreDNS pods if required
     - ports:
         - port: 53
           protocol: UDP
