@@ -290,7 +290,7 @@ This is the highest-criticality boundary. Full admin credentials transit this ch
 - ✅ Operator namespace is dedicated — workload pods do not run alongside it
 - ✅ Pod Security Standards can be enforced at the namespace level
 
-**Gap**: **No automatic rotation workflow exists for the Keycloak admin credential.** Rotating the password requires manually updating the Secret and restarting the operator pod. For long-running deployments, this means the credential age is unbounded unless an external secret manager (Vault, AWS Secrets Manager) manages rotation. **Tracked in issue #760 as part of the alerting work.**
+**Gap**: **No automatic rotation workflow exists for the Keycloak admin credential.** Rotating the password requires manually updating the Secret and restarting the operator pod. For long-running deployments, this means the credential age is unbounded unless an external secret manager (Vault, AWS Secrets Manager) manages rotation. **Tracked in issue #761.**
 
 **Residual risk**: High if the admin credential is compromised. Reduce the window by integrating external secret rotation and by restricting who can read the admin Secret to the operator SA only.
 
@@ -372,7 +372,7 @@ This is the highest-criticality boundary. Full admin credentials transit this ch
 | Admin credentials via K8s Secret reference | Never stored in CRD or configmap | ✅ In place |
 | Client secrets written atomically | ADR-080; old credential never leaves a partial state | ✅ In place |
 | Client secrets scoped to client namespace | Not accessible from other namespaces | ✅ In place |
-| Automatic admin credential rotation | No workflow currently exists | ❌ Gap |
+| Automatic admin credential rotation | No workflow currently exists — issue #761 | ❌ Gap |
 
 ### Container and Pod Security
 
@@ -505,7 +505,7 @@ The drift detection service identifies out-of-band Keycloak changes but treats t
 
 No built-in process exists to rotate the Keycloak admin credentials. Password age is unbounded unless an external secret manager manages rotation.
 
-**Tracked**: Issue #760 (companion to drift alerting work — both relate to credential integrity over time).
+**Tracked**: Issue #761.
 
 **Recommended mitigation**: Use an external secret management system (Vault, AWS Secrets Manager, External Secrets Operator) that rotates the credential and updates the K8s Secret. The operator picks up the new credential on the next reconciliation cycle without restart.
 
