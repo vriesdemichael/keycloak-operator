@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.5...operator-image-v0.10.6) (2026-04-12)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** derive keycloak tls verification from url ([58b61d6](https://github.com/vriesdemichael/keycloak-operator/commit/58b61d639b08d832bd60ddd3a454d6e8a1d2bcde))
+* **operator:** address tls review feedback ([2bc0b0c](https://github.com/vriesdemichael/keycloak-operator/commit/2bc0b0cadf01662b38a0a7ef65dceb9916f9c09d))
+
 ## [0.10.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.4...operator-image-v0.10.5) (2026-04-12)
 
 
