@@ -637,3 +637,7 @@ Script-based protocol mappers allow executing JavaScript code on the Keycloak se
 - [ADR 078](../decisions/078-restrict-privileged-roles-and-scripts.yaml) - Restrict privileged roles and script mappers
 - [Architecture](architecture.md) - How authorization fits into overall design
 - [Quick Start](../quickstart/README.md) - Practical authorization examples
+
+## Adversarial Security Assessment
+
+For a STRIDE-based threat model, attack surface analysis, and an honest inventory of security gaps with their mitigations, see the [Threat Model](../security/threat-model.md). That document is aimed at security engineers and auditors performing a pre-deployment risk review.
