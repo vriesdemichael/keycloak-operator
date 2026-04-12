@@ -1390,10 +1390,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-3-tls-verification-disabled-for-keycloak-admin-api" class="md-nav__link">
+  <a href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GAP-3: TLS Verification Disabled for Keycloak Admin API
+        Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification
       
     </span>
   </a>
@@ -5708,10 +5708,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-3-tls-verification-disabled-for-keycloak-admin-api" class="md-nav__link">
+  <a href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GAP-3: TLS Verification Disabled for Keycloak Admin API
+        Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification
       
     </span>
   </a>
@@ -6082,9 +6082,10 @@
 <h4 id="spoofing_2">Spoofing<a class="headerlink" href="#spoofing_2" title="Permanent link">&para;</a></h4>
 <p><strong>Threat</strong>: Operator authenticates to a fake Keycloak instance and leaks admin credentials.</p>
 <p><strong>Controls</strong>:
-- ✅ Keycloak is addressed by internal cluster DNS (<code>{name}.{namespace}.svc.cluster.local</code>) — not resolvable outside the cluster
-- ⚠️ <strong><code>verify_ssl</code> defaults to <code>False</code> in the admin client factory</strong> — TLS certificate verification is disabled for all Keycloak connections. For managed (same-namespace) Keycloak, where HTTP is used internally, this is acceptable. For external Keycloak instances configured via <code>KEYCLOAK_URL</code>, this is a higher risk. <strong>Tracked in issue #756.</strong></p>
-<p><strong>Residual risk</strong>: Medium for external Keycloak deployments until #756 is resolved. Low for operator-managed Keycloak (HTTP, same-namespace, not interceptable from outside the cluster).</p>
+- ✅ Operator-managed Keycloak is addressed by internal cluster DNS (<code>{name}.{namespace}.svc.cluster.local</code>) over in-cluster HTTP
+- ✅ External Keycloak connections derive TLS verification from <code>KEYCLOAK_URL</code>: <code>https://</code> defaults to certificate verification, <code>http://</code> defaults to no TLS verification
+- ✅ Operators can explicitly override TLS verification via <code>KEYCLOAK_VERIFY_SSL</code> / <code>keycloak.verifySsl</code>, which makes insecure external HTTPS an explicit configuration choice instead of an implicit default</p>
+<p><strong>Residual risk</strong>: Low for operator-managed Keycloak (HTTP, same-namespace, not interceptable from outside the cluster). Low for external HTTPS when verification is left at the secure default. Medium only when external HTTPS deployments explicitly disable certificate verification for self-signed or non-standard PKI.</p>
 <hr />
 <h4 id="tampering_1">Tampering<a class="headerlink" href="#tampering_1" title="Permanent link">&para;</a></h4>
 <p><strong>Threat</strong>: Keycloak API response is manipulated to cause the operator to take incorrect actions.</p>
@@ -6453,8 +6454,8 @@
 </tr>
 <tr>
 <td>TLS verification for Keycloak connections</td>
-<td>Disabled by default in factory function</td>
-<td>❌ Gap — issue #756</td>
+<td>Derived from URL scheme by default; explicit override available for self-signed or non-standard PKI</td>
+<td>✅ In place</td>
 </tr>
 </tbody>
 </table>
@@ -6575,12 +6576,14 @@
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">request.object.spec.clientAuthorizationGrants</span><span class="nv"> </span><span class="s">}}&quot;</span>
 </span></code></pre></div>
 <hr />
-<h3 id="gap-3-tls-verification-disabled-for-keycloak-admin-api">GAP-3: TLS Verification Disabled for Keycloak Admin API<a class="headerlink" href="#gap-3-tls-verification-disabled-for-keycloak-admin-api" title="Permanent link">&para;</a></h3>
-<p><strong>Severity</strong>: Medium (external Keycloak) / Low (operator-managed Keycloak)</p>
-<p>The <code>get_keycloak_admin_client()</code> factory defaults to <code>verify_ssl=False</code>, disabling certificate verification for the operator→Keycloak admin API connection. Admin credentials transit this channel.</p>
-<p><strong>For operator-managed Keycloak</strong>: HTTP is used on <code>svc.cluster.local</code> — TLS verification is not meaningful. Risk is low (traffic does not leave the cluster network).</p>
-<p><strong>For external Keycloak (<code>KEYCLOAK_URL</code> configured)</strong>: This is a genuine MITM risk if the connection passes through a load balancer or service mesh where interception is possible.</p>
-<p><strong>Tracked</strong>: Issue #756. Fix will enforce TLS verification for external Keycloak and make the behavior explicit via a setting.</p>
+<h3 id="accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification">Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification<a class="headerlink" href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Medium when explicitly configured / Low by default</p>
+<p>The operator now derives TLS verification from <code>KEYCLOAK_URL</code>: <code>https://</code> verifies certificates by default and <code>http://</code> does not. This closes the previous unsafe default described in issue #756.</p>
+<p><strong>For operator-managed Keycloak</strong>: HTTP is used on <code>svc.cluster.local</code> — TLS verification is not meaningful. Risk remains low because traffic stays on the cluster network.</p>
+<p><strong>For external Keycloak (<code>KEYCLOAK_URL</code> configured)</strong>: HTTPS is now verified by default. The remaining risk appears only when an operator explicitly sets <code>KEYCLOAK_VERIFY_SSL=false</code> / <code>keycloak.verifySsl=false</code> to tolerate self-signed or otherwise non-verifiable certificates.</p>
+<p><strong>Accepted because</strong>: Some environments still rely on self-signed or private PKI chains that are not trusted by the operator runtime, so a documented escape hatch is required.</p>
+<p><strong>Mitigations in place</strong>: Secure default for external HTTPS, scheme-derived behavior for managed in-cluster HTTP, explicit Helm/env configuration for the override, and startup warning when HTTPS verification is disabled.</p>
+<p><strong>What would reduce risk further</strong>: Mount a trusted CA bundle into the operator and keep <code>KEYCLOAK_VERIFY_SSL=true</code> for all HTTPS deployments.</p>
 <hr />
 <h3 id="gap-4-no-security-alerting-on-drift-detection">GAP-4: No Security Alerting on Drift Detection<a class="headerlink" href="#gap-4-no-security-alerting-on-drift-detection" title="Permanent link">&para;</a></h3>
 <p><strong>Severity</strong>: Medium</p>
@@ -6726,7 +6729,7 @@
 <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html">OWASP Kubernetes Security Cheat Sheet</a></li>
 <li><a href="https://csrc.nist.gov/publications/detail/sp/800/190/final">NIST SP 800-190</a> — Application Container Security Guide</li>
 <li>GitHub issue #94 — original threat model tracking issue</li>
-<li>GitHub issue #756 — TLS verification fix</li>
+<li>GitHub issue #756 — resolved TLS verification fix</li>
 <li>GitHub issue #760 — drift detection alerting and credential rotation</li>
 </ul>
 
