@@ -112,6 +112,8 @@ nav:
       - Security Model: concepts/security.md
       - Admission Webhooks: admission-webhooks.md
       - RBAC Implementation: rbac-implementation.md
+  - Security:
+      - Threat Model: security/threat-model.md
   - Guides:
       - Identity Providers: guides/identity-providers.md
       - User Federation: guides/user-federation.md
