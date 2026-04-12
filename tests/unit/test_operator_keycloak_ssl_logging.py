@@ -8,12 +8,18 @@ from keycloak_operator.operator import log_keycloak_connection_security_configur
 def test_logs_warning_for_insecure_https_keycloak_connection(
     mock_settings, mock_warning
 ):
-    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_url = (
+        "https://admin:super-secret@external.keycloak:8443/auth"
+    )
     mock_settings.resolved_keycloak_verify_ssl = False
 
     log_keycloak_connection_security_configuration()
 
-    mock_warning.assert_called_once()
+    mock_warning.assert_called_once_with(
+        "TLS certificate verification for the Keycloak admin API is disabled for HTTPS URL %s. "
+        "Use this only with explicitly trusted self-signed certificates or non-standard PKI.",
+        "https://external.keycloak:8443",
+    )
 
 
 @patch("keycloak_operator.operator.logging.warning")

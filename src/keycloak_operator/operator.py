@@ -98,8 +98,22 @@ def log_keycloak_connection_security_configuration() -> None:
         logging.warning(
             "TLS certificate verification for the Keycloak admin API is disabled for HTTPS URL %s. "
             "Use this only with explicitly trusted self-signed certificates or non-standard PKI.",
-            operator_settings.keycloak_url,
+            _sanitize_url_for_log(operator_settings.keycloak_url),
         )
+
+
+def _sanitize_url_for_log(url: str) -> str:
+    """Remove credentials from URLs before emitting them to logs."""
+    parsed = urlparse(url)
+    if not parsed.scheme:
+        return "<invalid-url>"
+
+    hostname = parsed.hostname or "<unknown-host>"
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+
+    port_suffix = f":{parsed.port}" if parsed.port is not None else ""
+    return f"{parsed.scheme}://{hostname}{port_suffix}"
 
 
 @kopf.on.startup()
