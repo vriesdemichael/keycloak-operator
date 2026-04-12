@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.4...chart-operator-v0.7.5) (2026-04-12)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** derive keycloak tls verification from url ([58b61d6](https://github.com/vriesdemichael/keycloak-operator/commit/58b61d639b08d832bd60ddd3a454d6e8a1d2bcde))
+
 ## [0.7.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.3...chart-operator-v0.7.4) (2026-04-11)
 
 
