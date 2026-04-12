@@ -452,7 +452,12 @@ class Settings(BaseSettings):
         if not self.keycloak_url:
             return True
 
-        return urlparse(self.keycloak_url).scheme.lower() == "https"
+        scheme = urlparse(self.keycloak_url).scheme.lower()
+        if scheme == "http":
+            return False
+        if scheme == "https":
+            return True
+        return True
 
 
 # Global settings instance - initialized once at module import

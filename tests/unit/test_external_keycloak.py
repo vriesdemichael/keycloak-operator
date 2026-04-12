@@ -49,6 +49,16 @@ def test_internal_http_keycloak_settings_disable_ssl_verification_automatically(
     assert settings.resolved_keycloak_verify_ssl is False
 
 
+def test_invalid_keycloak_url_scheme_defaults_to_ssl_verification():
+    settings = Settings(
+        KEYCLOAK_URL="ftp://external.keycloak",
+        KEYCLOAK_ADMIN_SECRET="ext-secret",
+    )
+
+    assert settings.keycloak_verify_ssl is None
+    assert settings.resolved_keycloak_verify_ssl is True
+
+
 # Test validate_keycloak_reference
 @patch("keycloak_operator.utils.kubernetes.settings")
 def test_validate_keycloak_reference_external(mock_settings):
