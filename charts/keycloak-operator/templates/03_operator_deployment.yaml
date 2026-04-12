@@ -185,6 +185,10 @@ spec:
           value: {{ .Values.keycloak.adminUsername | quote }}
         - name: KEYCLOAK_ADMIN_PASSWORD_KEY
           value: {{ .Values.keycloak.adminPasswordKey | quote }}
+        {{- if ne .Values.keycloak.verifySsl nil }}
+        - name: KEYCLOAK_VERIFY_SSL
+          value: {{ .Values.keycloak.verifySsl | quote }}
+        {{- end }}
         # OpenTelemetry tracing configuration
         - name: OTEL_TRACING_ENABLED
           value: {{ .Values.operator.tracing.enabled | quote }}

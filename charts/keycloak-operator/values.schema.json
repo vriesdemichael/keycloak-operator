@@ -748,6 +748,14 @@
           "description": "Key in keycloak.adminSecret containing the password used by the operator to connect to Keycloak",
           "default": "password"
         },
+        "verifySsl": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Whether the operator verifies TLS certificates when connecting to Keycloak over HTTPS. Set to false for self-signed or otherwise non-verifiable certificates. Leave null to derive from the URL scheme: https defaults to true, http defaults to false.",
+          "default": null
+        },
         "replicas": {
           "type": "integer",
           "description": "Number of Keycloak replicas",

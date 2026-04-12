@@ -22,6 +22,7 @@ Environment Variables:
 import logging
 import random
 import sys
+from urllib.parse import urlparse
 
 import kopf
 from kubernetes import config
@@ -85,6 +86,22 @@ def get_watched_namespaces() -> list[str] | None:
     return operator_settings.watched_namespaces
 
 
+def log_keycloak_connection_security_configuration() -> None:
+    """Log warnings for insecure HTTPS operator-to-Keycloak connections."""
+    if not operator_settings.keycloak_url:
+        return
+
+    if urlparse(operator_settings.keycloak_url).scheme.lower() != "https":
+        return
+
+    if not operator_settings.resolved_keycloak_verify_ssl:
+        logging.warning(
+            "TLS certificate verification for the Keycloak admin API is disabled for HTTPS URL %s. "
+            "Use this only with explicitly trusted self-signed certificates or non-standard PKI.",
+            operator_settings.keycloak_url,
+        )
+
+
 @kopf.on.startup()
 async def startup_handler(
     settings: kopf.OperatorSettings, memo: kopf.Memo, **_
@@ -144,6 +161,8 @@ async def startup_handler(
     dry_run = operator_settings.dry_run
     if dry_run:
         logging.info("Running in DRY-RUN mode - no changes will be applied")
+
+    log_keycloak_connection_security_configuration()
 
     # Load Kubernetes configuration if not already loaded
     try:

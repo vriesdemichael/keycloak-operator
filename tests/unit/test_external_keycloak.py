@@ -24,6 +24,29 @@ def test_external_keycloak_settings():
     assert settings.keycloak_url == "https://external.keycloak"
     assert settings.keycloak_admin_secret == "ext-secret"
     assert settings.keycloak_admin_username == "admin"
+    assert settings.keycloak_verify_ssl is None
+    assert settings.resolved_keycloak_verify_ssl is True
+
+
+def test_external_keycloak_settings_verify_ssl_override_false():
+    settings = Settings(
+        KEYCLOAK_URL="https://external.keycloak",
+        KEYCLOAK_ADMIN_SECRET="ext-secret",
+        KEYCLOAK_VERIFY_SSL=False,
+    )
+
+    assert settings.keycloak_verify_ssl is False
+    assert settings.resolved_keycloak_verify_ssl is False
+
+
+def test_internal_http_keycloak_settings_disable_ssl_verification_automatically():
+    settings = Settings(
+        KEYCLOAK_URL="http://keycloak.operator-ns.svc.cluster.local:8080",
+        KEYCLOAK_ADMIN_SECRET="ext-secret",
+    )
+
+    assert settings.keycloak_verify_ssl is None
+    assert settings.resolved_keycloak_verify_ssl is False
 
 
 # Test validate_keycloak_reference
@@ -61,6 +84,7 @@ async def test_get_keycloak_admin_client_external(
     mock_settings.pod_namespace = "operator-ns"
     mock_settings.keycloak_admin_username = "admin"
     mock_settings.keycloak_admin_password_key = "password"
+    mock_settings.resolved_keycloak_verify_ssl = True
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -89,6 +113,56 @@ async def test_get_keycloak_admin_client_external(
         )
 
         # Verify client creation
+        mock_cls.assert_called_with(
+            server_url="https://external.keycloak",
+            username="admin",
+            password="secret-pass",
+            verify_ssl=True,
+            rate_limiter=None,
+            keycloak_name="global",
+            keycloak_namespace="operator-ns",
+        )
+
+
+@pytest.mark.asyncio
+@patch("keycloak_operator.utils.keycloak_admin.settings")
+@patch("keycloak_operator.utils.kubernetes.get_kubernetes_client")
+@patch("keycloak_operator.utils.keycloak_admin.KeycloakAdminClient")
+@patch("keycloak_operator.utils.keycloak_admin._cache_lock", new_callable=MagicMock)
+@patch("keycloak_operator.utils.keycloak_admin._admin_client_cache", {})
+@patch("keycloak_operator.utils.keycloak_admin._pending_creations", {})
+async def test_get_keycloak_admin_client_external_honors_insecure_override(
+    mock_cache_lock, mock_cls, mock_get_k8s, mock_settings
+):
+    mock_lock_instance = MagicMock()
+    mock_lock_instance.__aenter__.return_value = None
+    mock_lock_instance.__aexit__.return_value = None
+    mock_cache_lock.return_value = mock_lock_instance
+
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
+    mock_settings.pod_namespace = "operator-ns"
+    mock_settings.keycloak_admin_username = "admin"
+    mock_settings.keycloak_admin_password_key = "password"
+    mock_settings.resolved_keycloak_verify_ssl = False
+
+    mock_core = MagicMock()
+    mock_k8s_client = MagicMock()
+    mock_get_k8s.return_value = mock_k8s_client
+
+    mock_instance = MagicMock()
+    future = asyncio.Future()
+    future.set_result(None)
+    mock_instance.authenticate.return_value = future
+    mock_cls.return_value = mock_instance
+
+    with patch("kubernetes.client.CoreV1Api", return_value=mock_core):
+        mock_secret = MagicMock()
+        mock_secret.data = {"password": base64.b64encode(b"secret-pass").decode()}
+        mock_core.read_namespaced_secret.return_value = mock_secret
+
+        _ = await get_keycloak_admin_client("my-kc", "default")
+
         mock_cls.assert_called_with(
             server_url="https://external.keycloak",
             username="admin",

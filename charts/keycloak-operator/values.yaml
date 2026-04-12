@@ -450,6 +450,10 @@ keycloak:
   adminSecret: ""
   # Key in the adminSecret containing the password used by the operator.
   adminPasswordKey: "password"
+  # Whether the operator verifies TLS certificates when connecting to Keycloak over HTTPS.
+  # Set to false for self-signed or otherwise non-verifiable certificates.
+  # Leave null to auto-detect from the URL scheme: https => true, http => false.
+  verifySsl: null
   # Managed Keycloak admin credential source.
   # When set, the operator copies username/password from this secret into the
   # generated <name>-admin-credentials proxy secret instead of generating new credentials.
