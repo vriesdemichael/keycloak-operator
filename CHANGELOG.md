@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.4...operator-image-v0.10.5) (2026-04-12)
+
+
+### Documentation
+
+* add threat model document for security review ([c8dc53f](https://github.com/vriesdemichael/keycloak-operator/commit/c8dc53f683e655a53550c4d2f9b96ff66747a2e9)), closes [#94](https://github.com/vriesdemichael/keycloak-operator/issues/94)
+
 ## [0.10.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.3...operator-image-v0.10.4) (2026-04-11)
 
 
