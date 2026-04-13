@@ -961,7 +961,7 @@ docs = [
     { name = "mkdocs-literate-nav", specifier = ">=0.6.1" },
     { name = "mkdocs-material", specifier = ">=9.5.0" },
     { name = "mkdocs-section-index", specifier = ">=0.3.8" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.25.0" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.3" },
 ]
 model-generation = [
     { name = "deepdiff", specifier = ">=8.0.1" },
