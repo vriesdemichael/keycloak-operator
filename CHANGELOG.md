@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.6...operator-image-v0.10.7) (2026-04-14)
+
+
+### Bug Fixes
+
+* **operator-image:** bump pydantic from 2.12.5 to 2.13.0 ([5b371d6](https://github.com/vriesdemichael/keycloak-operator/commit/5b371d6c64ee5e8869b23824264f7700e47d86be))
+* **operator:** address secret monitor review feedback ([62a6379](https://github.com/vriesdemichael/keycloak-operator/commit/62a6379de84830aa0574356863af4be91f729141))
+* **operator:** handle forbidden client secret reads without crashing ([79fc159](https://github.com/vriesdemichael/keycloak-operator/commit/79fc159f6e9eb943774e70c5dffa3916cf62e73a))
+* **operator:** refresh alpine packages for security scans ([4164aee](https://github.com/vriesdemichael/keycloak-operator/commit/4164aee69f8519bd67551486e10651aa34615584))
+* **operator:** scope safety scan to runtime dependencies ([b2509ff](https://github.com/vriesdemichael/keycloak-operator/commit/b2509ff3bc05058c102fe83d7fcc4f9d13fa188f))
+
 ## [0.10.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.5...operator-image-v0.10.6) (2026-04-12)
 
 
