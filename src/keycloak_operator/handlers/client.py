@@ -60,6 +60,9 @@ from keycloak_operator.utils.pause import get_pause_message, is_clients_paused
 logger = logging.getLogger(__name__)
 
 
+CLIENT_SECRET_MONITOR_INTERVAL_SECONDS = 30.0
+
+
 def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
     """
     Check if the resource is targeted at this operator instance (ADR-062).
@@ -110,6 +113,59 @@ class StatusWrapper:
         """Update multiple fields. Assumes data keys are already in camelCase."""
         for k, v in data.items():
             self._patch_status[k] = v
+
+
+async def _trigger_client_reconciliation(
+    *,
+    name: str,
+    namespace: str,
+    reason: str,
+    logger: logging.Logger,
+) -> bool:
+    """Patch the client resource to trigger reconciliation.
+
+    Returns True when the patch request was accepted, False when the parent CR
+    no longer exists or the request could not be completed.
+    """
+    api = client.CustomObjectsApi(get_kubernetes_client())
+    patch_body = {
+        "metadata": {
+            "annotations": {
+                ANNOTATION_RECONCILE_FORCE: f"{reason}-{datetime.now(UTC).timestamp()}"
+            }
+        }
+    }
+
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: api.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=name,
+                body=patch_body,
+            ),
+        )
+        return True
+    except ApiException as e:
+        if e.status == 404:
+            logger.warning(
+                f"Parent KeycloakClient {name} not found, skipping reconcile trigger"
+            )
+            return False
+        logger.error(f"Failed to trigger reconciliation for KeycloakClient {name}: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error triggering reconciliation for {name}: {e}")
+        return False
+
+
+def _should_monitor_client_secret(spec: dict[str, Any], **_: Any) -> bool:
+    """Run the secret monitor only for managed confidential clients."""
+    return not spec.get("publicClient", False) and spec.get("manageSecret", True)
 
 
 async def _perform_client_cleanup(
@@ -741,34 +797,34 @@ async def _run_client_health_check(
                             "Client credentials secret missing, triggering reconciliation to recreate it"
                         )
 
-                        # Trigger reconciliation by updating an annotation
-                        custom_api = client.CustomObjectsApi(k8s_client)
-                        patch_body = {
-                            "metadata": {
-                                "annotations": {
-                                    ANNOTATION_RECONCILE_FORCE: f"secret-missing-{datetime.now(UTC).timestamp()}"
-                                }
-                            }
-                        }
-
-                        # Use run_in_executor to avoid blocking
-                        loop = asyncio.get_running_loop()
-                        await loop.run_in_executor(
-                            None,
-                            lambda: custom_api.patch_namespaced_custom_object(
-                                group="vriesdemichael.github.io",
-                                version="v1",
-                                namespace=namespace,
-                                plural="keycloakclients",
-                                name=name,
-                                body=patch_body,
-                            ),
+                        triggered = await _trigger_client_reconciliation(
+                            name=name,
+                            namespace=namespace,
+                            reason="secret-missing",
+                            logger=logger,
                         )
 
+                        if triggered:
+                            patch.status.update(
+                                {
+                                    "phase": "Degraded",
+                                    "message": "Client credentials secret missing, recreating...",
+                                    "lastHealthCheck": datetime.now(UTC).isoformat(),
+                                }
+                            )
+                        return
+                    if e.status == 403:
+                        logger.warning(
+                            "Operator lacks permission to read client credentials secret "
+                            f"{secret_name} in namespace {namespace}"
+                        )
                         patch.status.update(
                             {
                                 "phase": "Degraded",
-                                "message": "Client credentials secret missing, recreating...",
+                                "message": (
+                                    "Operator lacks permission to read client credentials secret. "
+                                    "Grant delegated RBAC for this namespace."
+                                ),
                                 "lastHealthCheck": datetime.now(UTC).isoformat(),
                             }
                         )
@@ -802,76 +858,113 @@ async def _run_client_health_check(
         )
 
 
-@kopf.on.event(
-    "secrets", labels={"vriesdemichael.github.io/keycloak-client": kopf.PRESENT}
+@kopf.daemon(
+    "keycloakclients",
+    when=_should_monitor_client_secret,
+    cancellation_timeout=10.0,
 )
-async def monitor_client_secrets(
-    event: dict[str, Any],
+async def monitor_client_credentials_secret(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+    status: dict[str, Any],
+    meta: dict[str, Any],
+    stopped: kopf.DaemonStopped,
+    patch: kopf.Patch,
     logger: logging.Logger,
     **kwargs: Any,
 ) -> None:
-    """
-    Monitor client secrets and trigger reconciliation if deleted.
+    """Monitor a managed client credentials secret within the client's namespace.
 
-    If a managed secret is deleted, we must trigger reconciliation on the
-    parent KeycloakClient to recreate it.
+    This replaces the old cluster-wide secret watch with a per-client daemon so
+    the operator never needs to open a cluster-wide secret watch stream.
     """
-    # Only react to deletion events
-    if event["type"] != "DELETED":
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, get_kubernetes_client()
+    ):
         return
 
-    meta = event["object"]["metadata"]
-    name = meta["name"]
-    namespace = meta["namespace"]
-    labels = meta.get("labels", {})
-    client_name = labels.get("vriesdemichael.github.io/keycloak-client")
+    secret_name = f"{name}-credentials"
+    k8s_client = get_kubernetes_client()
+    core_api = client.CoreV1Api(k8s_client)
 
-    if not client_name:
-        return
+    while not stopped:
+        if meta.get("deletionTimestamp"):
+            return
 
-    logger.info(
-        f"Managed secret {name} deleted, triggering reconciliation for KeycloakClient {client_name}"
-    )
+        if is_clients_paused():
+            logger.debug(
+                f"Secret monitor paused for client {name}: reconciliation paused"
+            )
+            if await stopped.wait(timeout=60):
+                break
+            continue
 
-    # Touch the KeycloakClient to trigger reconciliation
-    try:
-        api = client.CustomObjectsApi(get_kubernetes_client())
-
-        # We need to use a distinct annotation value to ensure a change event
-        patch_body = {
-            "metadata": {
-                "annotations": {
-                    ANNOTATION_RECONCILE_FORCE: f"secret-deleted-{datetime.now(UTC).timestamp()}"
-                }
-            }
-        }
-
-        # Use run_in_executor to avoid blocking the event loop with synchronous K8s calls
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(
-            None,
-            lambda: api.patch_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                body=patch_body,
-            ),
-        )
-        logger.info(f"Triggered reconciliation for KeycloakClient {client_name}")
-
-    except ApiException as e:
-        if e.status == 404:
+        try:
+            secret = await asyncio.to_thread(
+                core_api.read_namespaced_secret,
+                secret_name,
+                namespace,
+            )
+            if (
+                not secret.data
+                or "client-id" not in secret.data
+                or "client-secret" not in secret.data
+            ):
+                patch.status.update(
+                    {
+                        "phase": "Degraded",
+                        "message": "Client credentials secret incomplete, recreating...",
+                    }
+                )
+                await _trigger_client_reconciliation(
+                    name=name,
+                    namespace=namespace,
+                    reason="secret-invalid",
+                    logger=logger,
+                )
+        except ApiException as e:
+            if e.status == 404:
+                logger.info(
+                    f"Managed secret {secret_name} missing for KeycloakClient {name}, triggering reconciliation"
+                )
+                patch.status.update(
+                    {
+                        "phase": "Degraded",
+                        "message": "Client credentials secret missing, recreating...",
+                    }
+                )
+                await _trigger_client_reconciliation(
+                    name=name,
+                    namespace=namespace,
+                    reason="secret-missing",
+                    logger=logger,
+                )
+            elif e.status == 403:
+                logger.warning(
+                    "Operator lacks permission to read managed client credentials secret "
+                    f"{secret_name} in namespace {namespace}"
+                )
+                patch.status.update(
+                    {
+                        "phase": "Degraded",
+                        "message": (
+                            "Operator lacks permission to read client credentials secret. "
+                            "Grant delegated RBAC for this namespace."
+                        ),
+                    }
+                )
+            else:
+                logger.warning(
+                    f"Failed to monitor client credentials secret {secret_name}: {e}"
+                )
+        except Exception as e:
             logger.warning(
-                f"Parent KeycloakClient {client_name} not found, ignoring secret deletion"
+                f"Unexpected error while monitoring client credentials secret {secret_name}: {e}"
             )
-        else:
-            logger.error(
-                f"Failed to trigger reconciliation for KeycloakClient {client_name}: {e}"
-            )
-    except Exception as e:
-        logger.error(f"Unexpected error triggering reconciliation: {e}")
+
+        if await stopped.wait(timeout=CLIENT_SECRET_MONITOR_INTERVAL_SECONDS):
+            break
 
 
 # Constants for rotation daemon
@@ -1080,6 +1173,19 @@ async def secret_rotation_daemon(
                     )
                     # Wait a bit and retry - secret may not be created yet
                     if await stopped.wait(timeout=30):
+                        break
+                    continue
+                if e.status == 403:
+                    logger.warning(
+                        "Operator lacks permission to read client credentials secret "
+                        f"{secret_name} in namespace {namespace}; rotation paused"
+                    )
+                    patch.status["phase"] = "Degraded"
+                    patch.status["message"] = (
+                        "Operator lacks permission to read client credentials secret. "
+                        "Grant delegated RBAC for this namespace."
+                    )
+                    if await stopped.wait(timeout=60):
                         break
                     continue
                 raise
