@@ -9,11 +9,34 @@ the same cluster without interfering with each other.
 import asyncio
 import logging
 import os
+from dataclasses import dataclass
 from typing import Any
+
+from kubernetes.client.rest import ApiException
 
 from keycloak_operator.settings import settings
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ClientManagementDecision:
+    """Outcome of resolving whether a client belongs to this operator."""
+
+    status: str
+    realm_name: str | None = None
+    realm_namespace: str | None = None
+    message: str | None = None
+
+    @property
+    def is_managed(self) -> bool:
+        """Return True when the client should be handled by this operator."""
+        return self.status == "managed"
+
+    @property
+    def should_retry(self) -> bool:
+        """Return True when ownership cannot be decided yet and should be retried."""
+        return self.status == "retry"
 
 
 def get_our_operator_namespace() -> str:
@@ -60,13 +83,13 @@ def is_managed_by_this_operator(spec: dict[str, Any], resource_namespace: str) -
     return resource_namespace in watch_list
 
 
-async def is_client_managed_by_this_operator(
+async def get_client_management_decision(
     spec: dict[str, Any],
     resource_namespace: str,
     k8s_client: Any,
-) -> bool:
+) -> ClientManagementDecision:
     """
-    Check if a KeycloakClient resource is managed by this operator instance.
+    Determine whether a KeycloakClient resource is managed by this operator.
 
     A client is managed by the operator that manages its parent realm.
 
@@ -76,7 +99,7 @@ async def is_client_managed_by_this_operator(
         k8s_client: Kubernetes API client
 
     Returns:
-        True if this operator instance should manage the client
+        Decision describing whether the client is managed or should be retried
     """
     from kubernetes import client as k8s_client_mod
 
@@ -86,7 +109,11 @@ async def is_client_managed_by_this_operator(
 
     if not realm_name:
         logger.warning(f"Client in {resource_namespace} is missing realmRef.name")
-        return False
+        return ClientManagementDecision(
+            status="not-managed",
+            realm_namespace=realm_namespace,
+            message="Client is missing realmRef.name",
+        )
 
     try:
         custom_objects_api = k8s_client_mod.CustomObjectsApi(k8s_client)
@@ -98,12 +125,60 @@ async def is_client_managed_by_this_operator(
             plural="keycloakrealms",
             name=realm_name,
         )
-        return is_managed_by_this_operator(realm.get("spec", {}), realm_namespace)
+        status = "managed"
+        if not is_managed_by_this_operator(realm.get("spec", {}), realm_namespace):
+            status = "not-managed"
+
+        return ClientManagementDecision(
+            status=status,
+            realm_name=realm_name,
+            realm_namespace=realm_namespace,
+        )
+    except ApiException as e:
+        if e.status == 404:
+            logger.debug(
+                "Parent realm '%s' in namespace '%s' not found yet for client in %s",
+                realm_name,
+                realm_namespace,
+                resource_namespace,
+            )
+            return ClientManagementDecision(
+                status="retry",
+                realm_name=realm_name,
+                realm_namespace=realm_namespace,
+                message="Parent realm not found yet",
+            )
+
+        logger.warning(
+            f"Could not determine ownership for client in {resource_namespace}: "
+            f"parent realm '{realm_name}' in '{realm_namespace}' lookup failed: {e}"
+        )
+        return ClientManagementDecision(
+            status="retry",
+            realm_name=realm_name,
+            realm_namespace=realm_namespace,
+            message=str(e),
+        )
     except Exception as e:
         logger.warning(
             f"Could not determine ownership for client in {resource_namespace}: "
             f"parent realm '{realm_name}' in '{realm_namespace}' lookup failed: {e}"
         )
-        # If the realm is missing, we can't claim ownership.
-        # Returning False ensures we don't touch the status of an orphan we don't own.
-        return False
+        return ClientManagementDecision(
+            status="retry",
+            realm_name=realm_name,
+            realm_namespace=realm_namespace,
+            message=str(e),
+        )
+
+
+async def is_client_managed_by_this_operator(
+    spec: dict[str, Any],
+    resource_namespace: str,
+    k8s_client: Any,
+) -> bool:
+    """Check if a KeycloakClient resource is managed by this operator instance."""
+    decision = await get_client_management_decision(
+        spec, resource_namespace, k8s_client
+    )
+    return decision.is_managed

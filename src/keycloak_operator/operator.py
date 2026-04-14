@@ -19,6 +19,7 @@ Environment Variables:
     KEYCLOAK_OPERATOR_DRY_RUN: Set to 'true' for dry-run mode
 """
 
+import asyncio
 import logging
 import random
 import sys
@@ -26,6 +27,7 @@ from urllib.parse import urlparse
 
 import kopf
 from kubernetes import config
+from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
     OPERATOR_FINALIZER,
@@ -114,6 +116,35 @@ def _sanitize_url_for_log(url: str) -> str:
 
     port_suffix = f":{parsed.port}" if parsed.port is not None else ""
     return f"{parsed.scheme}://{hostname}{port_suffix}"
+
+
+async def _is_managed_keycloak_ready_for_drift_detection() -> tuple[bool, str]:
+    """Return whether drift detection may talk to the managed Keycloak instance."""
+    if not operator_settings.keycloak_managed:
+        return True, "external"
+
+    from kubernetes import client as k8s_client
+
+    from keycloak_operator.utils.kubernetes import get_kubernetes_client
+
+    custom_objects_api = k8s_client.CustomObjectsApi(get_kubernetes_client())
+
+    try:
+        keycloak = await asyncio.to_thread(
+            custom_objects_api.get_namespaced_custom_object,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=operator_settings.pod_namespace,
+            plural="keycloaks",
+            name="keycloak",
+        )
+    except ApiException as e:
+        if e.status == 404:
+            return False, "Missing"
+        raise
+
+    phase = str(keycloak.get("status", {}).get("phase", "Unknown"))
+    return phase in {"Ready", "Degraded"}, phase
 
 
 @kopf.on.startup()
@@ -321,6 +352,18 @@ async def drift_detection_timer(**kwargs) -> None:
         return  # Silently skip — no reconciliation means no point detecting drift
 
     logger = logging.getLogger(__name__)
+
+    (
+        keycloak_ready,
+        keycloak_phase,
+    ) = await _is_managed_keycloak_ready_for_drift_detection()
+    if not keycloak_ready:
+        logger.info(
+            "Skipping drift detection: managed Keycloak is not operational yet (phase=%s)",
+            keycloak_phase,
+        )
+        return
+
     logger.info("Starting periodic drift detection scan")
 
     try:

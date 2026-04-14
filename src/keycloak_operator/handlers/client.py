@@ -48,6 +48,7 @@ from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.isolation import (
+    get_client_management_decision,
     is_client_managed_by_this_operator,
 )
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -61,6 +62,33 @@ logger = logging.getLogger(__name__)
 
 
 CLIENT_SECRET_MONITOR_INTERVAL_SECONDS = TIMER_INTERVAL_CLIENT
+
+
+async def _should_manage_client_or_retry(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+) -> bool:
+    """Return True when the client belongs to this operator, else retry if parent realm is missing."""
+    decision = await get_client_management_decision(
+        spec, namespace, get_kubernetes_client()
+    )
+    if decision.should_retry:
+        realm_name = decision.realm_name or spec.get("realmRef", {}).get(
+            "name", "<unknown>"
+        )
+        realm_namespace = decision.realm_namespace or spec.get("realmRef", {}).get(
+            "namespace", namespace
+        )
+        raise kopf.TemporaryError(
+            (
+                f"Waiting for parent realm {realm_name} in namespace "
+                f"{realm_namespace} before reconciling KeycloakClient {name}"
+            ),
+            delay=10,
+        )
+
+    return decision.is_managed
 
 
 def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
@@ -293,9 +321,7 @@ async def ensure_keycloak_client(
     log_handler_entry("create/resume", "keycloakclient", name, namespace)
 
     # Check ownership (ADR-062)
-    if not await is_client_managed_by_this_operator(
-        spec, namespace, get_kubernetes_client()
-    ):
+    if not await _should_manage_client_or_retry(spec, name, namespace):
         return None
 
     # Check if resource is being deleted - if so, skip reconciliation
@@ -383,9 +409,7 @@ async def update_keycloak_client(
     log_handler_entry("update", "keycloakclient", name, namespace)
 
     # Check ownership (ADR-062)
-    if not await is_client_managed_by_this_operator(
-        new.get("spec", {}), namespace, get_kubernetes_client()
-    ):
+    if not await _should_manage_client_or_retry(new.get("spec", {}), name, namespace):
         return None
 
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
