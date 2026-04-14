@@ -19,6 +19,16 @@ from keycloak_operator.settings import settings
 logger = logging.getLogger(__name__)
 
 
+def _is_retryable_client_lookup_error(error: ApiException) -> bool:
+    """Return whether a realm lookup error should be retried."""
+    status = error.status
+    if status == 404:
+        return True
+    if status in {409, 429}:
+        return True
+    return isinstance(status, int) and status >= 500
+
+
 @dataclass(frozen=True)
 class ClientManagementDecision:
     """Outcome of resolving whether a client belongs to this operator."""
@@ -37,6 +47,11 @@ class ClientManagementDecision:
     def should_retry(self) -> bool:
         """Return True when ownership cannot be decided yet and should be retried."""
         return self.status == "retry"
+
+    @property
+    def should_fail(self) -> bool:
+        """Return True when ownership resolution hit a permanent error."""
+        return self.status == "error"
 
 
 def get_our_operator_namespace() -> str:
@@ -149,12 +164,24 @@ async def get_client_management_decision(
                 message="Parent realm not found yet",
             )
 
-        logger.warning(
-            f"Could not determine ownership for client in {resource_namespace}: "
-            f"parent realm '{realm_name}' in '{realm_namespace}' lookup failed: {e}"
+        if _is_retryable_client_lookup_error(e):
+            logger.warning(
+                f"Could not determine ownership for client in {resource_namespace}: "
+                f"parent realm '{realm_name}' in '{realm_namespace}' lookup failed: {e}"
+            )
+            return ClientManagementDecision(
+                status="retry",
+                realm_name=realm_name,
+                realm_namespace=realm_namespace,
+                message=str(e),
+            )
+
+        logger.error(
+            f"Cannot determine ownership for client in {resource_namespace}: "
+            f"parent realm '{realm_name}' in '{realm_namespace}' lookup failed permanently: {e}"
         )
         return ClientManagementDecision(
-            status="retry",
+            status="error",
             realm_name=realm_name,
             realm_namespace=realm_namespace,
             message=str(e),

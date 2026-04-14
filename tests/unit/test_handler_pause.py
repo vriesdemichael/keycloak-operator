@@ -17,6 +17,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from keycloak_operator.utils.isolation import ClientManagementDecision
+
 
 class TestKeycloakHandlerPause:
     """Test pause wiring in keycloak.py create/resume and update handlers."""
@@ -308,7 +310,7 @@ class TestClientHandlerPause:
             patch(
                 "keycloak_operator.handlers.client.get_client_management_decision",
                 new_callable=AsyncMock,
-                return_value=MagicMock(is_managed=True, should_retry=False),
+                return_value=ClientManagementDecision(status="managed"),
             ),
             patch("keycloak_operator.handlers.client.get_kubernetes_client"),
             patch(
@@ -357,7 +359,7 @@ class TestClientHandlerPause:
             patch(
                 "keycloak_operator.handlers.client.get_client_management_decision",
                 new_callable=AsyncMock,
-                return_value=MagicMock(is_managed=True, should_retry=False),
+                return_value=ClientManagementDecision(status="managed"),
             ),
             patch("keycloak_operator.handlers.client.get_kubernetes_client"),
             patch(
@@ -462,10 +464,6 @@ class TestDriftDetectionPause:
             patch(
                 "keycloak_operator.utils.pause.is_clients_paused",
                 return_value=True,
-            ),
-            patch(
-                "keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection",
-                new=AsyncMock(return_value=(True, "Ready")),
             ),
             patch(
                 "keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection",
