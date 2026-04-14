@@ -87,6 +87,20 @@ async def _should_manage_client_or_retry(
             ),
             delay=10,
         )
+    if decision.should_fail:
+        realm_name = decision.realm_name or spec.get("realmRef", {}).get(
+            "name", "<unknown>"
+        )
+        realm_namespace = decision.realm_namespace or spec.get("realmRef", {}).get(
+            "namespace", namespace
+        )
+        raise kopf.PermanentError(
+            decision.message
+            or (
+                f"Cannot determine ownership for parent realm {realm_name} in namespace "
+                f"{realm_namespace} while reconciling KeycloakClient {name}"
+            )
+        )
 
     return decision.is_managed
 

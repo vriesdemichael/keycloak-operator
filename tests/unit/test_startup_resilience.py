@@ -146,6 +146,46 @@ class TestClientOwnershipDecisions:
         assert decision.is_managed is False
 
     @pytest.mark.asyncio
+    async def test_parent_realm_lookup_forbidden_returns_error_decision(self):
+        """Permanent realm lookup failures should not hot-loop retries."""
+        mock_custom_api = MagicMock()
+        mock_custom_api.get_namespaced_custom_object.side_effect = ApiException(
+            status=403,
+            reason="Forbidden",
+        )
+
+        with patch("kubernetes.client.CustomObjectsApi", return_value=mock_custom_api):
+            decision = await get_client_management_decision(
+                self._client_spec(),
+                "client-ns",
+                MagicMock(),
+            )
+
+        assert decision.should_retry is False
+        assert decision.should_fail is True
+        assert decision.is_managed is False
+
+    @pytest.mark.asyncio
+    async def test_parent_realm_lookup_server_error_returns_retry_decision(self):
+        """Transient realm lookup failures should still be retried."""
+        mock_custom_api = MagicMock()
+        mock_custom_api.get_namespaced_custom_object.side_effect = ApiException(
+            status=500,
+            reason="Internal Server Error",
+        )
+
+        with patch("kubernetes.client.CustomObjectsApi", return_value=mock_custom_api):
+            decision = await get_client_management_decision(
+                self._client_spec(),
+                "client-ns",
+                MagicMock(),
+            )
+
+        assert decision.should_retry is True
+        assert decision.should_fail is False
+        assert decision.is_managed is False
+
+    @pytest.mark.asyncio
     async def test_ensure_client_retries_when_parent_realm_missing(self):
         """Create/resume handler should requeue until the parent realm exists."""
         from keycloak_operator.handlers.client import ensure_keycloak_client
@@ -198,6 +238,76 @@ class TestClientOwnershipDecisions:
             ),
         ):
             with pytest.raises(kopf.TemporaryError, match="Waiting for parent realm"):
+                await update_keycloak_client(
+                    old={"spec": self._client_spec()},
+                    new={"spec": self._client_spec()},
+                    diff=[],
+                    name="test-client",
+                    namespace="client-ns",
+                    status={},
+                    patch=MagicMock(status={}),
+                    memo=MagicMock(rate_limiter=MagicMock()),
+                )
+
+    @pytest.mark.asyncio
+    async def test_ensure_client_fails_when_parent_realm_lookup_is_permanent_error(
+        self,
+    ):
+        """Create/resume handler should fail fast on permanent ownership errors."""
+        from keycloak_operator.handlers.client import ensure_keycloak_client
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_client_management_decision",
+                new=AsyncMock(
+                    return_value=ClientManagementDecision(
+                        status="error",
+                        realm_name="test-realm",
+                        realm_namespace="realm-ns",
+                        message="403 Forbidden",
+                    )
+                ),
+            ),
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client",
+                return_value=MagicMock(),
+            ),
+        ):
+            with pytest.raises(kopf.PermanentError, match="403 Forbidden"):
+                await ensure_keycloak_client(
+                    spec=self._client_spec(),
+                    name="test-client",
+                    namespace="client-ns",
+                    status={},
+                    patch=MagicMock(status={}),
+                    memo=MagicMock(rate_limiter=MagicMock()),
+                )
+
+    @pytest.mark.asyncio
+    async def test_update_client_fails_when_parent_realm_lookup_is_permanent_error(
+        self,
+    ):
+        """Update handler should fail fast on permanent ownership errors."""
+        from keycloak_operator.handlers.client import update_keycloak_client
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_client_management_decision",
+                new=AsyncMock(
+                    return_value=ClientManagementDecision(
+                        status="error",
+                        realm_name="test-realm",
+                        realm_namespace="realm-ns",
+                        message="403 Forbidden",
+                    )
+                ),
+            ),
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client",
+                return_value=MagicMock(),
+            ),
+        ):
+            with pytest.raises(kopf.PermanentError, match="403 Forbidden"):
                 await update_keycloak_client(
                     old={"spec": self._client_spec()},
                     new={"spec": self._client_spec()},
