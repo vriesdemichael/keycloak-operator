@@ -60,7 +60,7 @@ from keycloak_operator.utils.pause import get_pause_message, is_clients_paused
 logger = logging.getLogger(__name__)
 
 
-CLIENT_SECRET_MONITOR_INTERVAL_SECONDS = 30.0
+CLIENT_SECRET_MONITOR_INTERVAL_SECONDS = TIMER_INTERVAL_CLIENT
 
 
 def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
@@ -804,14 +804,17 @@ async def _run_client_health_check(
                             logger=logger,
                         )
 
-                        if triggered:
-                            patch.status.update(
-                                {
-                                    "phase": "Degraded",
-                                    "message": "Client credentials secret missing, recreating...",
-                                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                                }
-                            )
+                        patch.status.update(
+                            {
+                                "phase": "Degraded",
+                                "message": (
+                                    "Client credentials secret missing, recreating..."
+                                    if triggered
+                                    else "Client credentials secret missing, but reconcile trigger failed"
+                                ),
+                                "lastHealthCheck": datetime.now(UTC).isoformat(),
+                            }
+                        )
                         return
                     if e.status == 403:
                         logger.warning(
@@ -915,6 +918,7 @@ async def monitor_client_credentials_secret(
                     {
                         "phase": "Degraded",
                         "message": "Client credentials secret incomplete, recreating...",
+                        "lastHealthCheck": datetime.now(UTC).isoformat(),
                     }
                 )
                 await _trigger_client_reconciliation(
@@ -932,6 +936,7 @@ async def monitor_client_credentials_secret(
                     {
                         "phase": "Degraded",
                         "message": "Client credentials secret missing, recreating...",
+                        "lastHealthCheck": datetime.now(UTC).isoformat(),
                     }
                 )
                 await _trigger_client_reconciliation(
@@ -952,6 +957,7 @@ async def monitor_client_credentials_secret(
                             "Operator lacks permission to read client credentials secret. "
                             "Grant delegated RBAC for this namespace."
                         ),
+                        "lastHealthCheck": datetime.now(UTC).isoformat(),
                     }
                 )
             else:
@@ -1185,6 +1191,7 @@ async def secret_rotation_daemon(
                         "Operator lacks permission to read client credentials secret. "
                         "Grant delegated RBAC for this namespace."
                     )
+                    patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
                     if await stopped.wait(timeout=60):
                         break
                     continue
