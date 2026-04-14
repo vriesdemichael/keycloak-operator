@@ -53,8 +53,9 @@ ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Install runtime system dependencies
-RUN apk add --no-cache \
+# Install runtime system dependencies and apply latest Alpine security fixes
+RUN apk upgrade --no-cache && \
+    apk add --no-cache \
     ca-certificates
     # libstdc++ is often required by binary python extensions
     # libstdc++
@@ -108,9 +109,6 @@ FROM production AS test
 
 # Switch to root to install test dependencies
 USER root
-
-# Install build dependencies for test packages (just in case test deps need compilation)
-RUN apk add --no-cache build-base
 
 # Copy uv for installing test dependencies
 COPY --from=ghcr.io/astral-sh/uv:0.9.3@sha256:ecfea7316b266ba82a5e9efb052339ca410dd774dc01e134a30890e6b85c7cd1 /uv /bin/uv
