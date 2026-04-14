@@ -306,9 +306,9 @@ class TestClientHandlerPause:
                 return_value=pause_msg,
             ),
             patch(
-                "keycloak_operator.handlers.client.is_client_managed_by_this_operator",
+                "keycloak_operator.handlers.client.get_client_management_decision",
                 new_callable=AsyncMock,
-                return_value=True,
+                return_value=MagicMock(is_managed=True, should_retry=False),
             ),
             patch("keycloak_operator.handlers.client.get_kubernetes_client"),
             patch(
@@ -355,9 +355,9 @@ class TestClientHandlerPause:
                 return_value=pause_msg,
             ),
             patch(
-                "keycloak_operator.handlers.client.is_client_managed_by_this_operator",
+                "keycloak_operator.handlers.client.get_client_management_decision",
                 new_callable=AsyncMock,
-                return_value=True,
+                return_value=MagicMock(is_managed=True, should_retry=False),
             ),
             patch("keycloak_operator.handlers.client.get_kubernetes_client"),
             patch(
@@ -464,6 +464,14 @@ class TestDriftDetectionPause:
                 return_value=True,
             ),
             patch(
+                "keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection",
+                new=AsyncMock(return_value=(True, "Ready")),
+            ),
+            patch(
+                "keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection",
+                new=AsyncMock(return_value=(True, "Ready")),
+            ),
+            patch(
                 "keycloak_operator.services.drift_detection_service.DriftDetectionConfig.from_env",
             ) as mock_config,
             patch(
@@ -491,6 +499,10 @@ class TestDriftDetectionPause:
             patch(
                 "keycloak_operator.utils.pause.is_clients_paused",
                 return_value=False,
+            ),
+            patch(
+                "keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection",
+                new=AsyncMock(return_value=(True, "Ready")),
             ),
             patch(
                 "keycloak_operator.services.drift_detection_service.DriftDetectionConfig.from_env",
