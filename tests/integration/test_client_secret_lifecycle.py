@@ -10,7 +10,6 @@ Tests verify:
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 import uuid
 
@@ -281,11 +280,14 @@ class TestClientSecretLifecycle:
 
         start = asyncio.get_running_loop().time()
         while asyncio.get_running_loop().time() - start < 90:
-            with contextlib.suppress(ApiException):
+            try:
                 await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
                 pytest.fail(
                     "Managed secret was recreated even though delegated RBAC was removed"
                 )
+            except ApiException as e:
+                if e.status != 404:
+                    raise
 
             pods = await k8s_core_v1.list_namespaced_pod(
                 namespace=operator_namespace,
