@@ -109,7 +109,7 @@ tasks:
     desc: Run security scans (pip-audit, safety, trivy)
     cmds:
       - uv export --no-dev --format requirements-txt | grep -v '^\-e' | uv run --group security pip-audit -r /dev/stdin --desc
-      - uv run --group security safety check --json
+      - uv export --no-dev --format requirements-txt | grep -v '^\-e' | uv run --group security safety check --stdin --json
       - |
         if [ -z "$CI" ] && command -v trivy >/dev/null 2>&1; then
           echo "🔍 Running Trivy image scan..."
