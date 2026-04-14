@@ -238,3 +238,48 @@ class TestSecretRotationDaemon:
 
             # Verify status was updated
             assert mock_patch_obj.status.get("phase") == "Ready"
+
+    @pytest.mark.asyncio
+    async def test_daemon_secret_forbidden_degrades_without_crashing(
+        self, mock_stopped, mock_patch_obj, base_spec
+    ):
+        """403 on secret read should degrade and wait instead of crashing the daemon."""
+        from kubernetes.client.rest import ApiException
+
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_secret.side_effect = ApiException(status=403)
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.is_client_managed_by_this_operator",
+                return_value=True,
+            ),
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            assert mock_patch_obj.status["phase"] == "Degraded"
+            assert "lacks permission" in mock_patch_obj.status["message"].lower()

@@ -10,10 +10,12 @@ Tests verify:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import uuid
 
 import pytest
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from .wait_helpers import (
@@ -188,3 +190,145 @@ class TestClientSecretLifecycle:
         assert secret.metadata.owner_references[0].name == client_name
 
         logger.info("✓ Successfully verified client secret lifecycle")
+
+    @pytest.mark.timeout(420)
+    async def test_secret_monitor_survives_missing_namespace_rbac(
+        self,
+        k8s_custom_objects,
+        k8s_core_v1,
+        k8s_rbac_v1,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        helm_realm,
+        helm_client,
+    ) -> None:
+        """Deleting delegated RBAC must not crash the operator secret monitor."""
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"rbac-realm-{suffix}"
+        client_name = f"rbac-client-{suffix}"
+        realm_release_name = f"realm-rbac-{suffix}"
+        client_release_name = f"client-rbac-{suffix}"
+        namespace = test_namespace
+        secret_name = f"{client_name}-credentials"
+
+        await helm_realm(
+            release_name=realm_release_name,
+            realm_name=realm_name,
+            namespace=namespace,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[namespace],
+            displayName="RBAC Resilience Realm",
+            fullnameOverride=realm_name,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects=k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
+
+        await helm_client(
+            release_name=client_release_name,
+            client_id=client_name,
+            realm_name=realm_name,
+            realm_namespace=namespace,
+            publicClient=False,
+            manageSecret=True,
+            fullnameOverride=client_name,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects=k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakclients",
+            name=client_name,
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
+
+        await wait_for_secret_keys(
+            k8s_core_v1=k8s_core_v1,
+            secret_name=secret_name,
+            namespace=namespace,
+            required_keys=["client-secret", "client-id"],
+            timeout=60,
+            operator_namespace=operator_namespace,
+        )
+
+        for role_binding_name in (
+            "keycloak-operator-access",
+            f"{realm_name}-operator-access",
+            f"{client_name}-operator-access",
+        ):
+            try:
+                await k8s_rbac_v1.delete_namespaced_role_binding(
+                    name=role_binding_name,
+                    namespace=namespace,
+                )
+            except ApiException as e:
+                if e.status != 404:
+                    raise
+
+        await k8s_core_v1.delete_namespaced_secret(secret_name, namespace)
+
+        start = asyncio.get_running_loop().time()
+        while asyncio.get_running_loop().time() - start < 90:
+            with contextlib.suppress(ApiException):
+                await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
+                pytest.fail(
+                    "Managed secret was recreated even though delegated RBAC was removed"
+                )
+
+            pods = await k8s_core_v1.list_namespaced_pod(
+                namespace=operator_namespace,
+                label_selector="app.kubernetes.io/name=keycloak-operator",
+            )
+            assert pods.items, "No operator pods found"
+            for pod in pods.items:
+                assert pod.status.phase == "Running", (
+                    f"Operator pod {pod.metadata.name} is not running"
+                )
+                if pod.status.container_statuses:
+                    for container_status in pod.status.container_statuses:
+                        assert container_status.ready, (
+                            f"Operator container {container_status.name} is not ready"
+                        )
+
+            await asyncio.sleep(5)
+
+        role_binding = client.V1RoleBinding(
+            metadata=client.V1ObjectMeta(
+                name="keycloak-operator-access",
+                namespace=namespace,
+            ),
+            role_ref=client.V1RoleRef(
+                api_group="rbac.authorization.k8s.io",
+                kind="ClusterRole",
+                name="keycloak-operator-namespace-access",
+            ),
+            subjects=[
+                client.RbacV1Subject(
+                    kind="ServiceAccount",
+                    name=f"keycloak-operator-{operator_namespace}",
+                    namespace=operator_namespace,
+                )
+            ],
+        )
+        await k8s_rbac_v1.create_namespaced_role_binding(namespace, role_binding)
+
+        await wait_for_secret_keys(
+            k8s_core_v1=k8s_core_v1,
+            secret_name=secret_name,
+            namespace=namespace,
+            required_keys=["client-secret", "client-id"],
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
