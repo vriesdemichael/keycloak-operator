@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
@@ -3908,6 +3908,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._should_monitor_client_secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _should_monitor_client_secret
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._trigger_client_reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _trigger_client_reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.handlers.client.delete_keycloak_client" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3941,10 +3963,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.handlers.client.monitor_client_health" class="md-nav__link">
+  <a href="#keycloak_operator.handlers.client.monitor_client_credentials_secret" class="md-nav__link">
     <span class="md-ellipsis">
       
-        monitor_client_health
+        monitor_client_credentials_secret
       
     </span>
   </a>
@@ -3952,10 +3974,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="md-nav__link">
+  <a href="#keycloak_operator.handlers.client.monitor_client_health" class="md-nav__link">
     <span class="md-ellipsis">
       
-        monitor_client_secrets
+        monitor_client_health
       
     </span>
   </a>
@@ -13198,6 +13220,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._should_monitor_client_secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _should_monitor_client_secret
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._trigger_client_reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _trigger_client_reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.handlers.client.delete_keycloak_client" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -13231,10 +13275,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.handlers.client.monitor_client_health" class="md-nav__link">
+  <a href="#keycloak_operator.handlers.client.monitor_client_credentials_secret" class="md-nav__link">
     <span class="md-ellipsis">
       
-        monitor_client_health
+        monitor_client_credentials_secret
       
     </span>
   </a>
@@ -13242,10 +13286,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="md-nav__link">
+  <a href="#keycloak_operator.handlers.client.monitor_client_health" class="md-nav__link">
     <span class="md-ellipsis">
       
-        monitor_client_secrets
+        monitor_client_health
       
     </span>
   </a>
@@ -26963,6 +27007,54 @@ Finalizer management is handled by Kopf via settings.persistence.finalizer.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="keycloak_operator.handlers.client._should_monitor_client_secret" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_should_monitor_client_secret</span>
+
+
+<a href="#keycloak_operator.handlers.client._should_monitor_client_secret" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_should_monitor_client_secret</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Run the secret monitor only for managed confidential clients.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.handlers.client._trigger_client_reconciliation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_trigger_client_reconciliation</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.client._trigger_client_reconciliation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_trigger_client_reconciliation</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">logger</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Patch the client resource to trigger reconciliation.</p>
+<p>Returns True when the patch request was accepted, False when the parent CR
+no longer exists or the request could not be completed.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="keycloak_operator.handlers.client.delete_keycloak_client" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">delete_keycloak_client</span>
 
@@ -27281,6 +27373,42 @@ perform the strict parent-realm-based ownership check.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="keycloak_operator.handlers.client.monitor_client_credentials_secret" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">monitor_client_credentials_secret</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.client.monitor_client_credentials_secret" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">monitor_client_credentials_secret</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">spec</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">namespace</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">status</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">meta</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">stopped</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">patch</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">logger</span><span class="p">,</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="o">**</span><span class="n">kwargs</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Monitor a managed client credentials secret within the client's namespace.</p>
+<p>This replaces the old cluster-wide secret watch with a per-client daemon so
+the operator never needs to open a cluster-wide secret watch stream.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="keycloak_operator.handlers.client.monitor_client_health" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">monitor_client_health</span>
 
@@ -27441,32 +27569,6 @@ Default: 300 seconds (5 minutes).</p>
           </tr>
       </tbody>
     </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="keycloak_operator.handlers.client.monitor_client_secrets" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">monitor_client_secrets</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">monitor_client_secrets</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Monitor client secrets and trigger reconciliation if deleted.</p>
-<p>If a managed secret is deleted, we must trigger reconciliation on the
-parent KeycloakClient to recreate it.</p>
 
 
     </div>
