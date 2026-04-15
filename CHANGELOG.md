@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.7...operator-image-v0.10.8) (2026-04-15)
+
+
+### Bug Fixes
+
+* **operator:** address PR review feedback on client ownership ([62b0c59](https://github.com/vriesdemichael/keycloak-operator/commit/62b0c59ee59d60108801bccbf0c31dae44e1daa1))
+* **operator:** improve startup resilience for drift detection and client ownership ([2dde949](https://github.com/vriesdemichael/keycloak-operator/commit/2dde94908840e0c306377c755d280b81ec574879))
+
 ## [0.10.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.6...operator-image-v0.10.7) (2026-04-14)
 
 
