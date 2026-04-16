@@ -461,7 +461,7 @@ wheels = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.55.0"
+version = "0.56.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
@@ -473,9 +473,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/36/ec505ce62c143c0f045e82e2bb0360e2ede765c0cfe3a70bf32c5661b8a2/datamodel_code_generator-0.55.0.tar.gz", hash = "sha256:20ae7a4fbbb12be380f0bd02544db4abae96c5b644d4b3f2b9c3fc0bc9ee1184", size = 833828, upload-time = "2026-03-10T20:41:15.796Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/9c/5379be8daf9ff2fbbb9a7efcf68c037b089e5b76f360c4f9ca730916e2ee/datamodel_code_generator-0.56.1.tar.gz", hash = "sha256:697abd90cc4eb2c65f130be79a83a24746c3f2d0e15e6eb9dbf17b96784449be", size = 840372, upload-time = "2026-04-16T17:09:53.537Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/c6/2abc9d11adbbf689b6b4dfb7a136d57b9ccaa3b3f1ba83504462109e8dbb/datamodel_code_generator-0.55.0-py3-none-any.whl", hash = "sha256:efa5a925288ca2a135fdc3361c7d774ae5b24b4fd632868363e249d55ea2f137", size = 256860, upload-time = "2026-03-10T20:41:13.488Z" },
+    { url = "https://files.pythonhosted.org/packages/f7/cd/4a4a13f55069d88d8405aa325874b04c1b1dbc830f0d66c0e56cbd16aa12/datamodel_code_generator-0.56.1-py3-none-any.whl", hash = "sha256:cb2adc18a301f1a2cfcd56672037218eeaff0573669861c2b371eefe86753874", size = 256845, upload-time = "2026-04-16T17:09:51.81Z" },
 ]
 
 [package.optional-dependencies]
@@ -933,7 +933,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "authlib", specifier = ">=1.6.10" },
-    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.25.0" },
+    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.56.1" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "marshmallow", specifier = ">=4.1.2" },
     { name = "pip", specifier = ">=25.3" },
