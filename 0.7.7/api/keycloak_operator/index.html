@@ -1783,6 +1783,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _is_managed_keycloak_ready_for_drift_detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.operator._sanitize_url_for_log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3901,6 +3912,17 @@
     <span class="md-ellipsis">
       
         _run_client_health_check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._should_manage_client_or_retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _should_manage_client_or_retry
       
     </span>
   </a>
@@ -11095,6 +11117,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _is_managed_keycloak_ready_for_drift_detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.operator._sanitize_url_for_log" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -13213,6 +13246,17 @@
     <span class="md-ellipsis">
       
         _run_client_health_check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client._should_manage_client_or_retry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _should_manage_client_or_retry
       
     </span>
   </a>
@@ -17536,6 +17580,30 @@ KEYCLOAK_OPERATOR_DRY_RUN: Set to 'true' for dry-run mode</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_is_managed_keycloak_ready_for_drift_detection</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.operator._is_managed_keycloak_ready_for_drift_detection" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_is_managed_keycloak_ready_for_drift_detection</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return whether drift detection may talk to the managed Keycloak instance.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -26998,6 +27066,30 @@ Finalizer management is handled by Kopf via settings.persistence.finalizer.</p>
     <div class="doc doc-contents ">
 
         <p>Execute one health check iteration for a KeycloakClient.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.handlers.client._should_manage_client_or_retry" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_should_manage_client_or_retry</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.client._should_manage_client_or_retry" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_should_manage_client_or_retry</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return True when the client belongs to this operator, else retry if parent realm is missing.</p>
 
 
     </div>
