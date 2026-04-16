@@ -106,7 +106,7 @@ timeout = 900
 
 [dependency-groups]
 quality = [
-    "ruff>=0.13.1",
+    "ruff>=0.15.11",
     "ty>=0.0.31",
     "types-requests>=2.32.4.20250913",
     "pre-commit>=4.0.0",
@@ -116,7 +116,7 @@ docs = [
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=1.0.4",
     "mkdocs-gen-files>=0.5.0",
-    "mkdocs-section-index>=0.3.8",
+    "mkdocs-section-index>=0.3.12",
     "mkdocs-literate-nav>=0.6.1",
     "markdown-exec>=1.9.0",
     "mike>=2.2.0",
@@ -135,7 +135,7 @@ test = [
 security = [
     "pip-audit>=2.7.0",
     "safety>=3.0.0",
-    "authlib>=1.6.10",      # CVE-2025-68158
+    "authlib>=1.6.11",      # CVE-2025-68158
     "marshmallow>=4.1.2",  # CVE-2025-68480
     "pip>=25.3",           # CVE-2025-8869
 ]
