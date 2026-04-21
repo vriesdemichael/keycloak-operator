@@ -1,0 +1,28 @@
+number: 64
+title: No force-delete annotation for finalizers
+category: development
+decision: No force-delete annotation for stuck finalizers. Users manually remove finalizers
+  with kubectl patch when Keycloak is permanently unavailable. Standard Kubernetes
+  pattern documented in troubleshooting guide.
+agent_instructions: Do not implement force-delete annotations or timeout-based finalizer
+  removal. When users report stuck resources, direct them to troubleshooting documentation
+  for manual finalizer removal. Finalizers exist to prevent orphaned resources in
+  Keycloak - removing them is user's explicit responsibility.
+rationale: Industry standard approach (cert-manager, CloudNativePG, most operators
+  rely on manual kubectl patch). Zero maintenance burden. Finalizers protect against
+  data leaks - automatic removal contradicts their purpose. Manual removal forces
+  user acknowledgment of consequences (orphaned realms/clients in Keycloak). Standard
+  kubectl patch command is well-documented and universally available. Feature can
+  be added later if proven necessary through usage patterns.
+provenance: human
+rejected_alternatives:
+- alternative: Immediate force-delete annotation
+  reason: Too dangerous - no safety net, encourages careless usage, leaves orphaned
+    resources in Keycloak without attempting cleanup.
+- alternative: Timeout-based automatic cleanup (Zalando PostgreSQL pattern)
+  reason: Added complexity for rare edge case. Users can manually patch immediately
+    if needed rather than waiting for timeout. Maintenance burden not justified by
+    infrequent use.
+- alternative: Two-step confirmation annotation
+  reason: Overly complex UX. Manual kubectl patch is simpler and achieves same result
+    with clear user responsibility.
