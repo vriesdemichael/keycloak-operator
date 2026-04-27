@@ -1,0 +1,6855 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="GitOps-compatible Keycloak Kubernetes operator">
+      
+      
+      
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/0.7.12/security/threat-model/">
+      
+      
+        <link rel="prev" href="../../rbac-implementation/">
+      
+      
+        <link rel="next" href="../../guides/identity-providers/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Threat Model - Keycloak Operator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#threat-model" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+      
+  <img src="../../assets/images/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Keycloak Operator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Threat Model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vriesdemichael/keycloak-operator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/keycloak-operator
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Security
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/identity-providers/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../operations/day-two/" class="md-tabs__link">
+          
+  
+  
+  Operations & Day 2
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/keycloak-crd/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../development/" class="md-tabs__link">
+          
+  
+  
+  Development
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../decisions/generated-markdown/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Decision Records
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+      
+  <img src="../../assets/images/logo.svg" alt="logo">
+
+    </a>
+    Keycloak Operator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vriesdemichael/keycloak-operator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vriesdemichael/keycloak-operator
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/helm-vs-cr-deployments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Helm vs Direct CR Deployments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    End-to-End Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../admission-webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admission Webhooks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rbac-implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC Implementation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Threat Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scope-and-protected-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope and Protected Assets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scope and Protected Assets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asset-criticality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Asset Criticality
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-and-trust-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture and Trust Boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture and Trust Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trust-boundary-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust Boundary Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stride-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STRIDE Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="STRIDE Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tb-1-user-gitops-kubernetes-api-crd-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-1: User / GitOps → Kubernetes API (CRD creation)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-1: User / GitOps → Kubernetes API (CRD creation)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repudiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repudiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denial-of-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Denial of Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation of Privilege
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-2-operator-kubernetes-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-2: Operator → Kubernetes API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-2: Operator → Kubernetes API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering / Elevation of Privilege
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-3-operator-keycloak-admin-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-3: Operator → Keycloak Admin API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-3: Operator → Keycloak Admin API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repudiation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repudiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denial-of-service_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Denial of Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elevation-of-privilege-admin-credential-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation of Privilege — Admin Credential Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-4-operator-otlp-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-4: Operator → OTLP Collector
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-4: Operator → OTLP Collector">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-specific-attack-vectors-mitre-attck-for-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes-Specific Attack Vectors (MITRE ATT&amp;CK for Containers)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-controls-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Controls Inventory
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Controls Inventory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-and-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication and Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privilege-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Privilege Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-and-credential-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret and Credential Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-and-pod-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container and Pod Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observability-and-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability and Audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resilience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resilience
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-gaps-and-accepted-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Gaps and Accepted Risks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known Gaps and Accepted Risks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gap-1-full-keycloak-admin-credentials-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-1: Full Keycloak Admin Credentials Required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-2-no-platform-veto-on-clientauthorizationgrants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-2: No Platform Veto on clientAuthorizationGrants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-4-no-security-alerting-on-drift-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-4: No Security Alerting on Drift Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-5-no-admin-credential-rotation-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-5: No Admin Credential Rotation Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-6-etcd-encryption-is-cluster-dependent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-6: etcd Encryption is Cluster-Dependent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-hardening-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Hardening Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-security-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Security Baseline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Security Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimum-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimum Baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardened-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardened Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/identity-providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Identity Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/user-federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/drift-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Drift Detection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/multi-tenant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-Tenant Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/database-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/export-realms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Realm Export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/migration-toolkit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/smtp-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SMTP Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../how-to/ha-deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    High Availability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations & Day 2
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations & Day 2
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/day-two/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Day Two Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/secret-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secret Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/disaster-recovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Disaster Recovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration & Upgrade
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operations/escape-hatch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Escape Hatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/keycloak-crd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak CRD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/keycloak-realm-crd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KeycloakRealm CRD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/keycloak-client-crd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    KeycloakClient CRD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/keycloak-version-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/keycloak_operator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Docs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/test-cleanup-strategy.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Test Cleanup Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../decisions/generated-markdown/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decision Records
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decision Records
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/001-kopf-as-operator-framework/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-001: Kopf as operator framework
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/002-uv-for-dependency-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-002: uv for dependency management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/003-least-privilege-everywhere/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-003: Least privilege everywhere
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/004-everything-must-be-gitopsable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-004: Everything must be GitOpsable
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/005-no-plaintext-secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-005: No plaintext secrets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-006: All functionality must be tested with pytest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/007-integration-tests-in-kind-clusters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-007: Integration tests in Kind clusters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-008: Feature parity with self-managed Keycloak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/009-ai-agents-as-first-class-developers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-009: AI agents as first-class developers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-010: Semantic versioning for all artifacts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/011-conventional-commits-for-all-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-011: Conventional commits for all development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-012: Async API with rate limiting and retries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/013-pydantic-models-for-keycloak-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-013: Pydantic models for Keycloak API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/014-separate-helm-charts-per-resource-type/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-014: Separate Helm charts per resource type
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/015-cloudnativepg-as-first-class-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-015: CloudNativePG as first-class database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/016-multi-namespace-operation-by-default/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-016: Multi-namespace operation by default
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-017: Kubernetes RBAC over Keycloak security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/018-management-port-separation-keycloak-25/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-018: Management port separation - Keycloak 25+
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-019: Drift detection and continuous reconciliation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/020-real-kubernetes-for-integration-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-020: Real Kubernetes for integration testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-021: Pre-commit hooks with strict validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-022: Type annotations with ty for type checking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/023-make-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-023: Make for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/024-helm-as-deployment-mechanism/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-024: Helm as deployment mechanism
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-025: Realm and Client as primary CRD resource types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-026: Three-layer responsibility system with token delegation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/027-json-schemas-published-to-github-pages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-027: JSON schemas published to GitHub Pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/028-documentation-published-to-github-pages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-028: Documentation published to GitHub Pages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/029-versioned-documentation-with-mike/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-029: Versioned documentation with mike
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-030: Helm charts published to GitHub Pages OCI registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/031-automated-releases-with-release-please/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-031: Automated releases with release-please
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-032: Minimal RBAC with namespaced service accounts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/033-custom-resource-definitions-as-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-033: Custom Resource Definitions as API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-034: GitHub Actions for CI and artifact publication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-035: Keycloak 25.0+ version support requirement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-036: Automated dependency updates with Dependabot and custom workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-037: Support for operator-managed and external Keycloak instances
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-039: Token rotation and bootstrap flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/040-admission-webhooks-for-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-040: Admission Webhooks for Resource Validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/041-shared-operator-fixture-in-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-041: Shared operator fixture in tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-042: pytest-xdist for parallel integration tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-043: Wait helpers with debug logging in tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-044: Extra manifests support in Helm charts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-045: Active-standby HA using Kopf peering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-046: Multiple operator support with explicit references
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/047-managed-keycloak-for-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-047: Managed Keycloak for quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/048-prometheus-metrics-exposure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-048: Prometheus metrics exposure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-049: Horizontal scaling via multiple operator deployments (realm sharding)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/050-structured-json-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-050: Structured JSON logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-051: Multi-stage Docker builds for minimal images
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/052-optimized-keycloak-container-for-tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-052: Optimized Keycloak container for tests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-053: Error categorization - temporary vs permanent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-054: Namespace watch scope requires cluster-wide RBAC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/055-container-image-registry-and-tagging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-055: Container image registry and tagging strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-056: No opinionated backup or secret management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/057-cr-data-validated-with-pydantic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-057: CR data must be validated with Pydantic models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/058-single-keycloak-version-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-058: Single Keycloak version support (26.x)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/059-multi-version-keycloak-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-059: Multi-Version Keycloak Support with Single Canonical Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/060-cascading-deletes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-060: Cascading deletes for dependent resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/061-github-issues-with-ai-instructions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-061: GitHub Issues for planned work with AI agent instructions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/062-one-keycloak-per-operator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-062: One Keycloak instance per operator deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/063-namespace-grant-list-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-063: Namespace grant list authorization for clients
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/064-no-force-delete-annotation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-064: No force-delete annotation for finalizers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-065: Webhook certificate management with cert-manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/066-centralized-settings-with-pydantic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-066: Centralized settings management with pydantic-settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-067: Integration test coverage collection via SIGUSR1 signal
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/068-always-recreate-test-cluster/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-068: Always recreate test cluster
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/069-documentation-schema-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-069: Documentation schema validation in CI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/070-auto-discovery-for-schema-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-070: Auto-discovery for schema validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/071-crd-pydantic-schema-sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-071: CRD-Pydantic schema synchronization validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/072-handling-unrecognized-doc-snippets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-072: Handling unrecognized documentation snippets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-073: Security and Multi-Tenancy Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-074: Keycloak Scalability and High Availability Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/076-no-network-policies-in-helm-chart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-076: No Network Policies in Helm Chart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/077-no-ingress-traffic-separation-for-admin-and-public-interfaces/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/080-atomic-client-secret-rotation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-080: Atomic Client Secret Rotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/081-opentelemetry-distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-081: OpenTelemetry Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/082-trace-based-test-debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-082: Trace-Based Test Debugging Infrastructure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/083-kopf-version-pin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-083: Hard Pin kopf to 1.40.1 Due to Memory Leak
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/084-prometheus-metric-cardinality-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-084: Prometheus Metric Hygiene Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/086-migration-toolkit-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-086: Go-based migration toolkit for Keycloak export transformation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/087-reconciliation-pause/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-087: Operator-level reconciliation pause for safe maintenance windows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/088-blue-green-keycloak-upgrade-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-088: Blue-green Keycloak upgrade strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/089-kc-hostname-strict-default/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-089: Keep KC_HOSTNAME_STRICT=false as operator default
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/090-revision-oriented-cache-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-090: Revision-oriented JGroups cache isolation with major-version identity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/092-blue-green-upgrade-state-machine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/093-user-import-via-migration-toolkit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-093: User import via migration toolkit import-users command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/094-migration-toolkit-e2e-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-094: End-to-end integration testing for migration toolkit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scope-and-protected-assets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope and Protected Assets
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scope and Protected Assets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asset-criticality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Asset Criticality
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-and-trust-boundaries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture and Trust Boundaries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture and Trust Boundaries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#trust-boundary-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust Boundary Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stride-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        STRIDE Analysis
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="STRIDE Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tb-1-user-gitops-kubernetes-api-crd-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-1: User / GitOps → Kubernetes API (CRD creation)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-1: User / GitOps → Kubernetes API (CRD creation)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repudiation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repudiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denial-of-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Denial of Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation of Privilege
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-2-operator-kubernetes-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-2: Operator → Kubernetes API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-2: Operator → Kubernetes API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering-elevation-of-privilege" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering / Elevation of Privilege
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-3-operator-keycloak-admin-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-3: Operator → Keycloak Admin API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-3: Operator → Keycloak Admin API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#spoofing_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spoofing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tampering_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tampering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repudiation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repudiation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#denial-of-service_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Denial of Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elevation-of-privilege-admin-credential-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation of Privilege — Admin Credential Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tb-4-operator-otlp-collector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TB-4: Operator → OTLP Collector
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="TB-4: Operator → OTLP Collector">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#information-disclosure_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Information Disclosure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-specific-attack-vectors-mitre-attck-for-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes-Specific Attack Vectors (MITRE ATT&amp;CK for Containers)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-controls-inventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Controls Inventory
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Controls Inventory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-and-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication and Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#privilege-controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Privilege Controls
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-and-credential-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secret and Credential Handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#container-and-pod-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Container and Pod Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#network-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Security
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#observability-and-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Observability and Audit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resilience" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resilience
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-gaps-and-accepted-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Gaps and Accepted Risks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known Gaps and Accepted Risks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gap-1-full-keycloak-admin-credentials-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-1: Full Keycloak Admin Credentials Required
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-2-no-platform-veto-on-clientauthorizationgrants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-2: No Platform Veto on clientAuthorizationGrants
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-4-no-security-alerting-on-drift-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-4: No Security Alerting on Drift Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-5-no-admin-credential-rotation-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-5: No Admin Credential Rotation Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-6-etcd-encryption-is-cluster-dependent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GAP-6: etcd Encryption is Cluster-Dependent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#network-hardening-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Network Hardening Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-security-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment Security Baseline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Security Baseline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimum-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimum Baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hardened-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hardened Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security/threat-model.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="threat-model">Threat Model<a class="headerlink" href="#threat-model" title="Permanent link">&para;</a></h1>
+<p>This document is an adversarial security assessment of the Keycloak operator. It is intended for security engineers, platform architects, and auditors evaluating the operator before production deployment or during a security review.</p>
+<p>It is deliberately honest. Gaps are called out explicitly alongside the controls that are in place, because your threat model is only useful to you if it reflects reality.</p>
+<p>For the authorization model and how teams use it day-to-day, see <a href="../../concepts/security/">Security Model</a>. For deployment security recommendations, see <a href="../../operations/secret-management/">Secret Management</a>.</p>
+<hr />
+<h2 id="scope-and-protected-assets">Scope and Protected Assets<a class="headerlink" href="#scope-and-protected-assets" title="Permanent link">&para;</a></h2>
+<p>This assessment covers:</p>
+<ul>
+<li>The operator pod and its service account</li>
+<li>The Keycloak admin credential stored as a Kubernetes Secret</li>
+<li>The Keycloak instance managed by the operator</li>
+<li>The <code>Keycloak</code>, <code>KeycloakRealm</code>, and <code>KeycloakClient</code> Custom Resources</li>
+<li>Client credentials (OAuth2 secrets) generated and stored by the operator</li>
+</ul>
+<p>Out of scope:</p>
+<ul>
+<li>End-user authentication flows (Keycloak handles these independently of the operator)</li>
+<li>Platform-level security (etcd encryption, node security, container runtime)</li>
+<li>Identity Providers connected to realms (external systems)</li>
+</ul>
+<h3 id="asset-criticality">Asset Criticality<a class="headerlink" href="#asset-criticality" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Criticality</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keycloak admin credential Secret</td>
+<td><strong>Critical</strong></td>
+<td>Gives full admin access to Keycloak — all realms, all clients, all users</td>
+</tr>
+<tr>
+<td>Operator service account token</td>
+<td><strong>High</strong></td>
+<td>Can read labeled Secrets across opted-in namespaces, manage CRDs cluster-wide</td>
+</tr>
+<tr>
+<td><code>Keycloak</code> CR</td>
+<td><strong>High</strong></td>
+<td>Controls Keycloak deployment configuration</td>
+</tr>
+<tr>
+<td><code>KeycloakRealm</code> CR</td>
+<td><strong>Medium</strong></td>
+<td>Controls identity configuration for a tenant; includes <code>clientAuthorizationGrants</code></td>
+</tr>
+<tr>
+<td><code>KeycloakClient</code> CR</td>
+<td><strong>Medium</strong></td>
+<td>Controls OAuth2 client registration; spec includes redirect URIs and role assignments</td>
+</tr>
+<tr>
+<td>Generated client Secret</td>
+<td><strong>Medium</strong></td>
+<td>Application credentials; stored only in the client's namespace</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="architecture-and-trust-boundaries">Architecture and Trust Boundaries<a class="headerlink" href="#architecture-and-trust-boundaries" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TB
+    subgraph cluster["Kubernetes Cluster"]
+        subgraph opns["Operator Namespace (keycloak-system)"]
+            Op[Operator Pod]
+            KC[Keycloak Pod]
+            AdminSecret[Admin Credentials Secret]
+        end
+
+        subgraph teamns["Team Namespace (team-a)"]
+            RealmCR[KeycloakRealm CR]
+            ClientCR[KeycloakClient CR]
+            AppSecret[Generated Client Secret]
+        end
+
+        K8sAPI[Kubernetes API Server]
+        Webhook[Admission Webhook :8443]
+    end
+
+    User([User / GitOps Tool])
+    OTLPCollector([OTLP Collector])
+
+    User --&gt;|"TB-1: kubectl / ArgoCD apply"| K8sAPI
+    K8sAPI --&gt;|"TB-1b: ValidatingWebhook"| Webhook
+    Op --&gt;|"TB-2: in-cluster SA token"| K8sAPI
+    Op --&gt;|"TB-3: admin credentials"| KC
+    Op -.-&gt;|"TB-4: optional, OTLP"| OTLPCollector
+
+    RealmCR -.-&gt;|"operatorRef"| Op
+    ClientCR -.-&gt;|"realmRef"| RealmCR
+
+    KC --- AdminSecret
+
+    style opns fill:#1a4a7a,color:#ffffff,stroke:#4a90d9
+    style teamns fill:#1a5c2a,color:#ffffff,stroke:#4caf50
+    style cluster fill:transparent,stroke:#666666</code></pre>
+<h3 id="trust-boundary-definitions">Trust Boundary Definitions<a class="headerlink" href="#trust-boundary-definitions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Boundary</th>
+<th>From</th>
+<th>To</th>
+<th>Trust Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TB-1</td>
+<td>User to Kubernetes API</td>
+<td>Users, GitOps controllers</td>
+<td>K8s API server</td>
+<td><strong>Untrusted input</strong> — validated by admission webhook and Pydantic</td>
+</tr>
+<tr>
+<td>TB-1b</td>
+<td>K8s API to webhook</td>
+<td>Kubernetes API server</td>
+<td>Operator webhook server</td>
+<td>Mutual authentication via cert-manager TLS</td>
+</tr>
+<tr>
+<td>TB-2</td>
+<td>Operator to Kubernetes API</td>
+<td>Operator pod</td>
+<td>K8s API server</td>
+<td>High trust — in-cluster SA token, minimal RBAC</td>
+</tr>
+<tr>
+<td>TB-3</td>
+<td>Operator to Keycloak</td>
+<td>Operator pod</td>
+<td>Keycloak admin API</td>
+<td>High trust — full admin credentials, HTTP within cluster</td>
+</tr>
+<tr>
+<td>TB-4</td>
+<td>Operator to OTLP</td>
+<td>Operator pod</td>
+<td>Trace/metrics collector</td>
+<td>Low sensitivity — telemetry only</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="stride-analysis">STRIDE Analysis<a class="headerlink" href="#stride-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="tb-1-user-gitops-kubernetes-api-crd-creation">TB-1: User / GitOps → Kubernetes API (CRD creation)<a class="headerlink" href="#tb-1-user-gitops-kubernetes-api-crd-creation" title="Permanent link">&para;</a></h3>
+<h4 id="spoofing">Spoofing<a class="headerlink" href="#spoofing" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Attacker impersonates a legitimate user to create or modify CRs.</p>
+<p><strong>Controls</strong>:
+- ✅ Kubernetes API server enforces authentication for all requests (certificates, tokens, OIDC)
+- ✅ RBAC gates who can <code>create</code>/<code>update</code>/<code>delete</code> each CRD per namespace
+- ✅ GitOps tools (ArgoCD, Flux) authenticate with dedicated ServiceAccounts scoped to their namespace</p>
+<p><strong>Residual risk</strong>: None specific to this operator — depends on cluster authentication configuration.</p>
+<hr />
+<h4 id="tampering">Tampering<a class="headerlink" href="#tampering" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Attacker crafts a malicious CRD spec to cause unintended behavior in Keycloak.</p>
+<p><strong>Controls</strong>:
+- ✅ <strong>Admission webhook</strong> validates all CR specs synchronously before persistence to etcd (TLS-protected, cert-manager)
+- ✅ <strong>Pydantic models</strong> enforce strict typing, field constraints, and field-level validators on every reconciliation
+- ✅ <code>realmName</code> validator blocks path traversal characters (<code>/</code>, <code>\</code>, <code>?</code>, <code>#</code>, <code>%</code>, <code>&amp;</code>, <code>=</code>, <code>+</code>, space)
+- ✅ <code>clientId</code> validated as non-empty, max 255 chars; embedded in Keycloak API calls via the Keycloak-assigned UUID, not the raw string
+- ✅ <code>protocol</code> field is an enum (<code>openid-connect</code>, <code>saml</code>, <code>docker-v2</code>) — no free-text injection
+- ✅ Redirect URI validator blocks bare wildcards, domain wildcards (<code>https://*.example.com</code>), wildcards not at end of path, and non-scheme URIs
+- ✅ Script-based protocol mappers blocked by default (<code>KEYCLOAK_ALLOW_SCRIPT_MAPPERS=false</code>), preventing arbitrary JavaScript execution in Keycloak token flows
+- ✅ Case-insensitive check on mapper type prevents case-variation bypass</p>
+<p><strong>Residual risk</strong>: Low. Multiple independent validation layers.</p>
+<hr />
+<h4 id="repudiation">Repudiation<a class="headerlink" href="#repudiation" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Actor denies having created or modified a CR.</p>
+<p><strong>Controls</strong>:
+- ✅ Kubernetes audit logging captures all API calls (who, what, when) — platform responsibility to enable
+- ✅ GitOps PR history provides an immutable record of intent
+- ✅ Operator logs RBAC decisions with full context (source namespace, target namespace, operation, resource name)</p>
+<p><strong>Residual risk</strong>: Low when Kubernetes audit logging is enabled. Without it, only GitOps history remains.</p>
+<hr />
+<h4 id="information-disclosure">Information Disclosure<a class="headerlink" href="#information-disclosure" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: CR spec content exposes sensitive information.</p>
+<p><strong>Controls</strong>:
+- ✅ <strong>No plaintext secrets in CR specs</strong> (ADR-005) — all sensitive values are Kubernetes Secret references (<code>secretKeyRef</code>)
+- ✅ Admission webhook rejects specs containing plaintext where a Secret reference is required</p>
+<p><strong>Gap</strong>: The <code>.status</code> field on CRDs is not a formal Kubernetes status subresource (no <code>subresources: {status: {}}</code> in the CRD). Anyone with <code>patch</code> or <code>update</code> on a CR can write status fields. This is a low-risk monitoring integrity issue (a user could forge <code>phase: Ready</code> on a failing resource, suppressing alerts). The reconciler corrects status on the next cycle regardless. Compared to having general <code>update</code> permission on the CR — which implies the user is trusted — status forging is a minor concern.</p>
+<hr />
+<h4 id="denial-of-service">Denial of Service<a class="headerlink" href="#denial-of-service" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Attacker creates large numbers of CRs to overwhelm the operator or Keycloak.</p>
+<p><strong>Controls</strong>:
+- ✅ <strong>Three-layer rate limiting</strong> protects Keycloak: startup jitter (0–10s random delay), per-namespace limiter (5 req/s), global limiter (50 req/s)
+- ✅ <strong>Circuit breaker</strong> (<code>aiobreaker</code>) stops runaway reconciliation loops when Keycloak is unavailable
+- ✅ <strong>Exponential backoff</strong> on reconciliation failures prevents hammering
+- ✅ Kopf's built-in queue management prevents unbounded event accumulation</p>
+<p><strong>Residual risk</strong>: An attacker with CR creation permissions can queue work for the operator. The rate limiters absorb the load and protect Keycloak, but reconciliation latency increases. Kubernetes resource quotas at the namespace level are the appropriate additional control.</p>
+<hr />
+<h4 id="elevation-of-privilege">Elevation of Privilege<a class="headerlink" href="#elevation-of-privilege" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Attacker uses a CR to grant themselves elevated roles in Keycloak.</p>
+<p><strong>Controls</strong>:
+- ✅ <strong>Blocked realm roles</strong>: <code>admin</code> cannot be assigned via <code>KeycloakClient</code> spec
+- ✅ <strong>Blocked realm-management client roles</strong>: <code>realm-admin</code>, <code>manage-realm</code>, <code>manage-authorization</code>, <code>manage-users</code>, <code>manage-clients</code>, <code>manage-events</code>, <code>manage-identity-providers</code> are all blocked
+- ✅ <strong>Impersonation blocked by default</strong>: <code>impersonation</code> role cannot be assigned unless <code>KEYCLOAK_ALLOW_IMPERSONATION=true</code> is explicitly set
+- ✅ Checks run on every reconciliation, not just at creation — drift is corrected</p>
+<p><strong>Gap</strong>: The blocked-role list prevents the <em>operator</em> from assigning dangerous roles through CRDs. Someone with direct access to the Keycloak admin API (separate credentials or UI) can still assign these roles manually. If that happens, the operator will not detect or revert it — it only reconciles what it owns. This is addressed under the drift window discussion in TB-3.</p>
+<p><strong>Gap</strong>: A realm owner can add any Kubernetes namespace to <code>clientAuthorizationGrants</code>. There is no operator-native blocklist. This is a platform incident-response concern — without an external control, a platform team cannot prevent a realm owner's GitOps tool from continuously re-applying a grant list that includes a namespace the platform wants to block. See <a href="#gap-2-no-platform-veto-on-clientauthorizationgrants">GAP-2</a> for the recommended mitigation.</p>
+<hr />
+<h3 id="tb-2-operator-kubernetes-api">TB-2: Operator → Kubernetes API<a class="headerlink" href="#tb-2-operator-kubernetes-api" title="Permanent link">&para;</a></h3>
+<h4 id="spoofing_1">Spoofing<a class="headerlink" href="#spoofing_1" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Another process impersonates the operator's service account.</p>
+<p><strong>Controls</strong>:
+- ✅ SA token is mounted automatically by the kubelet; not distributable outside the pod
+- ✅ <code>automountServiceAccountToken: true</code> only on the operator deployment — other pods in the namespace do not inherit it
+- ✅ Token is short-lived and automatically rotated by the kubelet</p>
+<p><strong>Residual risk</strong>: If the operator pod is compromised and the SA token is extracted, it is valid until expiry (typically 1h for projected tokens). Pod security controls (next section) reduce this risk.</p>
+<hr />
+<h4 id="tampering-elevation-of-privilege">Tampering / Elevation of Privilege<a class="headerlink" href="#tampering-elevation-of-privilege" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Operator's SA is used to modify resources beyond its intended scope.</p>
+<p><strong>Controls</strong>:
+- ✅ Operator SA has <strong>no blanket cluster-wide Secret read</strong> access
+- ✅ Namespace Secret access is <strong>opt-in per namespace</strong> via RoleBinding created by Helm charts (<code>rbac.create=true</code>)
+- ✅ Even with Secret access, the operator requires the Secret to carry <code>vriesdemichael.github.io/keycloak-allow-operator-read=true</code> label — defense in depth
+- ✅ Cluster-wide permissions limited to: list/watch CRDs, patch CRD status, manage Keycloak deployments in operator namespace only
+- ✅ Operator uses <code>SubjectAccessReview</code> at runtime to verify its own permissions before cross-namespace operations
+- ✅ RBAC checks are performed fresh per reconciliation (not cached)
+- ✅ All cross-namespace RBAC decisions are audit-logged with structured JSON</p>
+<p><strong>Residual risk</strong>: Minimal given the layered design (ADR-032, ADR-073).</p>
+<hr />
+<h4 id="information-disclosure_1">Information Disclosure<a class="headerlink" href="#information-disclosure_1" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Operator SA reads Secrets it should not have access to.</p>
+<p><strong>Controls</strong>:
+- ✅ Double-gating: K8s RBAC must allow the read <strong>and</strong> the Secret must have the allow label
+- ✅ Secret contents are never logged (structured logging with explicit exclusion of sensitive fields)
+- ✅ Metrics (Prometheus) carry no Secret values — cardinality policy enforced (ADR-084)</p>
+<p><strong>Residual risk</strong>: Low. Any granted access is explicitly auditable via K8s audit logs.</p>
+<hr />
+<h3 id="tb-3-operator-keycloak-admin-api">TB-3: Operator → Keycloak Admin API<a class="headerlink" href="#tb-3-operator-keycloak-admin-api" title="Permanent link">&para;</a></h3>
+<p>This is the highest-criticality boundary. Full admin credentials transit this channel.</p>
+<h4 id="spoofing_2">Spoofing<a class="headerlink" href="#spoofing_2" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Operator authenticates to a fake Keycloak instance and leaks admin credentials.</p>
+<p><strong>Controls</strong>:
+- ✅ Operator-managed Keycloak is addressed by internal cluster DNS (<code>{name}.{namespace}.svc.cluster.local</code>) over in-cluster HTTP
+- ✅ External Keycloak connections derive TLS verification from <code>KEYCLOAK_URL</code>: <code>https://</code> defaults to certificate verification, <code>http://</code> defaults to no TLS verification
+- ✅ Operators can explicitly override TLS verification via <code>KEYCLOAK_VERIFY_SSL</code> / <code>keycloak.verifySsl</code>, which makes insecure external HTTPS an explicit configuration choice instead of an implicit default</p>
+<p><strong>Residual risk</strong>: Low for operator-managed Keycloak (HTTP, same-namespace, not interceptable from outside the cluster). Low for external HTTPS when verification is left at the secure default. Medium only when external HTTPS deployments explicitly disable certificate verification for self-signed or non-standard PKI.</p>
+<hr />
+<h4 id="tampering_1">Tampering<a class="headerlink" href="#tampering_1" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Keycloak API response is manipulated to cause the operator to take incorrect actions.</p>
+<p><strong>Controls</strong>:
+- ✅ Responses are deserialized into typed Pydantic models — malformed or unexpected fields are rejected or ignored
+- ✅ Same cluster-internal network as above — MITM requires cluster-level access</p>
+<p><strong>Residual risk</strong>: Low.</p>
+<hr />
+<h4 id="repudiation_1">Repudiation<a class="headerlink" href="#repudiation_1" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Keycloak-side admin changes cannot be attributed to a source.</p>
+<p><strong>Controls</strong>:
+- ✅ Keycloak admin events API is queried by the drift detection service to detect out-of-band changes
+- ✅ Admin events include the user/session that made the change — if the Keycloak admin console is used directly, the event records the user account</p>
+<p><strong>Gap</strong>: The operator does not currently emit a distinct security alert when drift is detected. Drift is treated as a consistency issue and reconciled silently. In a security context, drift may indicate unauthorized access to the Keycloak admin API and should trigger an alert. <strong>Tracked in issue #760.</strong></p>
+<hr />
+<h4 id="information-disclosure_2">Information Disclosure<a class="headerlink" href="#information-disclosure_2" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Admin credentials are leaked through logs, metrics, or error messages.</p>
+<p><strong>Controls</strong>:
+- ✅ Admin credentials loaded from K8s Secret at startup — never logged
+- ✅ HTTP response bodies are not logged at INFO level
+- ✅ Bearer tokens used for subsequent calls (credential not re-sent per request)
+- ✅ Token refresh uses the refresh token, not re-authenticating with password each time
+- ✅ Prometheus metrics contain no credential values</p>
+<p><strong>Residual risk</strong>: Low. Risk increases if <code>LOG_LEVEL=DEBUG</code> is enabled in production — review log pipeline before doing so.</p>
+<hr />
+<h4 id="denial-of-service_1">Denial of Service<a class="headerlink" href="#denial-of-service_1" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Keycloak admin API is overwhelmed by operator reconciliation.</p>
+<p><strong>Controls</strong>:
+- ✅ Three-layer rate limiting (jitter, namespace, global) — see TB-1 DoS section
+- ✅ Circuit breaker opens after sustained Keycloak failures, stops all API calls until Keycloak recovers
+- ✅ Drift detection interval is configurable — can be reduced at the cost of detection latency</p>
+<p><strong>Residual risk</strong>: Very low. The rate limiting architecture is specifically designed for this scenario.</p>
+<hr />
+<h4 id="elevation-of-privilege-admin-credential-scope">Elevation of Privilege — Admin Credential Scope<a class="headerlink" href="#elevation-of-privilege-admin-credential-scope" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: If the admin credential Secret is compromised, the attacker gains full Keycloak admin access.</p>
+<p><strong>Context</strong>: This is the highest-impact risk in the system. The operator uses a full master-realm admin account because realm <em>creation</em> requires master realm access — there is no Keycloak-native way to scope realm-creation permission to less than master admin. For realm-internal operations (clients, IDPs), a realm-scoped account would suffice but introduces a bootstrap problem (the realm-scoped account cannot exist before the realm does).</p>
+<p><strong>Controls</strong>:
+- ✅ The admin credential Secret requires the allow label AND namespace RoleBinding to be readable by the operator — two independent gates
+- ✅ Operator pod is hardened: non-root (UID 1001), read-only root filesystem, all Linux capabilities dropped, <code>allowPrivilegeEscalation: false</code>, <code>seccompProfile: RuntimeDefault</code>
+- ✅ Operator namespace is dedicated — workload pods do not run alongside it
+- ✅ Pod Security Standards can be enforced at the namespace level</p>
+<p><strong>Gap</strong>: <strong>No automatic rotation workflow exists for the Keycloak admin credential.</strong> The admin client is cached at startup with the password stored in memory — the Secret is not re-read on subsequent reconciliations. Rotating the password requires updating the Secret <strong>and restarting the operator pod</strong> to force a re-read. For long-running deployments, this means the credential age is unbounded unless an external secret manager (Vault, AWS Secrets Manager) manages rotation. <strong>Tracked in issue #761.</strong></p>
+<p><strong>Residual risk</strong>: High if the admin credential is compromised. Reduce the window by integrating external secret rotation and by restricting who can read the admin Secret to the operator SA only.</p>
+<hr />
+<h3 id="tb-4-operator-otlp-collector">TB-4: Operator → OTLP Collector<a class="headerlink" href="#tb-4-operator-otlp-collector" title="Permanent link">&para;</a></h3>
+<h4 id="information-disclosure_3">Information Disclosure<a class="headerlink" href="#information-disclosure_3" title="Permanent link">&para;</a></h4>
+<p><strong>Threat</strong>: Trace data sent to the OTLP collector contains sensitive operation details.</p>
+<p><strong>Controls</strong>:
+- ✅ Spans contain operation names and timing, not payload content or credentials
+- ✅ Correlation IDs do not encode secrets</p>
+<p><strong>Gap</strong>: <code>OTEL_EXPORTER_OTLP_INSECURE=true</code> is a supported configuration option. If set, trace data is transmitted without TLS. This is a platform configuration decision — if you configure an insecure OTLP endpoint, that is on you. The receiving collector should enforce authentication. Do not expose an unauthenticated OTLP endpoint on a non-loopback interface.</p>
+<p><strong>Residual risk</strong>: Low with secure collector configuration.</p>
+<hr />
+<h2 id="kubernetes-specific-attack-vectors-mitre-attck-for-containers">Kubernetes-Specific Attack Vectors (MITRE ATT&amp;CK for Containers)<a class="headerlink" href="#kubernetes-specific-attack-vectors-mitre-attck-for-containers" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Technique</th>
+<th>Threat</th>
+<th>Control</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Initial Access</strong> — Malicious admission controller</td>
+<td>Compromise webhook to allow bad specs</td>
+<td>Webhook protected by cert-manager TLS; cert rotation automatic</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Execution</strong> — Script mappers</td>
+<td>Inject arbitrary JS into Keycloak token flows via CRD</td>
+<td>Script mapper types blocked by default; case-insensitive check</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Persistence</strong> — Keycloak admin account creation</td>
+<td>Create a persistent backdoor admin account via operator</td>
+<td>Operator does not manage Keycloak users — out of scope by design</td>
+<td>✅ Not applicable</td>
+</tr>
+<tr>
+<td><strong>Persistence</strong> — Malicious operator image</td>
+<td>Supply-chain attack via compromised container image</td>
+<td>Image built in GitHub Actions with SBOM; Dependabot updates dependencies</td>
+<td>✅ Partial — no image signing currently</td>
+</tr>
+<tr>
+<td><strong>Privilege Escalation</strong> — Role assignment via CRD</td>
+<td>Assign <code>realm-admin</code> or <code>manage-realm</code> to a service account</td>
+<td>Explicit blocked-role list enforced every reconciliation</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Privilege Escalation</strong> — Impersonation via CRD</td>
+<td>Assign <code>impersonation</code> role to allow acting as any user</td>
+<td>Blocked unless <code>KEYCLOAK_ALLOW_IMPERSONATION=true</code> explicitly set</td>
+<td>✅ Mitigated by default</td>
+</tr>
+<tr>
+<td><strong>Defense Evasion</strong> — Status field forgery</td>
+<td>Forge <code>phase: Ready</code> to suppress monitoring alerts</td>
+<td>No status subresource; anyone with CR update can write status. Low impact — reconciler corrects on next cycle</td>
+<td>⚠️ Low residual risk</td>
+</tr>
+<tr>
+<td><strong>Lateral Movement</strong> — Cross-namespace client creation</td>
+<td>Unauthorized namespace creates client in another team's realm</td>
+<td><code>clientAuthorizationGrants</code> allowlist enforced before any Keycloak API call</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Lateral Movement</strong> — Platform veto bypass</td>
+<td>Realm owner adds adversary namespace to grant list; platform cannot block without operator changes</td>
+<td>Kyverno/OPA ClusterPolicy recommended as platform-level control</td>
+<td>⚠️ Requires external policy engine</td>
+</tr>
+<tr>
+<td><strong>Collection</strong> — Admin credential exfiltration</td>
+<td>Read Keycloak admin Secret via operator SA</td>
+<td>Double-gating: RBAC + label contract; SA cannot read unlabeled Secrets</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Collection</strong> — Client secret harvest</td>
+<td>Read generated OAuth2 client secrets</td>
+<td>Secrets written only to client's namespace; operator SA access is namespace-opt-in</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Impact</strong> — Destructive realm deletion</td>
+<td>Delete all realms via CRD delete cascade</td>
+<td>Cascading delete requires explicit <code>kubectl delete keycloakrealm</code> — no force-delete annotation (ADR-064)</td>
+<td>✅ Mitigated</td>
+</tr>
+<tr>
+<td><strong>Impact</strong> — Drift exploitation</td>
+<td>Make out-of-band Keycloak changes that escape detection</td>
+<td>Admin events API detects changes; operator reconciles drift. No security alerting on drift detection currently</td>
+<td>⚠️ Gap in alerting</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="security-controls-inventory">Security Controls Inventory<a class="headerlink" href="#security-controls-inventory" title="Permanent link">&para;</a></h2>
+<h3 id="authentication-and-authorization">Authentication and Authorization<a class="headerlink" href="#authentication-and-authorization" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CRD creation gated by K8s RBAC</td>
+<td>Standard Kubernetes RBAC roles per namespace</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Cross-namespace client creation gated by <code>clientAuthorizationGrants</code></td>
+<td>Checked by reconciler and admission webhook before any Keycloak call</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Secret access double-gated</td>
+<td>RBAC + <code>vriesdemichael.github.io/keycloak-allow-operator-read</code> label</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Cross-namespace RBAC validated at runtime</td>
+<td><code>SubjectAccessReview</code> on every cross-namespace operation</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>No Keycloak-internal user authentication</td>
+<td>Users interact only with CRDs, never with Keycloak admin UI (ADR-017)</td>
+<td>✅ In place</td>
+</tr>
+</tbody>
+</table>
+<h3 id="input-validation">Input Validation<a class="headerlink" href="#input-validation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Schema validation at API boundary</td>
+<td>Kubernetes-enforced JSON schema (CRD spec)</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Semantic validation at API boundary</td>
+<td>Admission webhook (Kopf + cert-manager TLS)</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Deep validation in reconciler</td>
+<td>Pydantic models with field-level validators</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Realm name path traversal prevention</td>
+<td>Explicit character blocklist in <code>validate_realm_name</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Redirect URI wildcard safety</td>
+<td>Validator blocks domain wildcards and bare wildcards</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Protocol allowlist</td>
+<td>Enum: <code>openid-connect</code>, <code>saml</code>, <code>docker-v2</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Script mapper blocking</td>
+<td>Case-insensitive type check, blocked by default</td>
+<td>✅ In place</td>
+</tr>
+</tbody>
+</table>
+<h3 id="privilege-controls">Privilege Controls<a class="headerlink" href="#privilege-controls" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Blocked realm roles</td>
+<td><code>admin</code> cannot be assigned via CRD</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Blocked realm-management roles</td>
+<td><code>realm-admin</code>, <code>manage-realm</code>, <code>manage-authorization</code>, <code>manage-users</code>, <code>manage-clients</code>, <code>manage-events</code>, <code>manage-identity-providers</code> blocked</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Impersonation blocked by default</td>
+<td><code>KEYCLOAK_ALLOW_IMPERSONATION=false</code> default</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Checks enforced on every reconciliation</td>
+<td>Not just at creation time</td>
+<td>✅ In place</td>
+</tr>
+</tbody>
+</table>
+<h3 id="secret-and-credential-handling">Secret and Credential Handling<a class="headerlink" href="#secret-and-credential-handling" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No plaintext secrets in CRD specs</td>
+<td>ADR-005; enforced by admission webhook</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Admin credentials via K8s Secret reference</td>
+<td>Never stored in CRD or configmap</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Client secrets written atomically</td>
+<td>ADR-080; old credential never leaves a partial state</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Client secrets scoped to client namespace</td>
+<td>Not accessible from other namespaces</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Automatic admin credential rotation</td>
+<td>No workflow currently exists — issue #761</td>
+<td>❌ Gap</td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-and-pod-security">Container and Pod Security<a class="headerlink" href="#container-and-pod-security" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Non-root user</td>
+<td>UID 1001</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Read-only root filesystem</td>
+<td><code>readOnlyRootFilesystem: true</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>No privilege escalation</td>
+<td><code>allowPrivilegeEscalation: false</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>All capabilities dropped</td>
+<td><code>capabilities: drop: [ALL]</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Seccomp profile</td>
+<td><code>RuntimeDefault</code></td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Pod Security Standards</td>
+<td>Configurable via <code>podSecurityContext</code>; <code>restricted</code> profile compatible</td>
+<td>✅ Available</td>
+</tr>
+</tbody>
+</table>
+<h3 id="network-security">Network Security<a class="headerlink" href="#network-security" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operator → Keycloak over cluster-internal DNS</td>
+<td>Not accessible from outside the cluster</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Webhook TLS</td>
+<td>cert-manager-issued certificate, automatic rotation</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Network policies</td>
+<td>Not shipped in Helm chart (ADR-076)</td>
+<td>⚠️ Platform responsibility</td>
+</tr>
+<tr>
+<td>TLS verification for Keycloak connections</td>
+<td>Derived from URL scheme by default; explicit override available for self-signed or non-standard PKI</td>
+<td>✅ In place</td>
+</tr>
+</tbody>
+</table>
+<h3 id="observability-and-audit">Observability and Audit<a class="headerlink" href="#observability-and-audit" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Structured JSON logging with correlation IDs</td>
+<td>All reconciliation events</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>RBAC decision audit logging</td>
+<td>Cross-namespace operations logged with context</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Prometheus metrics</td>
+<td>Operator activity, rate limiting, health</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>OpenTelemetry distributed tracing</td>
+<td>Full span tree for reconciliation operations</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Drift detection</td>
+<td>Periodic comparison of desired vs actual Keycloak state</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Keycloak admin event attribution</td>
+<td>Out-of-band changes attributable via Keycloak admin events API</td>
+<td>✅ Available</td>
+</tr>
+<tr>
+<td>Security alerting on drift</td>
+<td>No distinct alert/metric for drift detection results</td>
+<td>❌ Gap — issue #760</td>
+</tr>
+</tbody>
+</table>
+<h3 id="resilience">Resilience<a class="headerlink" href="#resilience" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Implementation</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Three-layer rate limiting</td>
+<td>Jitter, per-namespace limiter, global limiter</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Circuit breaker</td>
+<td>Stops reconciliation when Keycloak is unhealthy</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Exponential backoff</td>
+<td>Permanent failures do not retry indefinitely</td>
+<td>✅ In place</td>
+</tr>
+<tr>
+<td>Reconciliation pause</td>
+<td>Operator can be paused per-resource without restart</td>
+<td>✅ In place</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="known-gaps-and-accepted-risks">Known Gaps and Accepted Risks<a class="headerlink" href="#known-gaps-and-accepted-risks" title="Permanent link">&para;</a></h2>
+<p>These are explicit gaps in the security posture. They are documented here rather than hidden.</p>
+<h3 id="gap-1-full-keycloak-admin-credentials-required">GAP-1: Full Keycloak Admin Credentials Required<a class="headerlink" href="#gap-1-full-keycloak-admin-credentials-required" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: High (impact if exploited) / Low (likelihood given controls)</p>
+<p>The operator authenticates to Keycloak using full master-realm admin credentials. This is architecturally required: realm creation needs master-realm admin access, and there is no Keycloak API for finer-grained realm creation. For realm-internal operations, a realm-scoped account would suffice but introduces an unsolvable bootstrap dependency.</p>
+<p><strong>Accepted because</strong>: No viable alternative exists within Keycloak's current permission model.</p>
+<p><strong>Mitigations in place</strong>: Hardened pod (non-root, read-only FS, capabilities dropped); double-gated Secret access; dedicated operator namespace; K8s RBAC limits who can read the Secret.</p>
+<p><strong>What would reduce risk further</strong>: External secret manager with automatic rotation; restricting who can <code>exec</code> into the operator pod.</p>
+<hr />
+<h3 id="gap-2-no-platform-veto-on-clientauthorizationgrants">GAP-2: No Platform Veto on <code>clientAuthorizationGrants</code><a class="headerlink" href="#gap-2-no-platform-veto-on-clientauthorizationgrants" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Medium</p>
+<p>A realm owner with <code>update</code> permissions on a <code>KeycloakRealm</code> can add any namespace to <code>clientAuthorizationGrants</code>. There is no operator-native blocklist. A GitOps tool will continuously re-apply the realm manifest even if a platform team manually patches it.</p>
+<p><strong>Not fixed in the operator because</strong>: The correct home for cluster-scoped policy enforcement is a policy engine (Kyverno, OPA/Gatekeeper), not an application operator.</p>
+<p><strong>Recommended mitigation</strong>: Deploy a Kyverno <code>ClusterPolicy</code> that denies <code>KeycloakRealm</code> specs containing restricted namespaces in <code>clientAuthorizationGrants</code>. The integration with GitOps tooling is clean: Kyverno blocks the apply at the Kubernetes API boundary, ArgoCD reports the application as <code>Degraded</code>, and the realm manager has a clear signal to resolve the policy violation — without any platform team needing to take manual action.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Example: Kyverno policy blocking specific namespaces from appearing in grants</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kyverno.io/v1</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterPolicy</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">restrict-client-authorization-grants</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">validationFailureAction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Enforce</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">block-restricted-namespaces</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">match</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="nt">any</span><span class="p">:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resources</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">              </span><span class="nt">kinds</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;KeycloakRealm&quot;</span><span class="p p-Indicator">]</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">validate</span><span class="p">:</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">        </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Namespace</span><span class="nv"> </span><span class="s">&#39;restricted-ns&#39;</span><span class="nv"> </span><span class="s">cannot</span><span class="nv"> </span><span class="s">be</span><span class="nv"> </span><span class="s">added</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">clientAuthorizationGrants&quot;</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">        </span><span class="nt">deny</span><span class="p">:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">          </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">            </span><span class="nt">any</span><span class="p">:</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;restricted-ns&quot;</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">                </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AnyIn</span>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">                </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">request.object.spec.clientAuthorizationGrants</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</span></code></pre></div>
+<hr />
+<h3 id="accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification">Accepted Risk-3: External HTTPS Deployments May Explicitly Disable TLS Verification<a class="headerlink" href="#accepted-risk-3-external-https-deployments-may-explicitly-disable-tls-verification" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Medium when explicitly configured / Low by default</p>
+<p>The operator now derives TLS verification from <code>KEYCLOAK_URL</code>: <code>https://</code> verifies certificates by default and <code>http://</code> does not. This closes the previous unsafe default described in issue #756.</p>
+<p><strong>For operator-managed Keycloak</strong>: HTTP is used on <code>svc.cluster.local</code> — TLS verification is not meaningful. Risk remains low because traffic stays on the cluster network.</p>
+<p><strong>For external Keycloak (<code>KEYCLOAK_URL</code> configured)</strong>: HTTPS is now verified by default. The remaining risk appears only when an operator explicitly sets <code>KEYCLOAK_VERIFY_SSL=false</code> / <code>keycloak.verifySsl=false</code> to tolerate self-signed or otherwise non-verifiable certificates.</p>
+<p><strong>Accepted because</strong>: Some environments still rely on self-signed or private PKI chains that are not trusted by the operator runtime, so a documented escape hatch is required.</p>
+<p><strong>Mitigations in place</strong>: Secure default for external HTTPS, scheme-derived behavior for managed in-cluster HTTP, explicit Helm/env configuration for the override, and startup warning when HTTPS verification is disabled.</p>
+<p><strong>What would reduce risk further</strong>: Mount a trusted CA bundle into the operator and keep <code>KEYCLOAK_VERIFY_SSL=true</code> for all HTTPS deployments.</p>
+<hr />
+<h3 id="gap-4-no-security-alerting-on-drift-detection">GAP-4: No Security Alerting on Drift Detection<a class="headerlink" href="#gap-4-no-security-alerting-on-drift-detection" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Medium</p>
+<p>The drift detection service identifies out-of-band Keycloak changes but treats them as consistency issues rather than potential security events. No distinct metric or alert is emitted when drift is detected.</p>
+<p><strong>Why this matters</strong>: Drift in a production Keycloak instance should be treated as a potential incident indicator — someone may have accessed the admin API or admin UI directly. Without alerting, the change is reconciled silently.</p>
+<p><strong>Tracked</strong>: Issue #760.</p>
+<p><strong>Interim mitigation</strong>: Review Keycloak admin events periodically. The admin events API records user, timestamp, and operation for every change.</p>
+<hr />
+<h3 id="gap-5-no-admin-credential-rotation-workflow">GAP-5: No Admin Credential Rotation Workflow<a class="headerlink" href="#gap-5-no-admin-credential-rotation-workflow" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Medium</p>
+<p>No built-in process exists to rotate the Keycloak admin credentials. Password age is unbounded unless an external secret manager manages rotation.</p>
+<p><strong>Tracked</strong>: Issue #761.</p>
+<p><strong>Recommended mitigation</strong>: Use an external secret management system (Vault, AWS Secrets Manager, External Secrets Operator) that rotates the credential and updates the K8s Secret. Note that the operator caches the admin client at startup and stores the password in memory — updating the Secret does not automatically take effect. After rotating the credential, restart the operator pod so it re-creates the admin client and reads the new Secret value.</p>
+<hr />
+<h3 id="gap-6-etcd-encryption-is-cluster-dependent">GAP-6: etcd Encryption is Cluster-Dependent<a class="headerlink" href="#gap-6-etcd-encryption-is-cluster-dependent" title="Permanent link">&para;</a></h3>
+<p><strong>Severity</strong>: Low (as an operator concern) / High (as a deployment concern)</p>
+<p>All Kubernetes Secrets — including the Keycloak admin credential — are stored in etcd. If etcd is not encrypted at rest and an attacker gains node-level access, they can extract secrets from the etcd data directory.</p>
+<p><strong>This is out of scope for the operator to fix</strong>: Encryption at rest is a cluster configuration responsibility. The operator's security model assumes it is enabled.</p>
+<p><strong>Action</strong>: Before deploying to production, verify that <code>--encryption-provider-config</code> is set on the API server or that your managed Kubernetes provider encrypts etcd by default (GKE, EKS, AKS all do).</p>
+<hr />
+<h2 id="network-hardening-recommendations">Network Hardening Recommendations<a class="headerlink" href="#network-hardening-recommendations" title="Permanent link">&para;</a></h2>
+<p>The operator does not ship Kubernetes <code>NetworkPolicy</code> resources (ADR-076 — network policies for application-to-Keycloak traffic are out of scope). However, restricting the operator pod's own network access meaningfully reduces blast radius if the pod is compromised.</p>
+<p>The operator pod requires exactly these egress connections:</p>
+<table>
+<thead>
+<tr>
+<th>Destination</th>
+<th>Port</th>
+<th>Protocol</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Kubernetes API server</td>
+<td>6443 (kubeadm) / 443 (managed)</td>
+<td>HTTPS</td>
+<td>In-cluster SA token operations</td>
+</tr>
+<tr>
+<td>Keycloak service (<code>{name}.{namespace}.svc.cluster.local</code>)</td>
+<td>8080 (HTTP) / 8443 (HTTPS)</td>
+<td>HTTP/S</td>
+<td>Admin API</td>
+</tr>
+<tr>
+<td>OTLP collector</td>
+<td>Configurable</td>
+<td>gRPC/HTTP</td>
+<td>Telemetry (optional)</td>
+</tr>
+<tr>
+<td>CoreDNS</td>
+<td>53</td>
+<td>UDP/TCP</td>
+<td>DNS resolution</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example network policy for the operator pod:</strong></p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NetworkPolicy</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator-egress</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">podSelector</span><span class="p">:</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">policyTypes</span><span class="p">:</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Egress</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="nt">egress</span><span class="p">:</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="c1"># Kubernetes API server.</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="c1"># NetworkPolicy selectors only work for pods; the API server is a node-level process</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="c1"># (or an external endpoint on managed clusters), so a podSelector cannot target it.</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">    </span><span class="c1"># Replace the CIDR below with the actual API server IP from:</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">    </span><span class="c1">#   kubectl get endpoints kubernetes -n default</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ipBlock</span><span class="p">:</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">            </span><span class="nt">cidr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.96.0.1/32</span><span class="w">  </span><span class="c1"># Replace with your cluster&#39;s API server IP</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">      </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6443</span><span class="w">  </span><span class="c1"># kubeadm default; use 443 for managed clusters (GKE/EKS/AKS)</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">    </span><span class="c1"># Keycloak admin API (same namespace, Keycloak pods only).</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="c1"># Port 8080 for HTTP (in-cluster default); use 8443 if Keycloak runs with TLS.</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="c1"># The operator talks only to the admin REST API — Keycloak&#39;s metrics port (9000)</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">    </span><span class="c1"># is scraped by Prometheus, not the operator, and does not need egress here.</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">namespaceSelector</span><span class="p">:</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">            </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">              </span><span class="nt">kubernetes.io/metadata.name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-system</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">          </span><span class="nt">podSelector</span><span class="p">:</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">            </span><span class="nt">matchLabels</span><span class="p">:</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">              </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">      </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a><span class="w">    </span><span class="c1"># DNS — permits DNS to any destination on port 53; tighten to CoreDNS pods if required</span>
+</span><span id="__span-1-39"><a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">ports</span><span class="p">:</span>
+</span><span id="__span-1-40"><a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">53</span>
+</span><span id="__span-1-41"><a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UDP</span>
+</span><span id="__span-1-42"><a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">53</span>
+</span><span id="__span-1-43"><a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">          </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+</span></code></pre></div>
+<p>Add an additional egress rule for your OTLP collector if tracing is enabled.</p>
+<hr />
+<h2 id="deployment-security-baseline">Deployment Security Baseline<a class="headerlink" href="#deployment-security-baseline" title="Permanent link">&para;</a></h2>
+<h3 id="minimum-baseline">Minimum Baseline<a class="headerlink" href="#minimum-baseline" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Enable Kubernetes audit logging</strong> — required for repudiation controls to be effective</li>
+<li><strong>Use a dedicated namespace</strong> for the operator — do not co-locate with workload pods</li>
+<li><strong>Deploy with <code>restricted</code> Pod Security Standards</strong> on the operator namespace</li>
+<li><strong>Encrypt etcd at rest</strong> — verify your cluster configuration or managed provider defaults</li>
+<li><strong>Enable admission webhooks</strong> — <code>webhooks.enabled: true</code> in Helm values (requires cert-manager)</li>
+<li><strong>Apply namespace quotas</strong> to limit CR creation rate per namespace</li>
+</ol>
+<h3 id="hardened-configuration">Hardened Configuration<a class="headerlink" href="#hardened-configuration" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Deploy a network policy</strong> restricting operator egress to Keycloak, K8s API, and OTLP</li>
+<li><strong>Integrate external secret rotation</strong> for the Keycloak admin credential (Vault, ESO)</li>
+<li><strong>Deploy Kyverno or OPA/Gatekeeper</strong> with policies restricting <code>clientAuthorizationGrants</code></li>
+<li><strong>Enable Keycloak admin event logging</strong> and forward to your SIEM</li>
+<li><strong>Set up alerts</strong> on operator reconciliation failures and (once #760 is resolved) on drift detection</li>
+<li><strong>Review <code>LOG_LEVEL=DEBUG</code></strong> before enabling in production — trace-level logs should be treated like sensitive data</li>
+</ol>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../concepts/security/">Security Model</a> — authorization model and namespace grant system</li>
+<li><a href="../../rbac-implementation/">RBAC Implementation</a> — detailed RBAC wiring</li>
+<li><a href="../../operations/secret-management/">Secret Management</a> — credential handling operational guide</li>
+<li><a href="../../decisions/generated-markdown/003-least-privilege-everywhere/">ADR-003</a> — Least privilege everywhere</li>
+<li><a href="../../decisions/generated-markdown/005-no-plaintext-secrets/">ADR-005</a> — No plaintext secrets</li>
+<li><a href="../../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/">ADR-017</a> — Kubernetes RBAC over Keycloak security</li>
+<li><a href="../../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/">ADR-032</a> — Minimal RBAC with namespaced service accounts</li>
+<li><a href="../../decisions/generated-markdown/040-admission-webhooks-for-validation/">ADR-040</a> — Admission webhooks for validation</li>
+<li><a href="../../decisions/generated-markdown/063-namespace-grant-list-authorization/">ADR-063</a> — Namespace grant list authorization</li>
+<li><a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/">ADR-073</a> — Security and multi-tenancy model</li>
+<li><a href="../../decisions/generated-markdown/076-no-network-policies-in-helm-chart/">ADR-076</a> — No network policies in Helm chart</li>
+<li><a href="../../decisions/generated-markdown/078-restrict-privileged-roles-and-scripts/">ADR-078</a> — Restrict privileged roles and script mappers</li>
+<li><a href="../../decisions/generated-markdown/080-atomic-client-secret-rotation/">ADR-080</a> — Atomic client secret rotation</li>
+<li><a href="https://attack.mitre.org/matrices/enterprise/containers/">MITRE ATT&amp;CK for Containers</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html">OWASP Kubernetes Security Cheat Sheet</a></li>
+<li><a href="https://csrc.nist.gov/publications/detail/sp/800/190/final">NIST SP 800-190</a> — Application Container Security Guide</li>
+<li>GitHub issue #94 — original threat model tracking issue</li>
+<li>GitHub issue #756 — resolved TLS verification fix</li>
+<li>GitHub issue #760 — drift detection alerting and credential rotation</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../rbac-implementation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: RBAC Implementation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                RBAC Implementation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../guides/identity-providers/" class="md-footer__link md-footer__link--next" aria-label="Next: Identity Providers">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Identity Providers
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/vriesdemichael" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>
