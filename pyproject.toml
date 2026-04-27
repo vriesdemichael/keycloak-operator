@@ -29,8 +29,8 @@ dependencies = [
     # between dev and prod environments, simplifies the deployment, and enables
     # tracing to be toggled at runtime without redeploying. The overhead (~5MB)
     # is minimal compared to the operational benefits of always-available tracing.
-    "opentelemetry-api>=1.25.0",
-    "opentelemetry-exporter-otlp>=1.25.0",
+    "opentelemetry-api>=1.41.1",
+    "opentelemetry-exporter-otlp>=1.41.1",
     "opentelemetry-instrumentation-aiohttp-client>=0.46b0",
     "opentelemetry-instrumentation-httpx>=0.46b0",
     "opentelemetry-sdk>=1.25.0",
