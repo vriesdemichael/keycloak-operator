@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.13](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.12...chart-operator-v0.7.13) (2026-05-08)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.10.13 ([f32ae55](https://github.com/vriesdemichael/keycloak-operator/commit/f32ae5568c469a966d900247e4c3777813d6f5e4))
+
 ## [0.7.12](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.11...chart-operator-v0.7.12) (2026-04-27)
 
 
