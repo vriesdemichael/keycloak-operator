@@ -1,0 +1,21 @@
+number: 47
+title: Managed Keycloak for quick start
+category: architecture
+decision: Provide managed Keycloak option (operator deploys Keycloak) for quick start
+  experience. No separate Keycloak installation required to begin using operator.
+agent_instructions: 'Implement Keycloak CRD deployment mode where operator manages
+  full Keycloak lifecycle: deployment, configuration, upgrades. Provide sensible defaults
+  for getting started. Include quickstart examples with managed Keycloak. Document
+  both managed and external modes clearly.'
+rationale: Managed Keycloak reduces time-to-first-value. Users can deploy operator
+  and start creating realms/clients immediately without separate Keycloak setup. Lowers
+  adoption barrier for evaluation and development. Operator can optimize Keycloak
+  configuration for its use cases. Still support external Keycloak for production
+  where Keycloak is managed separately. Best of both worlds.
+provenance: human
+rejected_alternatives:
+- alternative: External Keycloak only
+  reason: High barrier to entry. Users must deploy Keycloak manually before using
+    operator. Complicates getting started.
+- alternative: Managed Keycloak only
+  reason: Doesn't support existing Keycloak deployments. Forces users to migrate.
