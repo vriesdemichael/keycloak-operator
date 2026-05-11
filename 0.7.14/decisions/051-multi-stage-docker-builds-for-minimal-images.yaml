@@ -1,0 +1,22 @@
+number: 51
+title: Multi-stage Docker builds for minimal images
+category: development
+decision: Use multi-stage Docker builds to produce minimal production images. Build
+  stage installs dependencies, final stage contains only runtime requirements.
+agent_instructions: 'Define Dockerfile with separate build and runtime stages. Build
+  stage: install uv, sync all dependencies including dev/build tools. Runtime stage:
+  copy only installed packages and application code. Use slim base images (python:3.13-slim).
+  Don''t include build tools, compilers, or dev dependencies in final image.'
+rationale: Multi-stage builds produce smaller images (100s of MB vs GBs). Smaller
+  images = faster pulls, less storage, smaller attack surface. Build tools (gcc, make)
+  not needed at runtime. Only ship runtime dependencies. Separates build-time and
+  runtime concerns. Faster image pulls in production. Lower network costs. Better
+  security (fewer packages = fewer vulnerabilities).
+provenance: human
+rejected_alternatives:
+- alternative: Single-stage builds
+  reason: Large images with unnecessary build tools. Slower deployments. More security
+    vulnerabilities.
+- alternative: Separate build and runtime Dockerfiles
+  reason: Harder to maintain. Duplication. Multi-stage achieves same goal in single
+    file.
