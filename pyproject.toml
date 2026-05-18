@@ -107,7 +107,7 @@ timeout = 900
 [dependency-groups]
 quality = [
     "ruff>=0.15.13",
-    "ty>=0.0.35",
+    "ty>=0.0.37",
     "types-requests>=2.33.0.20260513",
     "pre-commit>=4.6.0",
 ]
@@ -147,6 +147,6 @@ dev = [
     "jsonschema>=4.25.1",
 ]
 model-generation = [
-    "deepdiff>=8.0.1",
+    "deepdiff>=9.1.0",
     "httpx>=0.27.0",
 ]
