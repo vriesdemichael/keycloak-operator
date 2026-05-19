@@ -108,7 +108,7 @@ timeout = 900
 quality = [
     "ruff>=0.15.13",
     "ty>=0.0.37",
-    "types-requests>=2.33.0.20260513",
+    "types-requests>=2.33.0.20260518",
     "pre-commit>=4.6.0",
 ]
 docs = [
