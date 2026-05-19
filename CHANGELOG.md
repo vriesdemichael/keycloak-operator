@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.15...operator-image-v0.10.16) (2026-05-19)
+
+
+### Bug Fixes
+
+* **operator-image:** bump idna from 3.11 to 3.15 ([470f525](https://github.com/vriesdemichael/keycloak-operator/commit/470f5253999d909186b60abc3f10eb2515589f38))
+
 ## [0.10.15](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.14...operator-image-v0.10.15) (2026-05-18)
 
 
