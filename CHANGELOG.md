@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.18](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.17...operator-image-v0.10.18) (2026-05-20)
+
+
+### Bug Fixes
+
+* **operator-image:** bump opentelemetry-instrumentation-aiohttp-client ([4d4266c](https://github.com/vriesdemichael/keycloak-operator/commit/4d4266c69e0dcf7e54642499fba81d6341122770))
+
 ## [0.10.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.16...operator-image-v0.10.17) (2026-05-20)
 
 
