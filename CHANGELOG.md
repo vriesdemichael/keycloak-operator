@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.16...operator-image-v0.10.17) (2026-05-20)
+
+
+### Bug Fixes
+
+* **operator-image:** bump opentelemetry-sdk from 1.41.1 to 1.42.0 ([5796085](https://github.com/vriesdemichael/keycloak-operator/commit/5796085da47430eb3e33cf8fd150ac0f70bf8dfd))
+* **operator-image:** bump pymdown-extensions from 10.21.2 to 10.21.3 ([9a011bf](https://github.com/vriesdemichael/keycloak-operator/commit/9a011bf93bafdf1b352f074d71196134280b676c))
+
 ## [0.10.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.15...operator-image-v0.10.16) (2026-05-19)
 
 
