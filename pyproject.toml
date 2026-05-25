@@ -106,8 +106,8 @@ timeout = 900
 
 [dependency-groups]
 quality = [
-    "ruff>=0.15.13",
-    "ty>=0.0.38",
+    "ruff>=0.15.14",
+    "ty>=0.0.39",
     "types-requests>=2.33.0.20260518",
     "pre-commit>=4.6.0",
 ]
@@ -129,8 +129,8 @@ test = [
     "pyyaml>=6.0.0",
     "pytest-helm-charts>=1.3.2",
     "pytest-cov>=4.1.0",
-    "pytest-socket>=0.7.0",
-    "pytest-rerunfailures>=16.2",
+    "pytest-socket>=0.8.0",
+    "pytest-rerunfailures>=16.3",
 ]
 security = [
     "pip-audit>=2.7.0",
