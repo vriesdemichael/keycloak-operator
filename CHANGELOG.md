@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.20](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.19...operator-image-v0.10.20) (2026-05-25)
+
+
+### Bug Fixes
+
+* **operator-image:** bump the patch-updates group with 5 updates ([2f499ad](https://github.com/vriesdemichael/keycloak-operator/commit/2f499ad98ae8dced94e45b2cff7081cc308af302))
+
 ## [0.10.19](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.18...operator-image-v0.10.19) (2026-05-20)
 
 
