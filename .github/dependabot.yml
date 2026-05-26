@@ -87,6 +87,13 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    ignore:
+      # Ignore Python pre-release builds (alpha, beta, rc).
+      # Dependabot has no native "stable-only" filter for Docker images, so
+      # we explicitly block the 3.15.x pre-release series here.
+      # REMOVE this rule once python:3.15.0-alpine3.23 stable is published.
+      - dependency-name: "python"
+        versions: [">= 3.15.0.pre, < 3.15.0"]
 
   - package-ecosystem: "gomod"
     directory: "/tools/migration-toolkit"
