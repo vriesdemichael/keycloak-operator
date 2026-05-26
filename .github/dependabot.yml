@@ -88,12 +88,23 @@ updates:
       - "dependencies"
       - "docker"
     ignore:
-      # Ignore Python pre-release builds (alpha, beta, rc).
-      # Dependabot has no native "stable-only" filter for Docker images, so
-      # we explicitly block the 3.15.x pre-release series here.
-      # REMOVE this rule once python:3.15.0-alpine3.23 stable is published.
+      # Ignore Python pre-release builds (alpha, beta, rc) for upcoming versions.
+      # Dependabot has no native "stable-only" filter for Docker images, so we use
+      # Bundler version-range syntax. In Gem::Version semantics, string segments
+      # (a, b, rc) compare as LESS than numeric ones, so all pre-releases of a
+      # version are < the stable release:
+      #   3.15.0a6  -> segments [3,15,0,"a",6]  < [3,15,0] (3.15.0 stable)
+      #   3.15.0b1  -> segments [3,15,0,"b",1]  < [3,15,0]
+      #   3.15.0rc1 -> segments [3,15,0,"rc",1] < [3,15,0]
+      # The lower bound ">= 3.x.0.a" equals [3,x,0,"a"] which is <= every real
+      # alpha tag (3.x.0a1 == [3,x,0,"a",1] >= [3,x,0,"a",0]).
+      # NOTE: remove a version's entry once python:3.x.0-alpineY stable is published.
       - dependency-name: "python"
-        versions: [">= 3.15.0.pre, < 3.15.0"]
+        versions:
+          - ">= 3.15.0.a, < 3.15.0"  # 3.15 pre-releases — remove when 3.15.0 stable ships
+          - ">= 3.16.0.a, < 3.16.0"  # 3.16 pre-releases — remove when 3.16.0 stable ships
+          - ">= 3.17.0.a, < 3.17.0"  # 3.17 pre-releases — remove when 3.17.0 stable ships
+          - ">= 3.18.0.a, < 3.18.0"  # 3.18 pre-releases — remove when 3.18.0 stable ships
 
   - package-ecosystem: "gomod"
     directory: "/tools/migration-toolkit"
