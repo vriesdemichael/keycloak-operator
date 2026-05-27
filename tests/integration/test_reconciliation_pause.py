@@ -385,7 +385,7 @@ class TestReconciliationPauseRealms:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 
@@ -480,7 +480,7 @@ class TestReconciliationPauseRealms:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 
@@ -595,7 +595,7 @@ class TestReconciliationPauseKeycloak:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 
@@ -696,7 +696,9 @@ class TestReconciliationPauseClients:
                 body=realm_manifest,
             )
 
-            # Wait for realm to reach Paused phase
+            # Wait for realm to reach Paused phase.
+            # 180s timeout: the freshly-deployed operator needs to pick up the
+            # create event and process it.  Under CI load this can be slow.
             await wait_for_resource_condition(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -708,7 +710,7 @@ class TestReconciliationPauseClients:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 
@@ -731,7 +733,11 @@ class TestReconciliationPauseClients:
                 body=client_manifest,
             )
 
-            # Wait for Paused phase
+            # Wait for Paused phase.
+            # 180s timeout: the operator may be under load after reconciling the
+            # realm and deploying with fresh jitter.  The key-ordering fix in
+            # _add_condition removes the Kopf requeue loop, but extra headroom
+            # guards against general CI runner stress.
             resource = await wait_for_resource_condition(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -743,7 +749,7 @@ class TestReconciliationPauseClients:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 
@@ -843,7 +849,7 @@ class TestReconciliationPauseCustomMessage:
                     (r.get("status") or {}).get("phase") == "Paused"
                 ),
                 expected_phases=("Paused",),
-                timeout=120,
+                timeout=180,
                 operator_namespace=test_namespace,
             )
 

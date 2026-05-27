@@ -652,13 +652,17 @@ class BaseReconciler(ABC):
                 filtered.append(c)
         status.conditions = filtered
 
+        # Keys are ordered alphabetically to match Kubernetes API canonical
+        # ordering. This prevents Kopf from detecting spurious "inconsistencies"
+        # when comparing the serialized patch against what K8s returns, which
+        # would otherwise trigger unnecessary handler requeues under CI load.
         condition = {
-            "type": condition_type,
-            "status": condition_status,
-            "reason": reason,
-            "message": message,
             "lastTransitionTime": datetime.now(UTC).isoformat(),
+            "message": message,
             "observedGeneration": generation,
+            "reason": reason,
+            "status": condition_status,
+            "type": condition_type,
         }
         status.conditions.append(condition)
 
