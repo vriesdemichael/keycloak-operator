@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.22](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.21...operator-image-v0.10.22) (2026-05-27)
+
+
+### Bug Fixes
+
+* **operator-image:** bump kubernetes from 35.0.0 to 36.0.1 ([a665068](https://github.com/vriesdemichael/keycloak-operator/commit/a66506872a790c76d996ad1d50e4faf5d6cd4b4b))
+* **operator:** sort condition dict keys to match K8s canonical order ([ba6ddd3](https://github.com/vriesdemichael/keycloak-operator/commit/ba6ddd39398594863ce0f80a05c28e3032fee84d))
+
 ## [0.10.21](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.20...operator-image-v0.10.21) (2026-05-27)
 
 
