@@ -134,10 +134,10 @@ test = [
 ]
 security = [
     "pip-audit>=2.7.0",
-    "safety>=3.0.0",
+    "safety>=3.8.1",
     "authlib>=1.7.2",      # CVE-2025-68158
     "marshmallow>=4.1.2",  # CVE-2025-68480
-    "pip>=26.1.1",           # CVE-2025-8869
+    "pip>=26.1.2",           # CVE-2025-8869
 ]
 dev = [
     { include-group = "quality" },
