@@ -505,21 +505,21 @@ wheels = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.59.0"
+version = "0.59.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
-    { name = "black" },
+    { name = "black", marker = "sys_platform != 'emscripten'" },
     { name = "genson" },
     { name = "inflect" },
-    { name = "isort" },
+    { name = "isort", marker = "sys_platform != 'emscripten'" },
     { name = "jinja2" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/50/21488efdb515afc04039e19d876ee668d85a5c9590a3a4bb25b27f2b99c0/datamodel_code_generator-0.59.0.tar.gz", hash = "sha256:054e4d5568c27db5a993f6b3e1d34af53bd1f6d1b6c18b7166908b0f3dc04bd4", size = 1098070, upload-time = "2026-05-29T15:47:55.127Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/5a/cee8c4d30de3e9b561b677d22929d7b3485d7888b0425b9611310826554d/datamodel_code_generator-0.59.1.tar.gz", hash = "sha256:aef5794f58d2e85b7a603862a922985417d6610458a8f927b1660bd0d3955df1", size = 1130871, upload-time = "2026-06-03T18:58:37.367Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/ef/8e2479e3ba432bb3333d0f01d6bdc520cc7f765ccbfac134b015d806bc2b/datamodel_code_generator-0.59.0-py3-none-any.whl", hash = "sha256:c8c119ab618d24a619d635fef7aa9c96b69e069a4d287c9adfc148ae28368a69", size = 316232, upload-time = "2026-05-29T15:47:53.228Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/70/546f4c655614bb48fb9a7b4bc8a138f3c90c17f53797c9840d6a8bc57d7d/datamodel_code_generator-0.59.1-py3-none-any.whl", hash = "sha256:8b9391a14986a853c4b129ca3e3fd8b905fac26d1801f82f2f79a46e3e29d75f", size = 333504, upload-time = "2026-06-03T18:58:35.487Z" },
 ]
 
 [package.optional-dependencies]
@@ -978,7 +978,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "authlib", specifier = ">=1.7.2" },
-    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.59.0" },
+    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.59.1" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "marshmallow", specifier = ">=4.1.2" },
     { name = "pip", specifier = ">=26.1.2" },
