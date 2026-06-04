@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.23](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.22...operator-image-v0.10.23) (2026-06-04)
+
+
+### Bug Fixes
+
+* **operator-image:** bump aiohttp from 3.13.5 to 3.14.0 ([1b4d06f](https://github.com/vriesdemichael/keycloak-operator/commit/1b4d06f970fdd064181a1a2359896d6585923f7a))
+* **operator-image:** bump kubernetes in the patch-updates group ([7e77daf](https://github.com/vriesdemichael/keycloak-operator/commit/7e77daf67f4604285e3e5f726997b4c7054a4eeb))
+
 ## [0.10.22](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.21...operator-image-v0.10.22) (2026-05-27)
 
 
