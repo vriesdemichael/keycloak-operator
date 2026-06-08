@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "aiohttp>=3.14.0",
+    "aiohttp>=3.14.1",
     "asyncpg>=0.29.0",
     "httpx>=0.27.0",
     "kopf==1.40.1",  # Hard-pinned: kopf 1.42+ has memory leak (issue #1172)
