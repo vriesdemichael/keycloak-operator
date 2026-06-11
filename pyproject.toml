@@ -106,8 +106,8 @@ timeout = 900
 
 [dependency-groups]
 quality = [
-    "ruff>=0.15.15",
-    "ty>=0.0.43",
+    "ruff>=0.15.16",
+    "ty>=0.0.48",
     "types-requests>=2.33.0.20260518",
     "pre-commit>=4.6.0",
 ]
@@ -133,7 +133,7 @@ test = [
     "pytest-rerunfailures>=16.3",
 ]
 security = [
-    "pip-audit>=2.7.0",
+    "pip-audit>=2.10.1",
     "safety>=3.8.1",
     "authlib>=1.7.2",      # CVE-2025-68158
     "marshmallow>=4.1.2",  # CVE-2025-68480
