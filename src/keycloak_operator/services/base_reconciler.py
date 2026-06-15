@@ -653,9 +653,11 @@ class BaseReconciler(ABC):
         status.conditions = filtered
 
         # Keys are ordered alphabetically to match Kubernetes API canonical
-        # ordering. This prevents Kopf from detecting spurious "inconsistencies"
-        # when comparing the serialized patch against what K8s returns, which
-        # would otherwise trigger unnecessary handler requeues under CI load.
+        # ordering. Every field written here (including observedGeneration) must
+        # also be declared in the CRD's status.conditions schema; otherwise the
+        # API server prunes the undeclared field and Kopf sees the stored object
+        # differ from the patch it sent, reporting spurious "inconsistencies" and
+        # requeueing the handler in a tight loop under CI load.
         condition = {
             "lastTransitionTime": datetime.now(UTC).isoformat(),
             "message": message,
