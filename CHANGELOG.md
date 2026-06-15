@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.24](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.23...operator-image-v0.10.24) (2026-06-15)
+
+
+### Bug Fixes
+
+* **operator-image:** bump aiohttp in the patch-updates group ([7d486ad](https://github.com/vriesdemichael/keycloak-operator/commit/7d486ad8c9b05590238b1d65964dfc0ffb02ac48))
+* **operator-image:** bump python in /images/operator ([fe808e8](https://github.com/vriesdemichael/keycloak-operator/commit/fe808e8da3b1c8468a1fbdae21a0e1cdde2be7fe))
+* **operator-image:** bump python in /images/operator ([9739d83](https://github.com/vriesdemichael/keycloak-operator/commit/9739d8350d79eb91c27a621f9c5003e108dbad69))
+* **operator:** declare observedGeneration in status condition schema ([7914b9f](https://github.com/vriesdemichael/keycloak-operator/commit/7914b9f5b353190e114e84c11af64573ae363f93))
+* **operator:** make type checking compatible with ty 0.0.48 ([1edba1f](https://github.com/vriesdemichael/keycloak-operator/commit/1edba1fbf6c91bb510745d1f773b3306e4467cc2))
+
 ## [0.10.23](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.22...operator-image-v0.10.23) (2026-06-04)
 
 
