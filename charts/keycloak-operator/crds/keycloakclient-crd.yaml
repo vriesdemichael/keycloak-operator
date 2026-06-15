@@ -784,6 +784,9 @@ spec:
                     lastTransitionTime:
                       type: string
                       format: date-time
+                    observedGeneration:
+                      type: integer
+                      description: Generation of spec observed when the condition was set
                   required:
                   - type
                   - status

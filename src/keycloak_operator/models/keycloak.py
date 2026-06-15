@@ -1277,6 +1277,11 @@ class KeycloakCondition(BaseModel):
         alias="lastTransitionTime",
         description="Last time the condition transitioned",
     )
+    observed_generation: int | None = Field(
+        None,
+        alias="observedGeneration",
+        description="Generation of the spec observed when the condition was set",
+    )
 
 
 class BlueGreenUpgradeStatus(BaseModel):
