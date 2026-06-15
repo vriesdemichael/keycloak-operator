@@ -230,8 +230,8 @@ class TestTestDatabaseConnection:
     async def test_postgresql_success(self):
         """Successful PostgreSQL connection returns True."""
         mgr = _make_manager()
-        mgr._test_postgresql_connection = AsyncMock(return_value=True)  # type: ignore
-        mgr._record_connection_metrics = MagicMock()  # type: ignore
+        mgr._test_postgresql_connection = AsyncMock(return_value=True)
+        mgr._record_connection_metrics = MagicMock()
 
         result = await mgr.test_database_connection(
             connection_info={
@@ -247,8 +247,8 @@ class TestTestDatabaseConnection:
         )
 
         assert result is True
-        mgr._record_connection_metrics.assert_called_once()  # type: ignore
-        call_kwargs = mgr._record_connection_metrics.call_args  # type: ignore
+        mgr._record_connection_metrics.assert_called_once()
+        call_kwargs = mgr._record_connection_metrics.call_args
         assert (
             call_kwargs.kwargs.get("success") is True
             or call_kwargs[1].get("success") is True
@@ -258,8 +258,8 @@ class TestTestDatabaseConnection:
     async def test_postgresql_failure(self):
         """Failed PostgreSQL connection returns False."""
         mgr = _make_manager()
-        mgr._test_postgresql_connection = AsyncMock(return_value=False)  # type: ignore
-        mgr._record_connection_metrics = MagicMock()  # type: ignore
+        mgr._test_postgresql_connection = AsyncMock(return_value=False)
+        mgr._record_connection_metrics = MagicMock()
 
         result = await mgr.test_database_connection(
             connection_info={
@@ -278,8 +278,8 @@ class TestTestDatabaseConnection:
     async def test_non_postgresql_uses_socket(self):
         """Non-postgresql types use socket connection test."""
         mgr = _make_manager()
-        mgr._test_socket_connection = AsyncMock(return_value=True)  # type: ignore
-        mgr._record_connection_metrics = MagicMock()  # type: ignore
+        mgr._test_socket_connection = AsyncMock(return_value=True)
+        mgr._record_connection_metrics = MagicMock()
 
         result = await mgr.test_database_connection(
             connection_info={
@@ -293,16 +293,16 @@ class TestTestDatabaseConnection:
         )
 
         assert result is True
-        mgr._test_socket_connection.assert_awaited_once_with("db.local", 3306)  # type: ignore
+        mgr._test_socket_connection.assert_awaited_once_with("db.local", 3306)
 
     @pytest.mark.asyncio
     async def test_exception_returns_false(self):
         """Exception during connection test returns False."""
         mgr = _make_manager()
-        mgr._test_postgresql_connection = AsyncMock(  # type: ignore
+        mgr._test_postgresql_connection = AsyncMock(
             side_effect=RuntimeError("connection error")
         )
-        mgr._record_connection_metrics = MagicMock()  # type: ignore
+        mgr._record_connection_metrics = MagicMock()
 
         result = await mgr.test_database_connection(
             connection_info={
@@ -318,7 +318,7 @@ class TestTestDatabaseConnection:
 
         assert result is False
         # Metrics should still be recorded for failure
-        mgr._record_connection_metrics.assert_called()  # type: ignore
+        mgr._record_connection_metrics.assert_called()
 
 
 # ---------------------------------------------------------------------------

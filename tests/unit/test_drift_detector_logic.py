@@ -220,7 +220,7 @@ class TestCheckRealmResourceDrift:
         admin_client = AsyncMock()
 
         # _cr_exists returns False
-        detector._cr_exists = AsyncMock(return_value=False)  # type: ignore
+        detector._cr_exists = AsyncMock(return_value=False)
 
         result = await detector._check_realm_resource_drift(realm, admin_client)
 
@@ -295,7 +295,7 @@ class TestCheckRealmResourceDrift:
         admin_client = AsyncMock()
 
         # CR exists
-        detector._cr_exists = AsyncMock(return_value=True)  # type: ignore
+        detector._cr_exists = AsyncMock(return_value=True)
 
         result = await detector._check_realm_resource_drift(
             realm, admin_client, skip_config_drift=True
@@ -330,14 +330,14 @@ class TestCheckRealmResourceDrift:
         admin_client = AsyncMock()
 
         # CR exists
-        detector._cr_exists = AsyncMock(return_value=True)  # type: ignore
+        detector._cr_exists = AsyncMock(return_value=True)
 
         # Mock the K8s custom_objects_api to return a CR with enabled=True
         mock_cr = {
             "spec": {"realm": "my-realm", "enabled": True},
             "metadata": {"namespace": "ns-a", "name": "my-realm-cr"},
         }
-        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(  # type: ignore
+        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(
             return_value=mock_cr
         )
 
@@ -393,7 +393,7 @@ class TestCrExists:
     async def test_cr_exists_returns_true(self):
         """Returns True when the CR is found."""
         detector = _make_detector()
-        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(  # type: ignore
+        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(
             return_value={"metadata": {"name": "test"}}
         )
 
@@ -411,7 +411,7 @@ class TestCrExists:
         from kubernetes.client.rest import ApiException
 
         detector = _make_detector()
-        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(  # type: ignore
+        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(
             side_effect=ApiException(status=404, reason="Not Found")
         )
 
@@ -429,7 +429,7 @@ class TestCrExists:
         from kubernetes.client.rest import ApiException
 
         detector = _make_detector()
-        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(  # type: ignore
+        detector.custom_objects_api.get_namespaced_custom_object = MagicMock(
             side_effect=ApiException(status=403, reason="Forbidden")
         )
 
@@ -446,7 +446,7 @@ class TestCrExists:
         """Verifies the plural mapping for different kinds."""
         detector = _make_detector()
         mock_get = MagicMock(return_value={})
-        detector.custom_objects_api.get_namespaced_custom_object = mock_get  # type: ignore
+        detector.custom_objects_api.get_namespaced_custom_object = mock_get
 
         with patch(
             "keycloak_operator.services.drift_detection_service.asyncio.to_thread",
@@ -494,8 +494,8 @@ class TestRemediateDrift:
         """Orphaned drift triggers _remediate_orphan."""
         config = _make_config(auto_remediate=True)
         detector = _make_detector(config=config)
-        detector._remediate_orphan = AsyncMock()  # type: ignore
-        detector._remediate_config_drift = AsyncMock()  # type: ignore
+        detector._remediate_orphan = AsyncMock()
+        detector._remediate_config_drift = AsyncMock()
 
         drift_results = [
             DriftResult(
@@ -509,8 +509,8 @@ class TestRemediateDrift:
 
         await detector.remediate_drift(drift_results)
 
-        detector._remediate_orphan.assert_awaited_once()  # type: ignore
-        detector._remediate_config_drift.assert_not_awaited()  # type: ignore
+        detector._remediate_orphan.assert_awaited_once()
+        detector._remediate_config_drift.assert_not_awaited()
 
     @pytest.mark.asyncio
     @patch(
@@ -520,8 +520,8 @@ class TestRemediateDrift:
         """Config drift triggers _remediate_config_drift."""
         config = _make_config(auto_remediate=True)
         detector = _make_detector(config=config)
-        detector._remediate_orphan = AsyncMock()  # type: ignore
-        detector._remediate_config_drift = AsyncMock()  # type: ignore
+        detector._remediate_orphan = AsyncMock()
+        detector._remediate_config_drift = AsyncMock()
 
         drift_results = [
             DriftResult(
@@ -536,8 +536,8 @@ class TestRemediateDrift:
 
         await detector.remediate_drift(drift_results)
 
-        detector._remediate_config_drift.assert_awaited_once()  # type: ignore
-        detector._remediate_orphan.assert_not_awaited()  # type: ignore
+        detector._remediate_config_drift.assert_awaited_once()
+        detector._remediate_orphan.assert_not_awaited()
 
     @pytest.mark.asyncio
     @patch(
@@ -547,8 +547,8 @@ class TestRemediateDrift:
         """Unmanaged resources are left alone."""
         config = _make_config(auto_remediate=True)
         detector = _make_detector(config=config)
-        detector._remediate_orphan = AsyncMock()  # type: ignore
-        detector._remediate_config_drift = AsyncMock()  # type: ignore
+        detector._remediate_orphan = AsyncMock()
+        detector._remediate_config_drift = AsyncMock()
 
         drift_results = [
             DriftResult(
@@ -561,8 +561,8 @@ class TestRemediateDrift:
 
         await detector.remediate_drift(drift_results)
 
-        detector._remediate_orphan.assert_not_awaited()  # type: ignore
-        detector._remediate_config_drift.assert_not_awaited()  # type: ignore
+        detector._remediate_orphan.assert_not_awaited()
+        detector._remediate_config_drift.assert_not_awaited()
 
     @pytest.mark.asyncio
     @patch(
@@ -572,7 +572,7 @@ class TestRemediateDrift:
         """When remediation fails, error metric is incremented."""
         config = _make_config(auto_remediate=True)
         detector = _make_detector(config=config)
-        detector._remediate_orphan = AsyncMock(  # type: ignore
+        detector._remediate_orphan = AsyncMock(
             side_effect=RuntimeError("delete failed")
         )
 
@@ -644,7 +644,7 @@ class TestRemediateOrphan:
         """If the CR re-appears during remediation, the orphan is skipped."""
         config = _make_config(auto_remediate=True, minimum_age_hours=1)
         detector = _make_detector(config=config)
-        detector._cr_exists = AsyncMock(return_value=True)  # type: ignore
+        detector._cr_exists = AsyncMock(return_value=True)
 
         drift = DriftResult(
             resource_type="realm",
@@ -659,7 +659,7 @@ class TestRemediateOrphan:
         await detector._remediate_orphan(drift)
 
         # _cr_exists was called as safety check
-        detector._cr_exists.assert_awaited_once()  # type: ignore
+        detector._cr_exists.assert_awaited_once()
 
     @pytest.mark.asyncio
     @patch("keycloak_operator.services.drift_detection_service.REMEDIATION_TOTAL")
@@ -671,7 +671,7 @@ class TestRemediateOrphan:
         mock_admin.delete_realm.return_value = True
         admin_factory.return_value = mock_admin
         detector = _make_detector(config=config, keycloak_admin_factory=admin_factory)
-        detector._cr_exists = AsyncMock(return_value=False)  # type: ignore
+        detector._cr_exists = AsyncMock(return_value=False)
 
         drift = DriftResult(
             resource_type="realm",
