@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.22](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.21...chart-operator-v0.7.22) (2026-06-15)
+
+
+### Bug Fixes
+
+* **operator:** declare observedGeneration in status condition schema ([7914b9f](https://github.com/vriesdemichael/keycloak-operator/commit/7914b9f5b353190e114e84c11af64573ae363f93))
+
 ## [0.7.21](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.20...chart-operator-v0.7.21) (2026-06-05)
 
 
