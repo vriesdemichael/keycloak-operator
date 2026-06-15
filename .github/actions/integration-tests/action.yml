@@ -167,7 +167,10 @@ runs:
         name: k8s-${{ inputs.kind-version }}-keycloak-${{ inputs.keycloak-version }}
         token: ${{ inputs.codecov-token }}
         disable_search: true
-        fail_ci_if_error: true
+        # Coverage upload is a reporting concern, not a correctness gate.
+        # Transient Codecov outages (e.g. uploader GPG signature verification
+        # failures) must not fail CI when all tests have already passed.
+        fail_ci_if_error: false
 
     - name: Upload combined coverage artifact
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
