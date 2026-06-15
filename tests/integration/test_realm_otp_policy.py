@@ -49,9 +49,9 @@ async def test_realm_otp_policy_reconciliation(
     )
 
     # Mock RBAC validation since we are running outside the cluster
-    reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore
+    reconciler.validate_cross_namespace_access = AsyncMock()
     # Mock capacity check as well since we don't need to test that logic here
-    reconciler._check_realm_capacity = AsyncMock()  # type: ignore
+    reconciler._check_realm_capacity = AsyncMock()
 
     # Create a mock status object
     class MockStatus:

@@ -11,8 +11,8 @@ from keycloak_operator.utils.keycloak_admin import (
 @pytest.fixture
 def mock_admin_client():
     client = KeycloakAdminClient("http://test", "admin", "password")
-    client._get_client = AsyncMock()  # type: ignore
-    client._ensure_authenticated = AsyncMock()  # type: ignore
+    client._get_client = AsyncMock()
+    client._ensure_authenticated = AsyncMock()
     client.adapter = MagicMock()
     # Mock adapter methods
     client.adapter.get_scope_mappings_realm_roles_path = MagicMock(

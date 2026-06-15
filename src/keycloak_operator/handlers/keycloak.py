@@ -107,9 +107,6 @@ class StatusWrapper(MutableMapping[str, Any]):
             camel_key = self._to_camel_case(key)
             self._patch_status[camel_key] = value
 
-    def get(self, key: str, default: Any = None) -> Any:  # explicit for protocol
-        return self._patch_status.get(key, default)
-
     def to_dict(self) -> dict[str, Any]:
         return dict(self._patch_status)
 
