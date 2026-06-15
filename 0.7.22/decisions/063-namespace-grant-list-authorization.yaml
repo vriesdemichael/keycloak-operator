@@ -1,0 +1,65 @@
+number: 63
+title: Namespace grant list authorization for clients
+category: architecture
+decision: >
+  Replace dual-token authorization model with declarative namespace grant list approach.
+  Realm creation is unrestricted (controlled only by Kubernetes RBAC). Client creation
+  requires explicit namespace authorization via clientAuthorizationGrants list in realm spec.
+  No user-facing tokens required - authorization is purely declarative and GitOps-native.
+agent_instructions: >
+  When implementing client reconciliation, always fetch the referenced realm CR and validate
+  that the client's namespace is present in spec.clientAuthorizationGrants. Reject client
+  creation/update if namespace not in grant list. For realm reconciliation, validate capacity
+  limits before creating new realms. Never implement user-facing token generation, distribution,
+  or validation - all authorization is through grant lists. Status fields must reflect current
+  authorization state (authorizedClientNamespaces in realm, authorizationStatus in client).
+rationale: >
+  The dual-token authorization model created complexity and deviated from GitOps principles:
+
+  Problems with token-based auth:
+  - Complexity: Token generation, distribution, rotation lifecycle
+  - Manual intervention: Platform team distributing secrets
+  - Cross-namespace coordination: Secret syncing between namespaces
+  - Not GitOps-native: Secrets don't belong in Git, rotation causes drift
+  - Team churn: Long-lived credentials outlive team membership
+
+  Benefits of grant list approach:
+  - Simplicity: No token management at all for users
+  - GitOps-native: Authorization as declarative list in realm manifest
+  - PR workflow: Access control through standard code review
+  - Clear ownership: Realm team explicitly controls client access
+  - Audit trail: Git history shows all access changes
+  - Self-service: Teams create realms without platform intervention
+  - Kubernetes-native: Follows RBAC patterns, integrates with existing security model
+
+  Capacity management addresses operational scaling:
+  - Operators can set maxRealms limit to prevent resource exhaustion
+  - allowNewRealms flag enables graceful capacity handling
+  - Existing realms continue working when capacity reached
+  - Clear messaging guides users to alternative operators
+
+  Trade-offs:
+  - Realm teams maintain grant lists (added overhead)
+  - Requires cross-namespace read permissions for operator
+  - Revocation only blocks new clients, existing continue (by design)
+
+  This aligns with ADR 003 (least privilege), ADR 004 (GitOps-first), ADR 005 (no plaintext secrets),
+  ADR 016 (multi-namespace), and ADR 017 (K8s RBAC over Keycloak security).
+rejected_alternatives:
+  - alternative: Keep dual-token model with improvements
+    reason: >
+      Still requires secret distribution and management. Doesn't solve fundamental
+      GitOps incompatibility. Complexity remains even with better tooling.
+  - alternative: Use admission webhooks for validation
+    reason: >
+      Adds infrastructure complexity. Grant list in CRD is simpler and equally effective.
+      Webhooks better suited for more complex validation logic we don't need here.
+  - alternative: Per-namespace operators instead of grant lists
+    reason: >
+      Doesn't enable cross-namespace client provisioning. Requires multiple operator
+      deployments. Goes against ADR 016 (multi-namespace by default).
+  - alternative: Keycloak's built-in authorization
+    reason: >
+      Conflicts with ADR 017 (K8s RBAC over Keycloak security). Creates dual authentication
+      layer. Not GitOps compatible. Operator would need Keycloak admin credentials.
+provenance: guided-ai
