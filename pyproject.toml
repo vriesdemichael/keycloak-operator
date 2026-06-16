@@ -106,8 +106,8 @@ timeout = 900
 
 [dependency-groups]
 quality = [
-    "ruff>=0.15.16",
-    "ty>=0.0.48",
+    "ruff>=0.15.17",
+    "ty>=0.0.49",
     "types-requests>=2.33.0.20260518",
     "pre-commit>=4.6.0",
 ]
