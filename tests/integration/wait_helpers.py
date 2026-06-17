@@ -15,6 +15,7 @@ import logging
 import subprocess
 import tempfile
 from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Any
 
 from kubernetes.client.rest import ApiException
@@ -272,6 +273,117 @@ async def wait_for_resource_condition(
     error_message = "\n".join(error_parts)
 
     raise ResourceNotReadyError(error_message)
+
+
+async def wait_for_resource_condition_with_retrigger(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+    condition_func: Callable[[dict[str, Any]], bool],
+    *,
+    timeout: int = 180,
+    grace: int = 45,
+    interval: int = 3,
+    operator_namespace: str | None = None,
+    expected_phases: tuple[str, ...] = ("Ready", "Degraded"),
+    retrigger_annotation: str = "test.vriesdemichael.github.io/retrigger",
+) -> dict[str, Any]:
+    """Wait for a condition, re-emitting an event if the CR is never picked up.
+
+    This guards against the Kopf cold-start race where a freshly-deployed
+    operator misses the initial create event for a resource (the CR then sits
+    with no status forever). If the condition is not met within ``grace``
+    seconds, we re-emit an event by patching a benign annotation, then keep
+    waiting — bounded by the overall ``timeout``.
+
+    Double-emit guard: the re-trigger only fires when the resource still has NO
+    status. If a status is already present, the operator HAS reacted to the
+    original event, so we must not patch in a duplicate trigger — we simply
+    keep waiting for the condition.
+
+    Args mirror ``wait_for_resource_condition``; ``grace`` is how long to wait
+    for the operator to react before assuming the initial event was missed.
+
+    Raises:
+        ResourceNotReadyError: When the overall timeout is reached.
+    """
+    import time
+
+    deadline = time.time() + timeout
+
+    while True:
+        remaining = int(deadline - time.time())
+        if remaining <= 0:
+            # Out of budget: one last short wait so the failure carries the full
+            # debugging context (operator logs/events) from the base helper.
+            return await wait_for_resource_condition(
+                k8s_custom_objects=k8s_custom_objects,
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+                condition_func=condition_func,
+                timeout=interval,
+                interval=interval,
+                operator_namespace=operator_namespace,
+                expected_phases=expected_phases,
+            )
+
+        try:
+            return await wait_for_resource_condition(
+                k8s_custom_objects=k8s_custom_objects,
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+                condition_func=condition_func,
+                timeout=min(grace, remaining),
+                interval=interval,
+                operator_namespace=operator_namespace,
+                expected_phases=expected_phases,
+            )
+        except ResourceNotReadyError:
+            # Guard against a duplicate trigger: only re-emit if the operator has
+            # genuinely not reacted yet (no status at all). A non-empty status
+            # means the original event WAS delivered; keep waiting instead.
+            status = await _get_resource_status(
+                k8s_custom_objects, group, version, namespace, plural, name
+            )
+            if status:
+                continue
+
+            try:
+                await k8s_custom_objects.patch_namespaced_custom_object(
+                    group=group,
+                    version=version,
+                    namespace=namespace,
+                    plural=plural,
+                    name=name,
+                    body={
+                        "metadata": {
+                            "annotations": {
+                                retrigger_annotation: datetime.now(UTC).isoformat()
+                            }
+                        }
+                    },
+                )
+                logger.warning(
+                    "Re-emitted event for %s/%s in %s: no status after %ss, "
+                    "operator likely missed the initial watch event.",
+                    plural,
+                    name,
+                    namespace,
+                    grace,
+                )
+            except ApiException as exc:
+                if exc.status != 404:
+                    raise
+                # Resource is gone; let the next loop iteration surface it.
 
 
 async def wait_for_resource_ready(
