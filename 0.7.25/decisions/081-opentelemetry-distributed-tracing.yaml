@@ -1,0 +1,52 @@
+number: 81
+title: "OpenTelemetry Distributed Tracing"
+category: architecture
+decision: >
+  Implement OpenTelemetry distributed tracing for the Keycloak operator with optional propagation
+  to managed Keycloak instances. Tracing is disabled by default but can be enabled via Helm values
+  or environment variables.
+
+  Key design choices:
+  1. Use OTLP gRPC exporter for wide compatibility with observability backends (Jaeger, Tempo, etc.)
+  2. Auto-instrument httpx and aiohttp HTTP clients for automatic trace context propagation
+  3. Provide `@traced_handler` decorator for semantic spans on Kopf handlers
+  4. Propagate tracing config to Keycloak instances (26.x+) when `propagateToKeycloak: true`
+  5. Use W3C Trace Context (traceparent header) for cross-service propagation
+
+agent_instructions: >
+  When adding new Keycloak API interactions:
+  - HTTP clients are auto-instrumented, no manual trace context injection needed
+  - For Kopf handlers that would benefit from tracing, use the `@traced_handler` decorator
+  - Include k8s.namespace, k8s.resource.name, and k8s.resource.type attributes in spans
+  - Use `get_tracer(__name__)` for module-specific tracers when creating manual spans
+
+  When configuring tracing for production:
+  - Sample rate of 1.0 is default (100% traces) - recommend 0.1-0.5 for production
+  - OTEL dependencies are always installed (not optional) for consistency
+  - Keycloak 26.x+ required for end-to-end tracing via Quarkus OTEL support
+
+  For debugging test failures using traces, see ADR 082 (Trace-Based Test Debugging
+  Infrastructure).
+
+rationale: >
+  Distributed tracing provides critical observability for debugging reconciliation issues,
+  identifying slow Keycloak API calls, and understanding the full request lifecycle.
+
+  OpenTelemetry was chosen as the standard because:
+  - Industry-standard with wide backend support (Jaeger, Tempo, Honeycomb, etc.)
+  - First-class Python support with auto-instrumentation for HTTP clients
+  - W3C Trace Context ensures interoperability with Keycloak's built-in OTEL support
+  - CNCF graduated project with long-term support guarantee
+
+  Tracing is disabled by default to avoid overhead for users who don't need it,
+  and to not require an OTLP collector in minimal deployments.
+
+rejected_alternatives:
+  - alternative: "Make OTEL dependencies optional"
+    reason: "Adds complexity with optional dependencies and conditional imports. The overhead of always-installed deps is minimal (~5MB), and consistent environments prevent subtle bugs."
+  - alternative: "Use Zipkin format instead of OTLP"
+    reason: "OTLP is the native OpenTelemetry protocol with better tooling support. Zipkin format would require additional translation and limits backend choices."
+  - alternative: "Implement custom tracing solution"
+    reason: "OpenTelemetry provides a battle-tested, vendor-neutral solution. Custom implementation would add maintenance burden without benefits."
+
+provenance: guided-ai
