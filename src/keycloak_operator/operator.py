@@ -147,6 +147,35 @@ async def _is_managed_keycloak_ready_for_drift_detection() -> tuple[bool, str]:
     return phase in {"Ready", "Degraded"}, phase
 
 
+# Watch-readiness gate (ADR: cold-start event delivery).
+#
+# Declaring at least one @kopf.index per watched CRD kind makes Kopf block ALL
+# cause handlers until every indexed kind has finished its initial listing
+# (Kopf awaits the global ``operator_indexed`` toggle once, on cold start, then
+# drops the gate). Without an index, each resource's watch is independent: a
+# freshly-deployed operator can deliver an event for one kind (e.g. a realm)
+# while another kind's watch (e.g. clients) is still mid-listing, so a CR
+# created in that window has its create event dropped and never reconciles.
+#
+# These indexes intentionally store nothing (returning None discards the value);
+# they exist solely to couple the watches into a single readiness gate so that,
+# once the operator handles ANY resource, every CRD watch is provably streaming.
+_WATCH_READINESS_GROUP = "vriesdemichael.github.io"
+_WATCH_READINESS_VERSION = "v1"
+
+
+@kopf.index("keycloaks", group=_WATCH_READINESS_GROUP, version=_WATCH_READINESS_VERSION)
+@kopf.index(
+    "keycloakrealms", group=_WATCH_READINESS_GROUP, version=_WATCH_READINESS_VERSION
+)
+@kopf.index(
+    "keycloakclients", group=_WATCH_READINESS_GROUP, version=_WATCH_READINESS_VERSION
+)
+def watch_readiness_index(**_) -> None:
+    """No-op index used only to gate handlers on initial-listing completion."""
+    return None
+
+
 @kopf.on.startup()
 async def startup_handler(
     settings: kopf.OperatorSettings, memo: kopf.Memo, **_

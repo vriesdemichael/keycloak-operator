@@ -30,6 +30,7 @@ from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 from tests.integration.conftest import build_client_manifest, build_realm_manifest
 from tests.integration.wait_helpers import (
     wait_for_resource_condition,
+    wait_for_resource_condition_with_retrigger,
     wait_for_resource_deleted,
 )
 
@@ -733,12 +734,13 @@ class TestReconciliationPauseClients:
                 body=client_manifest,
             )
 
-            # Wait for Paused phase.
-            # 180s timeout: the operator may be under load after reconciling the
-            # realm and deploying with fresh jitter.  The key-ordering fix in
-            # _add_condition removes the Kopf requeue loop, but extra headroom
-            # guards against general CI runner stress.
-            resource = await wait_for_resource_condition(
+            # Wait for Paused phase, re-emitting the event if the freshly-deployed
+            # operator missed the client's initial create event (Kopf cold-start
+            # watch race). The @kopf.index watch-readiness gate makes this rare,
+            # but the retrigger self-heals a mid-run watch reconnect too. The
+            # re-emit only fires while the CR has no status, so a delivered event
+            # is never triggered twice.
+            resource = await wait_for_resource_condition_with_retrigger(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -750,6 +752,7 @@ class TestReconciliationPauseClients:
                 ),
                 expected_phases=("Paused",),
                 timeout=180,
+                grace=45,
                 operator_namespace=test_namespace,
             )
 
