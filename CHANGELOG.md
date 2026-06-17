@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.26](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.25...operator-image-v0.10.26) (2026-06-17)
+
+
+### Bug Fixes
+
+* **operator:** gate handlers on watch readiness; retrigger missed client events ([bf35414](https://github.com/vriesdemichael/keycloak-operator/commit/bf354143eac860f89a9276d0ea541995b94ef56a))
+
 ## [0.10.25](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.24...operator-image-v0.10.25) (2026-06-16)
 
 
