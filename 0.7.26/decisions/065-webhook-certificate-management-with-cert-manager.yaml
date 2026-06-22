@@ -1,0 +1,37 @@
+number: 65
+title: Webhook certificate management with cert-manager
+category: architecture
+decision: Use cert-manager for admission webhook TLS certificate management instead of Kopf's built-in auto-management.
+agent_instructions: When configuring admission webhooks, always use cert-manager to generate and rotate TLS certificates. Do not use Kopf's auto-management features. Webhook configurations must be managed manually via Helm templates.
+rationale: |
+  Kopf's webhook auto-management depends on insights.ready_resources.wait()
+  which never completes in our operator setup, causing the webhook server to wait
+  indefinitely. cert-manager provides: (1) Reliable certificate rotation without
+  manual intervention, (2) Standard Kubernetes pattern widely used in production,
+  (3) Decoupling from Kopf's internal systems, (4) Better observability through
+  Kubernetes resources, (5) Battle-tested in production environments. Trade-off:
+  Requires cert-manager as an additional cluster dependency and more complex initial
+  setup with additional Kubernetes resources.
+
+  Context: During webhook implementation, discovered that Kopf's auto-management system
+  waits for insights.ready_resources which never completes. This caused the webhook
+  server to never start serving requests or generating client configurations. Switched
+  to manual webhook configuration using cert-manager for certificate generation and
+  Helm templates for ValidatingWebhookConfiguration management. The operator now
+  configures WebhookServer with explicit certificate paths (certfile and pkeyfile)
+  and disables auto-management (settings.admission.managed = None). Dependencies
+  removed kopf[dev] extra package (no longer need certbuilder). See charts/keycloak-operator/templates/05_webhook_configuration.yaml
+  for implementation details.
+
+  References:
+  - https://cert-manager.io/docs/
+  - https://kopf.readthedocs.io/en/stable/admission/
+  - https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/
+rejected_alternatives:
+  - alternative: Kopf auto-management
+    reason: Rejected due to insights.ready_resources never completing.
+  - alternative: Manual certificate management
+    reason: Rejected due to requiring custom rotation logic.
+  - alternative: External CA
+    reason: Deferred for future multi-cluster scenarios.
+provenance: guided-ai
