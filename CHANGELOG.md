@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.28](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.27...operator-image-v0.10.28) (2026-06-22)
+
+
+### Bug Fixes
+
+* **operator-image:** bump msgpack from 1.1.2 to 1.2.1 ([8d6a4f7](https://github.com/vriesdemichael/keycloak-operator/commit/8d6a4f7839ccd284b1d0f06f1c8b76eb098733f3))
+
 ## [0.10.27](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.26...operator-image-v0.10.27) (2026-06-22)
 
 
