@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.31](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.30...operator-image-v0.10.31) (2026-06-25)
+
+
+### Bug Fixes
+
+* **operator-image:** bump opentelemetry-exporter-otlp ([b8d3783](https://github.com/vriesdemichael/keycloak-operator/commit/b8d37836f59c8c54376c59a770b4ef8cf197776a))
+
 ## [0.10.30](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.29...operator-image-v0.10.30) (2026-06-24)
 
 
