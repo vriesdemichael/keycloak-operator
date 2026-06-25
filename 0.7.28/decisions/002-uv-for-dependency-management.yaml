@@ -1,0 +1,13 @@
+number: 2
+title: uv for dependency management
+category: development
+decision: Use uv instead of pip, poetry, or pipenv for Python dependency management
+  and environment handling.
+agent_instructions: Always use 'uv run' for running Python commands. Never use 'python'
+  or 'pip' directly. Use 'uv sync' for installing dependencies. Update pyproject.toml
+  for dependency changes.
+rationale: 'Lockfiles ensure reproducible builds across environments (uv.lock). Minimal
+  image footprint: uv produces smaller, faster Docker images. Speed: uv is significantly
+  faster than pip for dependency resolution and installation. Modern standard: uv
+  is becoming the Python packaging standard with PEP 723 inline script support.'
+provenance: guided-ai
