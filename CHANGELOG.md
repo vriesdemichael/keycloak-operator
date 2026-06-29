@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.33](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.32...operator-image-v0.10.33) (2026-06-29)
+
+
+### Bug Fixes
+
+* **operator-image:** bump joserfc from 1.6.4 to 1.6.7 ([1ffd3d6](https://github.com/vriesdemichael/keycloak-operator/commit/1ffd3d6579433036cc1e387fb916b40f75308ee7))
+
 ## [0.10.32](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.31...operator-image-v0.10.32) (2026-06-25)
 
 
