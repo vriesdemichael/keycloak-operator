@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.10...migration-toolkit-v0.1.11) (2026-07-01)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** bump golang.org/x/net ([813efc5](https://github.com/vriesdemichael/keycloak-operator/commit/813efc53f8e1dbe5a6e6581fb05f17ac570d8e5b))
+
 ## [0.1.10](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.9...migration-toolkit-v0.1.10) (2026-06-15)
 
 
