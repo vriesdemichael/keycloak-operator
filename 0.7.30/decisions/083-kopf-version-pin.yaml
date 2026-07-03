@@ -1,0 +1,55 @@
+number: 83
+title: "Hard Pin kopf to 1.40.1 Due to Memory Leak"
+category: architecture
+decision: >
+  Hard-pin the kopf framework to version 1.40.1 (exact version, not a range) in pyproject.toml.
+  This pin must remain in place until the upstream memory leak issue (nolar/kopf#1172) is
+  resolved and verified in a future kopf release.
+
+  The constraint is: kopf==1.40.1
+
+agent_instructions: >
+  CRITICAL: Do NOT upgrade kopf beyond 1.40.1 without explicit user approval and verification.
+
+  When considering kopf upgrades:
+  1. Check if nolar/kopf#1172 is resolved in the target version
+  2. Run full integration test suite with memory monitoring
+  3. Verify operator memory stays stable (should remain under 200Mi, not grow unbounded)
+  4. Only then propose removing the hard pin
+
+  If you see dependabot or renovate PRs attempting to bump kopf:
+  - Close them with a comment referencing this ADR and issue #1172
+  - Do NOT merge kopf upgrades without memory leak verification
+
+  The memory leak manifests as:
+  - Operator grows from ~160Mi to 6Gi in ~90 seconds during reconciliation
+  - OOMKilled errors in Kubernetes
+  - Leak occurs in aiohttp's ResponseHandler.data_received called from kopf
+
+rationale: >
+  kopf 1.42+ introduced a catastrophic memory leak when using `patch` or `patch.status` in
+  handlers. The leak is traced to aiohttp's ResponseHandler.data_received, triggered by
+  changes in kopf 1.42 that removed event batching (events are now processed instantly).
+
+  The combination of increased handler execution frequency and memory leaked per execution
+  causes exponential memory growth. In integration tests, the operator grew from 160Mi to
+  6Gi within 90 seconds, causing OOMKilled.
+
+  Attempted workarounds that FAILED:
+  - Increasing memory limits (just delays the inevitable OOM)
+  - Refactoring handlers to use direct K8s API calls instead of patch.status
+  - Using patch_resource_status() utility to bypass kopf's patching
+
+  The only reliable solution is pinning to the last known working version (1.40.1).
+
+rejected_alternatives:
+  - alternative: "Pin to <1.42.0 range instead of exact version"
+    reason: "1.41.1 was tested but we have highest confidence in 1.40.1 which was running in production. Exact pin provides maximum stability."
+  - alternative: "Refactor all handlers to avoid patch.status"
+    reason: "Attempted and failed. The memory leak persisted even when bypassing kopf's patch mechanism with direct K8s API calls."
+  - alternative: "Increase operator memory limits"
+    reason: "This only delays the OOM. The leak is unbounded and will eventually exhaust any memory limit. Also wastes cluster resources."
+  - alternative: "Fork kopf and fix the issue ourselves"
+    reason: "Maintenance burden too high. Better to wait for upstream fix while pinned to working version."
+
+provenance: guided-ai

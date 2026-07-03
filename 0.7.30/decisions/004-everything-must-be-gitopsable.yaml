@@ -1,0 +1,14 @@
+number: 4
+title: Everything must be GitOpsable
+category: development
+decision: All operator functionality must be fully declarative and compatible with
+  GitOps workflows (ArgoCD, Flux). No imperative operations or manual interventions
+  required.
+agent_instructions: When implementing features, ensure they work purely through CRD
+  spec declarations. All state must be reconcilable from CRD spec alone. No hidden
+  state or manual steps. Test all features with GitOps tools in integration tests.
+rationale: 'GitOps is a core requirement, not optional. This enables: - Version control
+  for all infrastructure changes - Automated deployments and rollbacks - Disaster
+  recovery through declarative state - Compliance and audit requirements Trade-off:
+  Some operations may require more complex CRD specs instead of simple CLI commands.'
+provenance: guided-ai
