@@ -3,7 +3,7 @@ name: keycloak-operator
 description: A Helm chart for deploying the Keycloak Operator with GitOps compatibility
 type: application
 version: 0.7.29
-appVersion: "v0.10.33"
+appVersion: "v0.10.34"
 keywords:
   - keycloak
   - operator
