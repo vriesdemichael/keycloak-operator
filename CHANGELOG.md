@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.35](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.34...operator-image-v0.10.35) (2026-07-09)
+
+
+### Bug Fixes
+
+* **operator-image:** bump pyasn1 in the patch-updates group ([e4f19e0](https://github.com/vriesdemichael/keycloak-operator/commit/e4f19e0803b47c7d592640f66fae6019645409a5))
+
 ## [0.10.34](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.33...operator-image-v0.10.34) (2026-07-03)
 
 
