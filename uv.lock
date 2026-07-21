@@ -973,11 +973,11 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aiobreaker", specifier = ">=1.0.0" },
-    { name = "aiohttp", specifier = ">=3.14.1" },
+    { name = "aiohttp", specifier = ">=3.14.2" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "kopf", specifier = "==1.40.1" },
-    { name = "kubernetes", specifier = ">=36.0.2" },
+    { name = "kubernetes", specifier = ">=36.0.3" },
     { name = "opentelemetry-api", specifier = ">=1.42.1" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.43.0" },
     { name = "opentelemetry-instrumentation-aiohttp-client", specifier = ">=0.63b0" },
