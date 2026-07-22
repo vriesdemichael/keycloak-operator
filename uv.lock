@@ -999,7 +999,7 @@ dev = [
     { name = "marshmallow", specifier = ">=4.1.2" },
     { name = "pip", specifier = ">=26.1.2" },
     { name = "pip-audit", specifier = ">=2.10.1" },
-    { name = "pre-commit", specifier = ">=4.6.0" },
+    { name = "pre-commit", specifier = ">=4.6.1" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
@@ -1009,9 +1009,9 @@ dev = [
     { name = "pytest-timeout", specifier = ">=2.3.1" },
     { name = "pytest-xdist", specifier = ">=3.5.0" },
     { name = "pyyaml", specifier = ">=6.0.0" },
-    { name = "ruff", specifier = ">=0.15.21" },
+    { name = "ruff", specifier = ">=0.15.22" },
     { name = "safety", specifier = ">=3.8.1" },
-    { name = "ty", specifier = ">=0.0.59" },
+    { name = "ty", specifier = ">=0.0.62" },
     { name = "types-requests", specifier = ">=2.33.0.20260712" },
 ]
 docs = [
@@ -1020,7 +1020,7 @@ docs = [
     { name = "mkdocs", specifier = ">=1.6.0" },
     { name = "mkdocs-gen-files", specifier = ">=0.5.0" },
     { name = "mkdocs-literate-nav", specifier = ">=0.6.1" },
-    { name = "mkdocs-material", specifier = ">=9.5.0" },
+    { name = "mkdocs-material", specifier = ">=9.7.7" },
     { name = "mkdocs-section-index", specifier = ">=0.3.12" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.6" },
 ]
@@ -1029,9 +1029,9 @@ model-generation = [
     { name = "httpx", specifier = ">=0.27.0" },
 ]
 quality = [
-    { name = "pre-commit", specifier = ">=4.6.0" },
-    { name = "ruff", specifier = ">=0.15.21" },
-    { name = "ty", specifier = ">=0.0.59" },
+    { name = "pre-commit", specifier = ">=4.6.1" },
+    { name = "ruff", specifier = ">=0.15.22" },
+    { name = "ty", specifier = ">=0.0.62" },
     { name = "types-requests", specifier = ">=2.33.0.20260712" },
 ]
 security = [
