@@ -18,3 +18,10 @@ unresolved-attribute = "ignore"   # Mock attributes in tests (e.g. assert_called
 no-matching-overload = "ignore"   # Dictionary .get()/.update() with mixed types
 invalid-assignment = "ignore"    # Property assignment in tests
 not-iterable = "ignore"          # Dynamic types sometimes not recognized as iterable
+
+# ty >=0.0.62 added pydantic-discarded-extra-argument, which does not account for
+# populate_by_name: it flags field-name kwargs on aliased fields (e.g. api_version=
+# for alias="apiVersion") as discarded, in both the class Config and model_config
+# forms. Pydantic accepts them at runtime, as the unit tests covering these exact
+# constructions confirm.
+pydantic-discarded-extra-argument = "ignore"
