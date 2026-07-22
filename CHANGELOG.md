@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.36](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.35...operator-image-v0.10.36) (2026-07-22)
+
+
+### Bug Fixes
+
+* **operator-image:** bump the patch-updates group across 1 directory with 2 updates ([59ceb51](https://github.com/vriesdemichael/keycloak-operator/commit/59ceb5106ba34d9de1fe01da83baf4e540075d4d))
+* **operator-image:** ignore ty pydantic-discarded-extra-argument rule ([a9cd366](https://github.com/vriesdemichael/keycloak-operator/commit/a9cd366b1e1365aeddbfbb46e0376a46de3835c6))
+* **operator-image:** upgrade python dependencies to resolve click CVE ([83708b0](https://github.com/vriesdemichael/keycloak-operator/commit/83708b0220359fde6b6d746edd425bd2251d7c92))
+
 ## [0.10.35](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.34...operator-image-v0.10.35) (2026-07-09)
 
 
