@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.37](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.36...operator-image-v0.10.37) (2026-07-23)
+
+
+### Bug Fixes
+
+* **operator-image:** bump aiohttp in the patch-updates group ([d6cf25c](https://github.com/vriesdemichael/keycloak-operator/commit/d6cf25c87e76b8b235965449bae375d000cdcb31))
+
 ## [0.10.36](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.35...operator-image-v0.10.36) (2026-07-22)
 
 
