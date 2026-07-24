@@ -90,7 +90,7 @@ jobs:
           echo "digest=${BASE_DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@06fb636fac595d6fb4b28a5dfcb21a6f5091859c # v4.5.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -165,7 +165,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security
         if: steps.check.outputs.exists == 'false' && steps.params.outputs.upload_sarif == 'true'
-        uses: github/codeql-action/upload-sarif@7188fc363630916deb702c7fdcf4e481b751f97a # v4.37.1
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         with:
           sarif_file: 'trivy-keycloak-optimized.sarif'
           category: 'test/${{ steps.params.outputs.image_variant }}'
