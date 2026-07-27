@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.38](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.37...operator-image-v0.10.38) (2026-07-27)
+
+
+### Bug Fixes
+
+* **operator-image:** bump prometheus-client from 0.25.0 to 0.26.0 ([ed9ff57](https://github.com/vriesdemichael/keycloak-operator/commit/ed9ff5786588199c233fec340742f51e9b17d77c))
+
 ## [0.10.37](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.36...operator-image-v0.10.37) (2026-07-23)
 
 
