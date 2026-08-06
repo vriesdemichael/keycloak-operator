@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.39](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.38...operator-image-v0.10.39) (2026-08-06)
+
+
+### Bug Fixes
+
+* **operator-image:** bump cryptography from 49.0.0 to 50.0.0 ([f6e1ac3](https://github.com/vriesdemichael/keycloak-operator/commit/f6e1ac35a3009890df4419c294d9a2778cbf1ec7))
+
 ## [0.10.38](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.37...operator-image-v0.10.38) (2026-07-27)
 
 
