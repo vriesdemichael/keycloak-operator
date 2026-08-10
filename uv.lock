@@ -521,7 +521,7 @@ wheels = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.72.0"
+version = "0.72.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
@@ -533,9 +533,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/df/bc/a11657789f312bb788063eb549c94be02f90daf039c80752414129bf7059/datamodel_code_generator-0.72.0.tar.gz", hash = "sha256:1eb5356a75ba7c91f0265ca59e181c8da392a51ec23012f8b0d0f2d8125af5e0", size = 1808117, upload-time = "2026-08-03T18:20:37.741Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b6/2d/12becb81ac1492ed5f6e3afcb2426e0d665c5ae51fa24bbe951b408dd867/datamodel_code_generator-0.72.2.tar.gz", hash = "sha256:0e11564564ccf12e8ae89ca28b7848c795b40609e9f011e7b3434428eebd6f12", size = 1856918, upload-time = "2026-08-06T14:36:05.515Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/07/80627e062c56076cfc560a83153b4ca26df37d1bc7c4b730943641d5075f/datamodel_code_generator-0.72.0-py3-none-any.whl", hash = "sha256:04ea49686a08298bec99a4a8470f87940bacb2a50dcda262bd4c6c46b9ecc1b5", size = 495786, upload-time = "2026-08-03T18:20:36.141Z" },
+    { url = "https://files.pythonhosted.org/packages/da/e5/a64c15b05307974cf9676a73ab9e11bed49656a1df16188685c73cb290ed/datamodel_code_generator-0.72.2-py3-none-any.whl", hash = "sha256:df75b3a3225085e098337538cb6895f12e4daca80c43dc15284102bd42948dfc", size = 514012, upload-time = "2026-08-06T14:36:03.785Z" },
 ]
 
 [package.optional-dependencies]
@@ -994,7 +994,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "authlib", specifier = ">=1.7.2" },
-    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.72.0" },
+    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.72.2" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "marshmallow", specifier = ">=4.1.2" },
     { name = "pip", specifier = ">=26.2" },
