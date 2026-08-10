@@ -13,7 +13,7 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.14.6-alpine3.23@sha256:b165067c5afc37fa5608a3c05609cc3d51aafd808a30fbfd822ee594fef55ad4 AS builder
+FROM python:3.14.7-alpine3.23@sha256:3dd78139a25399653106981c08f9ba5469bd8568c254d304368dd54ca57b1b46 AS builder
 
 ENV UV_LINK_MODE=copy \
     VIRTUAL_ENV=/app/.venv \
@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.14.6-alpine3.23@sha256:b165067c5afc37fa5608a3c05609cc3d51aafd808a30fbfd822ee594fef55ad4 AS production
+FROM python:3.14.7-alpine3.23@sha256:3dd78139a25399653106981c08f9ba5469bd8568c254d304368dd54ca57b1b46 AS production
 
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONPATH=/app/src \
