@@ -1,0 +1,16 @@
+number: 7
+title: Integration tests in Kind clusters
+category: development
+decision: Integration tests must run in real Kind (Kubernetes in Docker) clusters
+  with real Keycloak instances. No mocked operators, no mocked Keycloak.
+agent_instructions: Integration tests use 'task test:integration' which creates Kind
+  clusters. Never mock the operator or Keycloak in integration tests - use real deployments.
+  Tests must deploy via Helm charts to validate production-like scenarios. Read tests/integration/TESTING.md
+  for patterns and requirements.
+rationale: 'Production parity: Tests run against the same environment as production
+  (real K8s, real Keycloak). Catch integration issues: Mocks hide networking, timing,
+  and state issues that only appear in real clusters. Helm chart validation: Tests
+  verify the actual deployment artifacts users will use. CI/CD confidence: If it passes
+  integration tests, it works in production. Trade-off: Slower test execution, but
+  higher confidence in results.'
+provenance: guided-ai

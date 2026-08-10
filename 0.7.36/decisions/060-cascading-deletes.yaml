@@ -1,0 +1,38 @@
+number: 60
+title: Cascading deletes for dependent resources
+category: architecture
+decision: Deletes cascade from Keycloak to Realms to Clients. When parent resource
+  is deleted, operator automatically deletes dependent child resources. Finalizers
+  ensure proper cleanup order.
+agent_instructions: 'Cascading delete order: Keycloak → Realms → Clients. Implementation
+  in src/keycloak_operator/services/keycloak_reconciler.py (_delete_dependent_resources)
+  and realm_reconciler.py (realm cleanup). Keycloak deletion: finds and deletes all
+  KeycloakRealm CRs referencing it, then KeycloakClient CRs. Realm deletion: deletes
+  clients from Keycloak, then deletes KeycloakClient CRs referencing the realm. Finalizers
+  (KEYCLOAK_FINALIZER, REALM_FINALIZER, CLIENT_FINALIZER from src/keycloak_operator/constants.py)
+  prevent deletion until cleanup completes. Child CR finalizers removed before deletion
+  to prevent deadlock. Cascading delete logged with "Cascading deletion:" prefix.'
+rationale: 'Cascading deletes prevent orphaned resources and ensure clean removal.
+  Deleting Keycloak should remove all dependent Realms and Clients - users expect
+  this behavior. Deleting Realm should remove all its Clients. Manual deletion of
+  each resource is tedious and error-prone. Finalizers guarantee cleanup happens before
+  CR removal - prevents Kubernetes deleting CR before Keycloak cleanup completes.
+  Order matters: Clients deleted before Realms (clients depend on realms), Realms
+  deleted before Keycloak. Finalizer removal on children prevents deadlock - child
+  cleanup already done by parent, so skip child finalizer logic. Matches Kubernetes
+  patterns (OwnerReferences with cascade) but implemented manually for cross-namespace
+  support.'
+provenance: human
+rejected_alternatives:
+- alternative: No cascading deletes - manual cleanup required
+  reason: User must remember to delete Clients, then Realms, then Keycloak. Easy to
+    orphan resources. Poor UX.
+- alternative: Kubernetes OwnerReferences for cascading
+  reason: OwnerReferences don't work across namespaces. Realms and Clients can be
+    in different namespaces than Keycloak.
+- alternative: Delete children first, fail parent delete if children exist
+  reason: Forces specific deletion order. User must delete Clients, wait, delete
+    Realms, wait, delete Keycloak. Tedious.
+- alternative: Background garbage collection
+  reason: Delay between parent deletion and child cleanup. Orphaned resources visible
+    temporarily. Less deterministic.
