@@ -107,7 +107,7 @@ timeout = 900
 [dependency-groups]
 quality = [
     "ruff>=0.16.1",
-    "ty>=0.0.66",
+    "ty>=0.0.69",
     "types-requests>=2.33.0.20260712",
     "pre-commit>=4.6.1",
 ]
@@ -137,7 +137,7 @@ security = [
     "safety>=3.8.1",
     "authlib>=1.7.2",      # CVE-2025-68158
     "marshmallow>=4.1.2",  # CVE-2025-68480
-    "pip>=26.2",           # CVE-2025-8869
+    "pip>=26.2.1",           # CVE-2025-8869
 ]
 dev = [
     { include-group = "quality" },
