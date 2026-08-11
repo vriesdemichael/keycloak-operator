@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.41](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.40...operator-image-v0.10.41) (2026-08-11)
+
+
+### Bug Fixes
+
+* **operator-image:** bump pydantic-settings from 2.14.2 to 2.15.0 ([d5e6364](https://github.com/vriesdemichael/keycloak-operator/commit/d5e63648f30a1f57e4882543e70d5e1b2d2df895))
+
 ## [0.10.40](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.39...operator-image-v0.10.40) (2026-08-10)
 
 
