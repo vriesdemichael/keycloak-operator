@@ -1,0 +1,53 @@
+number: 91
+title: Legacy flat-field database config normalized to external tier
+category: architecture
+decision: >
+  Flat-field database configuration (setting top-level 'host', 'database', etc.
+  on KeycloakDatabaseConfig without a cnpg, managed, or external sub-object) is
+  normalized to the 'external' tier at the model layer. The KeycloakDatabaseConfig
+  .tier property returns 'external' for these configs. There is no fourth tier
+  called 'legacy'. The flat fields remain valid for backward compatibility but are
+  semantically equivalent to database.external with identical backup behavior:
+  warn-and-proceed.
+agent_instructions: >
+  There are exactly three database tiers: 'cnpg', 'managed', 'external'.
+  Do not implement a fourth tier called 'legacy'. Flat-field database configs
+  (no cnpg/managed/external sub-object) ARE external tier with a different
+  syntax — KeycloakDatabaseConfig.tier returns 'external' for them.
+  In backup logic, do not add distinct behavior for 'legacy'. If a defensive
+  compatibility path ever receives a stray 'legacy' value, normalize it to
+  'external' immediately (before dispatch, before logging, before BackupResult
+  construction) so 'legacy' never surfaces in logs, results, or user-facing
+  output.
+  When writing tests, verify tier == 'external' for flat-field configs. If
+  you add compatibility tests for stray 'legacy' input, assert it normalizes
+  to 'external' before dispatch/behavior/logging.
+  When writing documentation, show a three-row tier table (CNPG, Managed,
+  External) and add a note that flat-field syntax is treated as External.
+rationale: >
+  ADR-088 introduced tiered database configuration but retained a conceptual
+  'legacy' tier as a temporary bridging concept. This created ambiguity: the
+  backup service had a 'Tier 4 (Legacy)' concept, documentation showed a
+  four-row tier table, and tests asserted tier == 'legacy'. In practice, legacy
+  and external have been identical in behavior since ADR-088 was implemented
+  (both warn-and-proceed on upgrades, both connect using direct DB credentials).
+  Keeping them conceptually separate served no purpose — it only added confusion
+  for operators trying to understand what tier their config belongs to.
+  Normalizing legacy to external at the model layer collapses the four-tier
+  concept back to three, eliminates dead code in the backup dispatcher, and
+  gives operators a single, clear contract: if the operator cannot automate
+  your backup, it logs a warning and proceeds. Full backward compatibility is
+  preserved — all existing CRs using flat fields continue to work unchanged.
+rejected_alternatives:
+  - alternative: "Keep legacy as a distinct fourth tier"
+    reason: >
+      Legacy and external are behaviorally identical. Distinguishing them
+      as separate tiers adds conceptual overhead with no operational benefit.
+      If they ever need to diverge (e.g. a manual gate only for external),
+      a new ADR can re-introduce the split with explicit intent.
+  - alternative: "Raise a deprecation warning or admission webhook error for flat-field configs"
+    reason: >
+      Flat-field configs are a backward-compat path that existing users rely on.
+      Blocking or warning on them would be a breaking change without justification.
+      They remain accepted silently and normalize to external.
+provenance: guided-ai
