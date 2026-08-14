@@ -521,7 +521,7 @@ wheels = [
 
 [[package]]
 name = "datamodel-code-generator"
-version = "0.72.2"
+version = "0.72.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "argcomplete" },
@@ -533,9 +533,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/2d/12becb81ac1492ed5f6e3afcb2426e0d665c5ae51fa24bbe951b408dd867/datamodel_code_generator-0.72.2.tar.gz", hash = "sha256:0e11564564ccf12e8ae89ca28b7848c795b40609e9f011e7b3434428eebd6f12", size = 1856918, upload-time = "2026-08-06T14:36:05.515Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/14/4b/4652f0bb085a564982c3e515a0b02bcee21765ddac967bcf152a70d2af14/datamodel_code_generator-0.72.3.tar.gz", hash = "sha256:a20160de09b76d4a293ccba5a9ee5c341b5365890237ac1ff812f420e4c09f3b", size = 1965678, upload-time = "2026-08-10T18:58:41.636Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/e5/a64c15b05307974cf9676a73ab9e11bed49656a1df16188685c73cb290ed/datamodel_code_generator-0.72.2-py3-none-any.whl", hash = "sha256:df75b3a3225085e098337538cb6895f12e4daca80c43dc15284102bd42948dfc", size = 514012, upload-time = "2026-08-06T14:36:03.785Z" },
+    { url = "https://files.pythonhosted.org/packages/84/fd/9d8a0594aedcc6ee8133b21dd3543d6021842e013058803a69918720d0aa/datamodel_code_generator-0.72.3-py3-none-any.whl", hash = "sha256:4536f6dd12dd86c9c7a78b16ef83ae9aa7a9cbdb8bef8a3b63baa4ad9d3d3829", size = 554226, upload-time = "2026-08-10T18:58:40.087Z" },
 ]
 
 [package.optional-dependencies]
@@ -994,7 +994,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "authlib", specifier = ">=1.7.2" },
-    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.72.2" },
+    { name = "datamodel-code-generator", extras = ["http"], specifier = ">=0.72.3" },
     { name = "jsonschema", specifier = ">=4.25.1" },
     { name = "marshmallow", specifier = ">=4.3.1" },
     { name = "pip", specifier = ">=26.2.1" },
