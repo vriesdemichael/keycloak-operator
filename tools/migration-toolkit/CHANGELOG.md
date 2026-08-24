@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.12...migration-toolkit-v0.1.13) (2026-08-24)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** bump k8s.io/apimachinery ([31e9510](https://github.com/vriesdemichael/keycloak-operator/commit/31e9510549da8c4450ffed163022d5afe437809a))
+
 ## [0.1.12](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.11...migration-toolkit-v0.1.12) (2026-07-24)
 
 
