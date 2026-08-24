@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.13...migration-toolkit-v0.1.14) (2026-08-24)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** bump k8s.io/client-go ([21cfa5a](https://github.com/vriesdemichael/keycloak-operator/commit/21cfa5ae7b8b5e5fa6802d607c3b2effeb0a03d8))
+
 ## [0.1.13](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.12...migration-toolkit-v0.1.13) (2026-08-24)
 
 
