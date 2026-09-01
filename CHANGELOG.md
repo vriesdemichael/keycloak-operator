@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.44](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.43...operator-image-v0.10.44) (2026-09-01)
+
+
+### Bug Fixes
+
+* **operator-image:** bump nltk from 3.10.0 to 3.10.3 ([c71b370](https://github.com/vriesdemichael/keycloak-operator/commit/c71b3704bacc3d249c6d5777b1f5f0622372054e))
+
 ## [0.10.43](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.42...operator-image-v0.10.43) (2026-09-01)
 
 
