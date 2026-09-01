@@ -1,0 +1,29 @@
+number: 23
+status: superseded
+superseded_by: 85
+title: Make for development automation
+category: development
+decision: Use Make as the primary interface for all development tasks. All common
+  workflows (testing, quality checks, deployment, cluster management) must have corresponding
+  Make targets.
+agent_instructions: >
+  This decision is SUPERSEDED by ADR-085. Use Taskfile instead of Make.
+  Always check the Taskfile.yml for existing tasks before running
+  commands directly. Use 'task --list' to see available tasks.
+rationale: Make provides a standardized, discoverable interface for all development
+  tasks. Developers and AI agents can run 'make help' to see all available commands.
+  Make targets abstract away complexity (uv, pytest flags, cluster setup) into simple,
+  memorable commands. Documentation stays in sync because commands are defined once
+  in Makefile. Cross-platform compatibility - Make works on Linux, macOS, Windows
+  (WSL). CI/CD uses same Make targets as local development, ensuring consistency.
+provenance: human
+rejected_alternatives:
+- alternative: Use shell scripts in scripts/ directory
+  reason: Less discoverable, no built-in help system, harder to compose tasks. Make
+    provides dependency management and built-in help.
+- alternative: Use task runners like Taskfile or Just
+  reason: Make is universally available, well-understood, and doesn't require additional
+    tooling. Taskfile/Just add dependencies.
+- alternative: Document raw commands
+  reason: Commands change (different flags, tools, paths). Make targets provide stable
+    interface even as underlying commands evolve.
