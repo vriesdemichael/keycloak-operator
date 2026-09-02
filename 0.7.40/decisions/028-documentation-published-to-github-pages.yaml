@@ -1,0 +1,21 @@
+number: 28
+title: Documentation published to GitHub Pages
+category: development
+decision: Publish all project documentation to GitHub Pages at https://vriesdemichael.github.io/keycloak-operator/
+  using MkDocs with Material theme.
+agent_instructions: Maintain documentation in docs/ directory using Markdown. Build
+  documentation with MkDocs. Documentation is automatically published to GitHub Pages
+  on pushes to main branch. Keep documentation in sync with code changes - update
+  docs when adding features.
+rationale: GitHub Pages provides free, reliable hosting for project documentation.
+  MkDocs with Material theme provides professional appearance and good UX (search,
+  navigation, mobile support). Versioned documentation matches versioned releases.
+  Users can access documentation without cloning repository. GitHub Pages SSL and
+  CDN provide fast, secure access globally. Integrated with CI/CD for automatic publishing.
+provenance: human
+rejected_alternatives:
+- alternative: Documentation only in README.md
+  reason: Single file doesn't scale for complex project. No proper navigation or search.
+- alternative: Wiki or separate documentation site
+  reason: Harder to keep in sync with code. Wiki doesn't support versioning or CI/CD
+    publishing.

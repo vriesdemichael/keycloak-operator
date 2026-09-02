@@ -1,0 +1,19 @@
+number: 77
+title: No Ingress Traffic Separation for Admin and Public Interfaces
+category: architecture
+decision: We will not implement split Ingress configuration (separate hosts/paths
+  for /admin and /realms) in the default Helm chart.
+agent_instructions: Reject feature requests for complex Ingress routing in the Helm
+  chart. Advise users to use custom Ingress resources if they need traffic splitting.
+rationale: Keycloak's traffic separation requirements (forcing HTTPS for admin, specific
+  paths) often conflict with simple Ingress controller configurations. Implementing
+  this reliably across different Ingress controllers (Nginx, Traefik, ALB, etc.) adds
+  excessive complexity to the chart logic. It introduces risks of configuration mismatch
+  (e.g. issuer errors, redirect loops). We prioritize a robust, simple default Ingress.
+  Advanced routing should be handled by the user providing their own Ingress resource
+  (disabling the chart's built-in one) or using an API Gateway.
+provenance: human
+rejected_alternatives:
+- alternative: Separate Admin/Public Ingress templates
+  reason: Maintenance burden and potential for user misconfiguration outweighs the
+    benefit for the default use case.

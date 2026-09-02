@@ -1,0 +1,32 @@
+number: 79
+title: No managed Keycloak upgrades
+category: architecture
+decision: Operator does not support upgrading managed Keycloak instances. Users must
+  manually upgrade Keycloak or redeploy with new version. Automated upgrades are planned
+  but blocked by database migration complexity.
+agent_instructions: 'Operator creates Keycloak instances with specific version (DEFAULT_KEYCLOAK_IMAGE).
+  Changing keycloak.image in CR spec does not trigger automatic upgrade. Operator
+  does not handle Keycloak database schema migrations between versions. Document manual
+  upgrade process: backup database, update image, run Keycloak migrations, verify.
+  If upgrade support requested, explain it is planned but requires database migration
+  orchestration. External Keycloak instances (decision 037) handle their own upgrades.'
+rationale: 'Keycloak version upgrades require database schema migrations which can
+  fail or cause downtime. Operator cannot safely orchestrate: backup before migration,
+  migration execution, rollback on failure, verification. Database migration is Keycloak''s
+  responsibility - operator should not reimplement. Users need control over upgrade
+  timing for production systems (maintenance windows, testing). Automated upgrades
+  risk data loss or corruption if migration fails. CNPG (decision 015) handles database
+  backups but not Keycloak-specific migrations. Better to provide clear manual process
+  than risky automation. Future: could add upgrade CRD with explicit user confirmation,
+  backup orchestration, migration monitoring.'
+provenance: human
+rejected_alternatives:
+- alternative: Automatic upgrades on image change
+  reason: Dangerous - no backup, no rollback, no user confirmation. Database migration
+    failures could corrupt data.
+- alternative: Blue-green deployment for upgrades
+  reason: Requires duplicate database (Keycloak shares schema). Complex migration
+    coordination. Wastes resources during upgrade.
+- alternative: Helm chart upgrade handles it
+  reason: Helm doesn't orchestrate database migrations. Would still need operator
+    logic for safe upgrades.

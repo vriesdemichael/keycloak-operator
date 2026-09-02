@@ -1,0 +1,88 @@
+number: 19
+title: Drift detection and continuous reconciliation
+category: architecture
+decision: >
+  Operator reconciles CRD specs with actual Keycloak state using a timestamp-based
+  comparison approach. Drift detection is opt-in via environment variables and uses
+  Keycloak Admin Events to efficiently detect external changes without polling.
+
+  Key implementation details:
+  1. Admin events MUST be enabled for drift detection to function (enforced by reconciler).
+  2. Timestamp comparison: Store last reconcile event time, compare with latest admin event.
+  3. Baseline timestamp: Set current time on resource creation (no admin event exists yet).
+  4. Ownership tracking prevents conflicts with manual resources or other operators.
+agent_instructions: >
+  Drift detection uses Keycloak Admin Events for efficient change detection:
+
+  1. **Admin Events Required**: When drift detection is enabled, the reconciler enforces
+     `adminEventsEnabled: true` and `adminEventsDetailsEnabled: true` on the realm,
+     regardless of user configuration. This is non-negotiable for drift detection to work.
+
+  2. **Timestamp-Based Detection**: The operator stores `lastReconcileEventTime` in CR status.
+     On each timer tick, it queries admin events since that timestamp. If events exist for
+     the resource type, drift may have occurred and full reconciliation runs.
+
+  3. **Baseline Timestamp**: When creating a new resource, there's no admin event yet (the
+     realm didn't exist). The reconciler sets `lastReconcileEventTime = current_time` as
+     a baseline to prevent unnecessary double-reconciliation.
+
+  4. **Configuration**: Environment variables control behavior:
+     - DRIFT_DETECTION_ENABLED (default: false)
+     - DRIFT_DETECTION_AUTO_REMEDIATE (default: true when enabled)
+     - DRIFT_DETECTION_MINIMUM_AGE_HOURS (default: 1)
+
+  5. **Ownership Tracking**: Use ownership.py to mark resources with operator instance ID.
+     Only remediate drift for resources owned by this operator instance.
+
+  6. **Status Phases**: Unknown, Pending, Provisioning, Ready, Degraded, Failed.
+     Timer handlers skip Unknown, Pending, Failed phases.
+
+  Key files:
+  - src/keycloak_operator/services/drift_detection_service.py
+  - src/keycloak_operator/services/realm_reconciler.py (baseline timestamp logic ~line 215-248)
+  - src/keycloak_operator/services/client_reconciler.py (baseline timestamp logic ~line 250-280)
+  - src/keycloak_operator/utils/ownership.py
+rationale: >
+  **Why timestamp-based detection with admin events?**
+
+  Alternative approaches were considered and rejected:
+
+  1. **Full state comparison on every timer**: Too expensive. Requires fetching entire
+     Keycloak state and diffing against CRD spec. O(n) API calls per resource per tick.
+
+  2. **Polling for changes**: No efficient way to ask Keycloak "what changed since X?"
+     without admin events. Would require full state fetch.
+
+  3. **Webhook from Keycloak**: Keycloak doesn't support outbound webhooks for config changes.
+
+  Admin events provide an efficient mechanism: one API call returns all changes since
+  a timestamp. If no relevant events, skip reconciliation entirely.
+
+  **Why enforce admin events?**
+
+  Users might disable admin events for "performance" but this breaks drift detection entirely.
+  Rather than silently failing or degrading, the reconciler enforces the requirement.
+  The overhead of admin events is minimal compared to the value of drift detection.
+
+  **Why baseline timestamp on creation?**
+
+  When a realm is created, the creation itself doesn't generate an admin event (the realm
+  didn't exist to log events). Without a baseline, the first timer tick would see
+  "no events since epoch" and potentially trigger unnecessary work. Setting current time
+  as baseline establishes a clean starting point.
+provenance: guided-ai
+rejected_alternatives:
+  - alternative: Full state diff on every reconciliation
+    reason: >
+      Too expensive. Each reconciliation would require fetching entire Keycloak state
+      (realms, clients, roles, groups, etc.) and comparing against CRD spec. This creates
+      O(n) API calls per resource and doesn't scale with large Keycloak deployments.
+  - alternative: Keycloak webhooks for change notification
+    reason: >
+      Keycloak does not support outbound webhooks for configuration changes. Admin events
+      are the only mechanism to track changes made outside the operator.
+  - alternative: Optional admin events (warn if disabled)
+    reason: >
+      Drift detection cannot function without admin events. Warning but proceeding would
+      give users false confidence that drift detection works. Better to enforce the
+      requirement explicitly.
