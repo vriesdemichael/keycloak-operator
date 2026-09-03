@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.45](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.44...operator-image-v0.10.45) (2026-09-03)
+
+
+### Bug Fixes
+
+* **operator-image:** bump python in /images/operator ([450021e](https://github.com/vriesdemichael/keycloak-operator/commit/450021e45894f39a5b8c528f39444abb504bd033))
+
 ## [0.10.44](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.43...operator-image-v0.10.44) (2026-09-01)
 
 
