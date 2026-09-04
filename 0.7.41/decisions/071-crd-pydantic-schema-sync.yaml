@@ -1,0 +1,21 @@
+number: 71
+title: CRD-Pydantic schema synchronization validation
+category: development
+decision: >
+  CRD openAPIV3Schema definitions must be validated against Pydantic model JSON schemas
+  in CI. The validator extracts property paths from both schemas, normalizes snake_case
+  to camelCase for comparison, and reports any fields that exist in one but not the other.
+  This ensures the Kubernetes API (CRD) stays synchronized with the Python models.
+agent_instructions: >
+  When modifying Pydantic models in src/keycloak_operator/models/, ensure the corresponding
+  CRD in charts/keycloak-operator/crds/ is updated to match. Run `task quality:validate-crd-pydantic`
+  to check for mismatches. Field names in Pydantic use snake_case while CRDs use camelCase -
+  the validator handles this conversion automatically. Add new fields to both places or
+  the CI will fail.
+rationale: >
+  The CRD defines the Kubernetes API contract while Pydantic models define the Python
+  representation. If these drift apart, the operator may fail to parse valid CRs or may
+  expose fields in Python that don't exist in the API. Automated validation catches this
+  drift early. The validator uses Pydantic's model_json_schema() to extract the Python
+  schema and compares it to the CRD's openAPIV3Schema.
+provenance: guided-ai
