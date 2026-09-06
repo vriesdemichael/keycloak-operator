@@ -13,7 +13,6 @@
 # Security-sensitive files
 /pyproject.toml @vriesdemichael
 /uv.lock @vriesdemichael
-/.github/dependabot.yml @vriesdemichael
 
 # Documentation
 /docs/ @vriesdemichael
